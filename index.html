@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Zabbix Monitor</title>
+    <link href="lib/css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="lib/js/echarts.min.js"></script>
+    <style>
+        /* 内联 SVG 图标样式 */
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- 顶部栏 -->
+        <header class="header">
+            <div class="header-content">
+                <div class="flex items-center">
+                    <img src="assets/zabbix.png" class="logo" alt="logo">
+                    <h1>Zabbix Dashboard</h1>
+                </div>
+                <div class="header-actions">
+                    <div class="last-refresh">
+                        最后刷新：<span id="lastRefreshTime">--</span>
+                    </div>
+                    <a href="https://github.com/X-Mars" target="_blank" class="icon-btn">
+                        <svg viewBox="0 0 24 24" width="24" height="24" class="icon">
+                            <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                        </svg>
+                    </a>
+                    <button id="settingsBtn" class="icon-btn">
+                        <svg viewBox="0 0 24 24" width="24" height="24" class="icon">
+                            <path fill="currentColor" d="M24 13.616v-3.232l-2.869-1.02c-.198-.687-.472-1.342-.811-1.955l1.308-2.751-2.285-2.285-2.751 1.307c-.613-.339-1.268-.613-1.955-.811l-1.02-2.869h-3.232l-1.021 2.869c-.687.198-1.342.472-1.955.811l-2.751-1.308-2.285 2.285 1.308 2.752c-.339.613-.614 1.268-.811 1.955l-2.869 1.02v3.232l2.869 1.02c.198.687.472 1.342.811 1.955l-1.308 2.751 2.285 2.286 2.751-1.308c.613.339 1.268.613 1.955.811l1.021 2.869h3.232l1.02-2.869c.687-.198 1.342-.472 1.955-.811l2.751 1.308 2.285-2.286-1.308-2.751c.339-.613.614-1.268.811-1.955l2.869-1.02zm-12 2.384c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主要内容区 -->
+        <main class="main-content flex-grow">
+            <!-- 状态卡片 -->
+            <div class="status-cards">
+                <div class="status-card">
+                    <div class="status-icon blue">
+                        <svg viewBox="0 0 24 24" width="24" height="24" class="icon">
+                            <path fill="currentColor" d="M4 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V3c0-1.1-.9-2-2-2H4zm16 18H4v-2h16v2zm0-4H4v-2h16v2zm0-4H4V3h16v8zM6 5h2v2H6V5zm0 8h2v2H6v-2zm4-8h8v2h-8V5zm0 8h8v2h-8v-2z"/>
+                        </svg>
+                    </div>
+                    <div class="status-info">
+                        <span class="status-label">主机数量</span>
+                        <span id="hostCount" class="status-value">--</span>
+                    </div>
+                </div>
+                <div class="status-card">
+                    <div class="status-icon green">
+                        <svg viewBox="0 0 1337 1024" width="24" height="24" class="icon">
+                          <path fill="currentColor" d="M20.899213 815.020408h1295.673469v188.081633H20.899213z M1295.674723 1024H41.797172a41.795918 41.795918 0 0 1-41.795918-41.795918v-164.25796a41.795918 41.795918 0 0 1 1.462857-11.284898l12.329796-36.571428a20.897959 20.897959 0 0 1 39.706122 13.165714L41.797172 818.99102V982.204082h1253.877551v-163.84l-12.747755-38.243266a20.897959 20.897959 0 0 1 12.747755-26.540408 20.897959 20.897959 0 0 1 26.540408 13.165714l12.747756 38.661225a39.079184 39.079184 0 0 1 2.089795 12.956735V982.204082A41.795918 41.795918 0 0 1 1295.674723 1024z M261.225744 909.061224a31.346939 31.346939 0 1 0 62.693877 0 31.346939 31.346939 0 1 0-62.693877 0Z M20.899213 815.020408h1295.673469v20.897959H20.899213z M20.899213 522.44898h1295.673469v188.081632H20.899213z M1295.674723 731.428571H41.797172a41.795918 41.795918 0 0 1-41.795918-41.795918v-164.257959a41.795918 41.795918 0 0 1 1.462857-11.284898L164.050233 29.466122A41.795918 41.795918 0 0 1 203.965336 0h930.168163a41.795918 41.795918 0 0 1 39.706122 29.048163l161.541225 483.787755a39.079184 39.079184 0 0 1 2.089796 12.956735V689.632653a41.795918 41.795918 0 0 1-41.795919 41.795918zM203.965336 41.795918L41.797172 526.419592V689.632653h1253.877551v-163.84L1134.133499 41.795918z M261.225744 616.489796a31.346939 31.346939 0 1 0 62.693877 0 31.346939 31.346939 0 1 0-62.693877 0Z M843.024927 405.420408H752.327784a77.531429 77.531429 0 0 1-70.426122-45.139592L606.04207 191.843265a35.94449 35.94449 0 0 0-32.391837-20.897959h-109.087346a20.897959 20.897959 0 0 1 0-41.795918h108.042449a77.322449 77.322449 0 0 1 70.217142 44.930612l77.949388 168.646531a35.526531 35.526531 0 0 0 32.391837 20.897959h89.861224a20.897959 20.897959 0 0 1 0 41.795918z M843.024927 461.00898v-152.973062L919.511458 384.522449l-76.486531 76.486531z"/>
+                        </svg>
+                    </div>
+                    <div class="status-info">
+                        <span class="status-label">交换机数量</span>
+                        <span id="switchCount" class="status-value">--</span>
+                    </div>
+                </div>
+                <div class="status-card">
+                    <div class="status-icon red">
+                        <svg viewBox="0 0 24 24" width="24" height="24" class="icon">
+                            <path fill="currentColor" d="M12 2L1 21h22M12 6l7.53 13H4.47M11 10v4h2v-4m-2 6v2h2v-2"/>
+                        </svg>
+                    </div>
+                    <div class="status-info">
+                        <span class="status-label">当前告警</span>
+                        <span id="alertCount" class="status-value">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图表区域 -->
+            <div class="charts-container">
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <h3>告警趋势</h3>
+                        <button class="refresh-btn" onclick="refreshChart('trend')">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div id="trendChart" class="chart"></div>
+                </div>
+                <div class="chart-box">
+                    <div class="chart-header">
+                        <h3>告警等级分布</h3>
+                        <button class="refresh-btn" onclick="refreshChart('severity')">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                    <div id="severityChart" class="chart"></div>
+                </div>
+            </div>
+            <!-- 告警列表 -->
+            <div class="alerts-list">
+                <div class="list-header">
+                    <h3>一周内告警历史</h3>
+                    <button class="refresh-btn" onclick="refreshAlerts()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="list-content">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>主机</th>
+                                <th>告警内容</th>
+                                <th>等级</th>
+                                <th>状态</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="alertsList">
+                            <!-- 告警列表内容将通过 JavaScript 动态添加 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 设置弹窗 -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>设置</h2>
+                <button class="close-btn" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Zabbix API 地址</label>
+                    <input type="text" id="apiUrl" placeholder="https://your-zabbix-server">
+                </div>
+                <div class="form-group">
+                    <label>API Token</label>
+                    <input type="password" id="apiToken" placeholder="输入您的API Token">
+                </div>
+                <div class="form-group">
+                    <label>刷新间隔</label>
+                    <select id="refreshInterval" class="form-select">
+                        <option value="5000">5 秒</option>
+                        <option value="30000">30 秒</option>
+                        <option value="60000">1 分钟</option>
+                        <option value="300000" selected>5 分钟</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="testConnection" class="btn primary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" class="icon">
+                        <path fill="currentColor" d="M16 7v-4h-2v4h-4v-4h-2v4h-4v2h4v4h-4v2h4v4h2v-4h4v4h2v-4h4v-2h-4v-4h4v-2h-4zm-6 6v-4h4v4h-4z"/>
+                    </svg>
+                    测试连接
+                </button>
+                <button id="saveSettings" class="btn success">
+                    <svg viewBox="0 0 24 24" width="16" height="16" class="icon">
+                        <path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zM6 6h9v4H6z"/>
+                    </svg>
+                    保存设置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 

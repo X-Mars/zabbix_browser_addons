@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "Zabbix Monitor",
+  "version": "1.0",
+  "description": "Zabbix monitoring dashboard for new tab",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "web_accessible_resources": [{
+    "resources": [
+      "assets/*",
+      "lib/webfonts/*",
+      "lib/css/*",
+      "lib/js/*"
+    ],
+    "matches": ["<all_urls>"]
+  }],
+  "chrome_url_overrides": {
+    "newtab": "index.html"
+  },
+  "icons": {
+    "16": "assets/zabbix.png",
+    "48": "assets/zabbix.png",
+    "128": "assets/zabbix.png"
+  }
+} 
