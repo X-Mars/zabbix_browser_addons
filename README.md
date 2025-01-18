@@ -17,12 +17,14 @@
 1. 下载项目代码
    - 下载地址：https://github.com/X-Mars/zabbix_browser_addons
    - 下载后解压到本地目录
-
 2. 在 Chrome/Edge 浏览器中打开扩展管理页面
    - Chrome: 访问 `chrome://extensions/`
    - Edge: 访问 `edge://extensions/`
 3. 开启"开发者模式"
 3. 点击"加载已解压的扩展程序"，选择项目目录
+
+![image](./assets/3.jpg)
+![image](./assets/4.jpg)
 
 ## 使用说明
 ### 初始配置
@@ -32,6 +34,9 @@
    - 刷新间隔
 
 3. 点击浏览器工具栏的插件图标即可使用
+
+![image](./assets/5.jpg)
+![image](./assets/6.jpg)
 
 ### 功能使用
 - 监控面板：展示关键监控指标
