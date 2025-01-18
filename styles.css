@@ -677,17 +677,22 @@ body {
 .hosts-list th:nth-child(4),
 .hosts-list td:nth-child(4),
 .hosts-list th:nth-child(5),
-.hosts-list td:nth-child(5),
+.hosts-list td:nth-child(5) {
+    width: 8%;
+}
+
+/* CPU和内存使用率列的宽度 */
 .hosts-list th:nth-child(6),
 .hosts-list td:nth-child(6),
 .hosts-list th:nth-child(7),
 .hosts-list td:nth-child(7) {
-    width: 10%;
+    width: 20%;  /* 增加宽度 */
+    min-width: 180px;  /* 设置最小宽度 */
 }
 
 .hosts-list th:nth-child(8),
 .hosts-list td:nth-child(8) {
-    width: 10%;
+    width: 9%;
 }
 
 /* 可排序的表头样式 */
@@ -797,4 +802,170 @@ body {
 #hostsModal .hosts-list {
     flex: 1;
     overflow: auto;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 24px;
+    background-color: #e6e8eb;
+    border-radius: 12px;
+    position: relative;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 12px;
+    position: relative;
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+/* 进度条颜色 */
+.progress-fill.medium {
+    background-color: #52c41a;  /* 绿色 (<60%) */
+}
+
+.progress-fill.low {
+    background-color: #4096ff;  /* 蓝色 (60-80%) */
+}
+
+.progress-fill.warning {
+    background-color: #faad14;  /* 橙色 (80-90%) */
+}
+
+.progress-fill.danger {
+    background-color: #ff4d4f;  /* 红色 (>90%) */
+}
+
+/* 主机详情样式 */
+.host-detail {
+    padding: 1rem;
+}
+
+.detail-card {
+    background: white;
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+.detail-card-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+.detail-card-header i {
+    color: var(--primary-color);
+}
+
+.detail-card-body {
+    padding: 1rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-item label {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.info-item span {
+    font-size: 1rem;
+    color: var(--gray-800);
+}
+
+.performance-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.performance-chart-container {
+    background: var(--gray-100);
+    border-radius: var(--radius);
+    padding: 1rem;
+}
+
+.chart-title {
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    margin-bottom: 0.5rem;
+}
+
+.performance-chart {
+    height: 200px;
+    width: 100%;
+}
+
+.chart-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.zoom-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.zoom-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.zoom-btn i {
+    font-size: 16px;
+}
+
+.time-range-buttons {
+    display: flex;
+    gap: 8px;
+    margin: 0 auto;  /* 居中显示 */
+}
+
+.time-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--gray-300);
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--gray-600);
+    transition: all 0.2s;
+}
+
+.time-btn:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-400);
+}
+
+.time-btn.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
 } 

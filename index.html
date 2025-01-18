@@ -100,7 +100,8 @@
                                 <th>等级</th>
                                 <th>状态</th>
                                 <th>持续时间</th>
-                                <th>时间</th>
+                                <th>开始时间</th>
+                                <th>结束时间</th>
                             </tr>
                         </thead>
                         <tbody id="alertsList">
@@ -160,7 +161,7 @@
 
     <div id="hostsModal" class="modal">
         <div class="modal-overlay"></div>
-        <div class="modal-content">
+        <div class="modal-content" style="width: 80%; max-width: none;">
             <div class="modal-header">
                 <h2>主机列表</h2>
                 <button class="close-btn" id="closeHostsModal">
@@ -201,6 +202,123 @@
                             <!-- 主机列表将通过 JavaScript 动态添加 -->
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主机详情对话框 -->
+    <div id="hostDetailModal" class="modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>主机详情</h2>
+                <button class="close-btn" id="closeHostDetailModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="host-detail">
+                    <!-- 基本信息卡片 -->
+                    <div class="detail-card">
+                        <div class="detail-card-header">
+                            <i class="fas fa-server"></i>
+                            <span>基本信息</span>
+                        </div>
+                        <div class="detail-card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <label>主机名称</label>
+                                    <span id="detailHostName">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>IP地址</label>
+                                    <span id="detailHostIP">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>系统类型</label>
+                                    <span id="detailHostOS">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>运行时间</label>
+                                    <span id="detailUptime">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 硬件信息卡片 -->
+                    <div class="detail-card">
+                        <div class="detail-card-header">
+                            <i class="fas fa-microchip"></i>
+                            <span>硬件信息</span>
+                        </div>
+                        <div class="detail-card-body">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <label>CPU核心数</label>
+                                    <span id="detailCPUCores">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <label>内存总量</label>
+                                    <span id="detailMemoryTotal">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 性能监控卡片 -->
+                    <div class="detail-card">
+                        <div class="detail-card-header">
+                            <i class="fas fa-chart-line"></i>
+                            <span>性能监控</span>
+                        </div>
+                        <div class="detail-card-body">
+                            <div class="performance-grid">
+                                <div class="performance-chart-container">
+                                    <div class="chart-title">
+                                        CPU使用率 (24小时)
+                                        <button class="zoom-btn" data-chart="cpu">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                    </div>
+                                    <div id="detailCPUChart" class="performance-chart"></div>
+                                </div>
+                                <div class="performance-chart-container">
+                                    <div class="chart-title">
+                                        内存使用率 (24小时)
+                                        <button class="zoom-btn" data-chart="memory">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                    </div>
+                                    <div id="detailMemoryChart" class="performance-chart"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 添加放大图表的模态框 -->
+                    <div id="zoomChartModal" class="modal">
+                        <div class="modal-overlay"></div>
+                        <div class="modal-content" style="width: 100%; max-width: none;">
+                            <div class="modal-header">
+                                <h2 id="zoomChartTitle"></h2>
+                                <div class="time-range-buttons">
+                                    <button class="time-btn" data-range="1h">1小时</button>
+                                    <button class="time-btn active" data-range="24h">24小时</button>
+                                    <button class="time-btn" data-range="7d">7天</button>
+                                    <button class="time-btn" data-range="15d">15天</button>
+                                    <button class="time-btn" data-range="30d">30天</button>
+                                </div>
+                                <button class="close-btn" id="closeZoomChartModal">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div id="zoomChart" style="width: 100%; height: 80vh;"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
