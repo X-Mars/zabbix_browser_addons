@@ -379,6 +379,28 @@ body {
     background: #2d8a46;
 }
 
+.btn-success {
+    background-color: #67C23A;
+    border-color: #67C23A;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #529b2e;
+    border-color: #529b2e;
+}
+
+.btn-danger {
+    background-color: #F56C6C;
+    border-color: #F56C6C;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c45656;
+    border-color: #c45656;
+}
+
 /* 动画 */
 @keyframes fadeIn {
     from { opacity: 0; }

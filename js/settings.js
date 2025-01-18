@@ -68,6 +68,7 @@ class Settings {
     async testConnection() {
         const testBtn = document.getElementById('testConnection');
         const originalText = testBtn.innerHTML;
+        const originalClass = testBtn.className;
         testBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${i18n.t('settings.messages.testing')}`;
         testBtn.disabled = true;
 
@@ -79,11 +80,26 @@ class Settings {
             const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
             await api.testConnection();
             
-            alert(i18n.t('settings.messages.connectionSuccess'));
+            // 测试成功
+            testBtn.className = 'btn btn-success';
+            testBtn.innerHTML = `<i class="fas fa-check"></i> ${i18n.t('settings.messages.connectionSuccess')}`;
+            
+            // 3秒后恢复原状
+            setTimeout(() => {
+                testBtn.className = originalClass;
+                testBtn.innerHTML = originalText;
+            }, 5000);
         } catch (error) {
-            alert(i18n.t('settings.messages.connectionFailed').replace('{error}', error.message));
+            // 测试失败
+            testBtn.className = 'btn btn-danger';
+            testBtn.innerHTML = `<i class="fas fa-times"></i> ${i18n.t('settings.messages.connectionFailed')}`;
+            
+            // 5秒后恢复原状
+            setTimeout(() => {
+                testBtn.className = originalClass;
+                testBtn.innerHTML = originalText;
+            }, 5000);
         } finally {
-            testBtn.innerHTML = originalText;
             testBtn.disabled = false;
         }
     }
