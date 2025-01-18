@@ -10,10 +10,14 @@
 
 
 ## 安装方法
-1. 在 Chrome/Edge 浏览器中打开扩展管理页面
+1. 下载项目代码
+   - 下载地址：https://github.com/X-Mars/zabbix_browser_addons
+   - 下载后解压到本地目录
+
+2. 在 Chrome/Edge 浏览器中打开扩展管理页面
    - Chrome: 访问 `chrome://extensions/`
    - Edge: 访问 `edge://extensions/`
-2. 开启"开发者模式"
+3. 开启"开发者模式"
 3. 点击"加载已解压的扩展程序"，选择项目目录
 
 ## 使用说明
