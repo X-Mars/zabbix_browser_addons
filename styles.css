@@ -21,10 +21,9 @@ body {
 }
 
 .dashboard {
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
-    width: 100%;
 }
 
 /* 顶部栏样式 */
@@ -36,6 +35,8 @@ body {
     top: 0;
     z-index: 10;
     width: 100%;
+    height: 60px;
+    min-height: 60px;
 }
 
 .header-content {
@@ -91,32 +92,40 @@ body {
 
 /* 主要内容区样式 */
 .main-content {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 180px);
     max-width: 100%;
     width: 100%;
     margin: 2rem auto;
     padding: 0 1.5rem;
     flex-grow: 1;
-    display: flex;
-    flex-direction: column;
     gap: 1.5rem;
 }
 
-/* 状态卡片样式 */
+/* 状态卡片容器 */
 .status-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
+    display: flex;
+    gap: 20px;
+    height: 120px;
+    min-height: 120px;
+    width: 100%;
+    background: transparent;
+    box-shadow: none;
 }
 
+/* 状态卡片 */
 .status-card {
+    flex: 1;
     background: white;
     border-radius: var(--radius);
     padding: 1.5rem;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    justify-content: space-between;
     box-shadow: var(--shadow-sm);
     transition: all 0.3s;
+    margin: 0;
 }
 
 .status-card:hover {
@@ -124,6 +133,7 @@ body {
     box-shadow: var(--shadow-md);
 }
 
+/* 图标容器 */
 .status-icon {
     width: 56px;
     height: 56px;
@@ -131,6 +141,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .status-icon.blue {
@@ -148,38 +159,41 @@ body {
     color: var(--danger-color);
 }
 
+/* 文字信息容器 */
 .status-info {
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
 }
 
 .status-label {
     font-size: 0.875rem;
     color: var(--gray-600);
     margin-bottom: 0.25rem;
+    text-align: right;
 }
 
 .status-value {
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--gray-800);
+    text-align: right;
 }
 
 /* 图表区域样式 */
 .charts-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
-    min-height: 200px;
-    margin-bottom: 0.75rem;
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
 }
 
 .chart-box {
-    background: white;
-    border-radius: var(--radius);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    height: 100%;
+    flex: 1;
+    min-height: 0;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
 }
@@ -197,24 +211,9 @@ body {
     color: var(--gray-800);
 }
 
-.refresh-btn {
-    background: none;
-    border: none;
-    padding: 0.5rem;
-    color: var(--gray-600);
-    cursor: pointer;
-    border-radius: 8px;
-    transition: all 0.2s;
-}
-
-.refresh-btn:hover {
-    color: var(--gray-800);
-    background: var(--gray-100);
-}
-
 .chart {
-    flex-grow: 1;
-    min-height: 150px;
+    flex: 1;
+    min-height: 0;
 }
 
 /* 模态框样式 */
@@ -242,11 +241,14 @@ body {
     position: relative;
     background: white;
     border-radius: var(--radius);
-    width: 100%;
-    max-width: 500px;
+    width: 80%;
+    max-width: 1200px;
+    height: 80vh;
     margin: 1rem;
     box-shadow: var(--shadow-md);
     animation: slideUp 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
@@ -255,6 +257,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -279,6 +282,10 @@ body {
 
 .modal-body {
     padding: 1.5rem;
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-footer {
@@ -392,7 +399,7 @@ body {
 /* 响应式调整 */
 @media (max-width: 1200px) {
     .status-cards {
-        grid-template-columns: repeat(3, 1fr);
+        display: flex;  /* 保持 flex 布局 */
     }
     
     .charts-container {
@@ -417,13 +424,13 @@ body {
     }
 
     .status-cards {
-        grid-template-columns: repeat(2, 1fr);
+        display: flex;  /* 保持 flex 布局 */
     }
 }
 
 @media (max-width: 576px) {
     .status-cards {
-        grid-template-columns: 1fr;
+        display: flex;  /* 保持 flex 布局 */
     }
     
     .chart {
@@ -479,13 +486,13 @@ body {
 
 /* 告警列表样式 */
 .alerts-list {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
     background: white;
     border-radius: var(--radius);
     padding: 0.75rem 1.5rem;
     box-shadow: var(--shadow-sm);
-    max-height: calc(100vh - 500px);
-    display: flex;
-    flex-direction: column;
 }
 
 .list-header {
@@ -571,14 +578,14 @@ body {
     font-weight: 500;
 }
 
-.status-tag.acknowledged {
+.status-tag.resolved {
     background: #e8f5e9;
-    color: #2e7d32;
+    color: #2e7d32;  /* 绿色 */
 }
 
-.status-tag.unacknowledged {
-    background: #fafafa;
-    color: #616161;
+.status-tag.problem {
+    background: #fce8e6;
+    color: #ea4335;  /* 红色 */
 }
 
 .last-refresh {
@@ -594,4 +601,200 @@ body {
 .last-refresh span {
     margin-left: 0.25rem;
     font-weight: 500;
+}
+
+/* 主机列表样式 */
+.hosts-list {
+    flex: 1;
+    overflow: auto;
+    margin: -1.5rem;
+    padding: 1.5rem;
+}
+
+.hosts-list table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.hosts-list thead {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1;
+}
+
+.hosts-list th,
+.hosts-list td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--gray-200);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.hosts-list th {
+    font-weight: 500;
+    color: var(--gray-600);
+    background: var(--gray-100);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.hosts-list tr:hover {
+    background: var(--gray-100);
+}
+
+/* 让主机卡片显示为可点击状态 */
+.status-card:first-child {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.status-card:first-child:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* 设置各列的宽度比例 */
+.hosts-list th:nth-child(1),
+.hosts-list td:nth-child(1) {
+    width: 20%;
+}
+
+.hosts-list th:nth-child(2),
+.hosts-list td:nth-child(2) {
+    width: 15%;
+}
+
+.hosts-list th:nth-child(3),
+.hosts-list td:nth-child(3) {
+    width: 10%;
+}
+
+.hosts-list th:nth-child(4),
+.hosts-list td:nth-child(4),
+.hosts-list th:nth-child(5),
+.hosts-list td:nth-child(5),
+.hosts-list th:nth-child(6),
+.hosts-list td:nth-child(6),
+.hosts-list th:nth-child(7),
+.hosts-list td:nth-child(7) {
+    width: 10%;
+}
+
+.hosts-list th:nth-child(8),
+.hosts-list td:nth-child(8) {
+    width: 10%;
+}
+
+/* 可排序的表头样式 */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    padding-right: 2.5rem !important;
+}
+
+/* 默认状态下只显示 Font Awesome 图标，隐藏伪元素箭头 */
+.sortable i {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-400);
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+/* 隐藏伪元素箭头 */
+.sortable::after {
+    display: none;
+}
+
+.sortable:hover i {
+    color: var(--gray-600);
+}
+
+/* 当前排序列的样式 */
+.sortable[data-active="true"] {
+    color: var(--primary-color);
+}
+
+.sortable[data-active="true"] i {
+    color: var(--primary-color);
+}
+
+/* 修改排序图标样式 */
+.sortable i.fa-sort::before {
+    content: '⇅';
+}
+
+.sortable i.fa-sort-up::before {
+    content: '⇑';
+}
+
+.sortable i.fa-sort-down::before {
+    content: '⇓';
+}
+
+/* 主机列表告警状态背景色 */
+.hosts-list tr.has-alerts {
+    background-color: rgba(251, 188, 5, 0.1) !important;  /* 黄色背景 */
+}
+
+.hosts-list tr.no-alerts {
+    background-color: rgba(52, 168, 83, 0.1) !important;  /* 绿色背景 */
+}
+
+/* 鼠标悬停时加深背景色 */
+.hosts-list tr.has-alerts:hover {
+    background-color: rgba(251, 188, 5, 0.2) !important;
+}
+
+.hosts-list tr.no-alerts:hover {
+    background-color: rgba(52, 168, 83, 0.2) !important;
+}
+
+/* 设置对话框样式 */
+#settingsModal .modal-content {
+    width: 80%;
+    max-width: 500px;
+    height: auto;
+    min-height: 400px;
+}
+
+#settingsModal .modal-body {
+    padding: 1.5rem;
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+}
+
+#settingsModal .form-group {
+    margin-bottom: 1rem;
+}
+
+#settingsModal .form-group input,
+#settingsModal .form-select {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* 主机列表对话框样式保持原样 */
+#hostsModal .modal-content {
+    width: 80%;
+    max-width: 1200px;
+    height: 80vh;
+}
+
+#hostsModal .modal-body {
+    padding: 1.5rem;
+    overflow: hidden;
+}
+
+#hostsModal .hosts-list {
+    flex: 1;
+    overflow: auto;
 } 

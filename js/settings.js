@@ -29,7 +29,11 @@ class Settings {
 
     async loadSettings() {
         const settings = await new Promise((resolve) => {
-            chrome.storage.local.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+            chrome.storage.local.get([
+                'apiUrl', 
+                'apiToken', 
+                'refreshInterval'
+            ], (result) => {
                 resolve(result);
             });
         });
@@ -57,7 +61,8 @@ class Settings {
         });
 
         this.closeModal();
-        location.reload();  // 重新加载页面以应用新设置
+        // 移除 window.close()，改为刷新页面以应用新设置
+        location.reload();
     }
 
     async testConnection() {
@@ -65,6 +70,9 @@ class Settings {
         this.testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
 
         try {
+            // 在测试连接前先处理 URL
+            handleApiUrlInput(this.apiUrl);
+            
             const api = new ZabbixAPI(
                 this.apiUrl.value.trim(),
                 this.apiToken.value.trim()
@@ -87,6 +95,54 @@ class Settings {
         this.modal.classList.remove('active');
     }
 }
+
+function handleApiUrlInput(input) {
+    let url = input.value.trim();
+    if (url && !url.endsWith('api_jsonrpc.php')) {
+        // 移除末尾的斜杠
+        url = url.replace(/\/+$/, '');
+        // 添加 api_jsonrpc.php
+        url = `${url}/api_jsonrpc.php`;
+        input.value = url;
+        
+        // 显示提示信息
+        showApiUrlTip('已自动补充 api_jsonrpc.php 路径');
+    }
+}
+
+function showApiUrlTip(message) {
+    const tipDiv = document.createElement('div');
+    tipDiv.className = 'api-url-tip';
+    tipDiv.textContent = message;
+    tipDiv.style.color = '#67C23A';  // 使用绿色表示成功
+    tipDiv.style.fontSize = '12px';
+    tipDiv.style.marginTop = '5px';
+
+    // 获取输入框的父元素
+    const inputParent = document.querySelector('#apiUrl').parentElement;
+    // 移除已存在的提示（如果有）
+    const existingTip = inputParent.querySelector('.api-url-tip');
+    if (existingTip) {
+        existingTip.remove();
+    }
+    // 添加新提示
+    inputParent.appendChild(tipDiv);
+
+    // 3秒后自动隐藏提示
+    setTimeout(() => {
+        tipDiv.remove();
+    }, 3000);
+}
+
+// 添加输入事件监听
+document.addEventListener('DOMContentLoaded', function() {
+    const apiUrlInput = document.querySelector('#apiUrl');
+    if (apiUrlInput) {
+        apiUrlInput.addEventListener('blur', function() {
+            handleApiUrlInput(this);
+        });
+    }
+});
 
 // 初始化设置
 new Settings(); 

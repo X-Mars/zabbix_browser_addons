@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Zabbix Monitor",
+  "name": "Zabbix Dashboard",
   "version": "1.0",
-  "description": "Zabbix monitoring dashboard for new tab",
+  "description": "Zabbix dashboard",
   "permissions": [
     "storage",
     "tabs"
@@ -22,8 +22,16 @@
     ],
     "matches": ["<all_urls>"]
   }],
-  "chrome_url_overrides": {
-    "newtab": "index.html"
+  "action": {
+    "default_title": "Zabbix Monitor",
+    "default_icon": {
+      "16": "assets/zabbix.png",
+      "48": "assets/zabbix.png",
+      "128": "assets/zabbix.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "icons": {
     "16": "assets/zabbix.png",
