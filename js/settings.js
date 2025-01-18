@@ -72,7 +72,10 @@ class Settings {
         testBtn.disabled = true;
 
         try {
-            const settings = await this.getSettings();
+            const settings = {
+                apiUrl: this.apiUrl.value.trim(),
+                apiToken: btoa(this.apiToken.value.trim())
+            };
             const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
             await api.testConnection();
             
