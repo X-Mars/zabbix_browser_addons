@@ -27,7 +27,7 @@
                 </div>
                 <div class="header-actions">
                     <div class="last-refresh">
-                        最后刷新：<span id="lastRefreshTime">--</span>
+                        <span id="lastRefreshTime" data-i18n="settings.messages.lastRefresh"></span>
                     </div>
                     <a href="https://github.com/X-Mars" target="_blank" class="icon-btn">
                         <svg viewBox="0 0 24 24" width="24" height="24" class="icon">
@@ -54,7 +54,7 @@
                         </svg>
                     </div>
                     <div class="status-info">
-                        <span class="status-label">主机数量</span>
+                        <span class="status-label" data-i18n="hostCount"></span>
                         <span id="hostCount" class="status-value">--</span>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
                         </svg>
                     </div>
                     <div class="status-info">
-                        <span class="status-label">当前告警</span>
+                        <span class="status-label" data-i18n="currentAlerts"></span>
                         <span id="alertCount" class="status-value">--</span>
                     </div>
                 </div>
@@ -75,13 +75,13 @@
             <div class="charts-container">
                 <div class="chart-box">
                     <div class="chart-header">
-                        <h3>告警趋势</h3>
+                        <h3 data-i18n="alertHistory"></h3>
                     </div>
                     <div id="trendChart" class="chart"></div>
                 </div>
                 <div class="chart-box">
                     <div class="chart-header">
-                        <h3>当前告警分布</h3>
+                        <h3 data-i18n="currentAlertDistribution"></h3>
                     </div>
                     <div id="severityChart" class="chart"></div>
                 </div>
@@ -89,19 +89,19 @@
             <!-- 告警列表 -->
             <div class="alerts-list">
                 <div class="list-header">
-                    <h3>一周内告警历史</h3>
+                    <h3 data-i18n="weeklyAlertHistory"></h3>
                 </div>
                 <div class="list-content">
                     <table>
                         <thead>
                             <tr>
-                                <th>主机</th>
-                                <th>告警内容</th>
-                                <th>等级</th>
-                                <th>状态</th>
-                                <th>持续时间</th>
-                                <th>开始时间</th>
-                                <th>结束时间</th>
+                                <th data-i18n="host"></th>
+                                <th data-i18n="alertContent"></th>
+                                <th data-i18n="level"></th>
+                                <th data-i18n="status"></th>
+                                <th data-i18n="duration"></th>
+                                <th data-i18n="startTime"></th>
+                                <th data-i18n="endTime"></th>
                             </tr>
                         </thead>
                         <tbody id="alertsList">
@@ -118,27 +118,27 @@
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>设置</h2>
+                <h2 data-i18n="settings.title">设置</h2>
                 <button class="close-btn" id="closeModal">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>Zabbix API 地址</label>
+                    <label data-i18n="settings.apiUrl">Zabbix API 地址</label>
                     <input type="text" id="apiUrl" placeholder="https://your-zabbix-server">
                 </div>
                 <div class="form-group">
-                    <label>API Token</label>
+                    <label data-i18n="settings.apiToken">API Token</label>
                     <input type="password" id="apiToken" placeholder="输入您的API Token">
                 </div>
                 <div class="form-group">
-                    <label>刷新间隔</label>
+                    <label data-i18n="settings.refreshInterval">刷新间隔</label>
                     <select id="refreshInterval" class="form-select">
-                        <option value="5000">5 秒</option>
-                        <option value="30000">30 秒</option>
-                        <option value="60000">1 分钟</option>
-                        <option value="300000" selected>5 分钟</option>
+                        <option value="5000" data-i18n="settings.intervals.5s">5 秒</option>
+                        <option value="30000" data-i18n="settings.intervals.30s">30 秒</option>
+                        <option value="60000" data-i18n="settings.intervals.1m">1 分钟</option>
+                        <option value="300000" selected data-i18n="settings.intervals.5m">5 分钟</option>
                     </select>
                 </div>
             </div>
@@ -147,13 +147,13 @@
                     <svg viewBox="0 0 24 24" width="16" height="16" class="icon">
                         <path fill="currentColor" d="M16 7v-4h-2v4h-4v-4h-2v4h-4v2h4v4h-4v2h4v4h2v-4h4v4h2v-4h4v-2h-4v-4h4v-2h-4zm-6 6v-4h4v4h-4z"/>
                     </svg>
-                    测试连接
+                    <span data-i18n="settings.testConnection">测试连接</span>
                 </button>
                 <button id="saveSettings" class="btn success">
                     <svg viewBox="0 0 24 24" width="16" height="16" class="icon">
                         <path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm2 16H5V5h11.17L19 7.83V19zm-7-7c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zM6 6h9v4H6z"/>
                     </svg>
-                    保存设置
+                    <span data-i18n="settings.saveSettings">保存设置</span>
                 </button>
             </div>
         </div>
@@ -163,7 +163,7 @@
         <div class="modal-overlay"></div>
         <div class="modal-content" style="width: 80%; max-width: none;">
             <div class="modal-header">
-                <h2>主机列表</h2>
+                <h2 data-i18n="hostList"></h2>
                 <button class="close-btn" id="closeHostsModal">
                     <i class="fas fa-times"></i>
                 </button>
@@ -173,29 +173,14 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>主机名称</th>
-                                <th>IP地址</th>
-                                <th>操作系统</th>
-                                <th class="sortable" data-sort="cpuCores">
-                                    CPU核心数
-                                    <i class="fas fa-sort"></i>
-                                </th>
-                                <th class="sortable" data-sort="memoryTotal">
-                                    内存总量
-                                    <i class="fas fa-sort"></i>
-                                </th>
-                                <th class="sortable" data-sort="cpu">
-                                    CPU使用率
-                                    <i class="fas fa-sort"></i>
-                                </th>
-                                <th class="sortable" data-sort="memory">
-                                    内存使用率
-                                    <i class="fas fa-sort"></i>
-                                </th>
-                                <th class="sortable" data-sort="alerts">
-                                    当前告警
-                                    <i class="fas fa-sort"></i>
-                                </th>
+                                <th data-i18n="hostName"></th>
+                                <th data-i18n="ipAddress"></th>
+                                <th data-i18n="operatingSystem"></th>
+                                <th class="sortable" data-sort="cpuCores" data-i18n="cpuCores"></th>
+                                <th class="sortable" data-sort="memoryTotal" data-i18n="memoryTotal"></th>
+                                <th class="sortable" data-sort="cpu" data-i18n="cpuUsage"></th>
+                                <th class="sortable" data-sort="memory" data-i18n="memoryUsage"></th>
+                                <th class="sortable" data-sort="alerts" data-i18n="alerts"></th>
                             </tr>
                         </thead>
                         <tbody id="hostsList">
@@ -212,7 +197,7 @@
         <div class="modal-overlay"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h2>主机详情</h2>
+                <h2 data-i18n="hostDetails"></h2>
                 <button class="close-btn" id="closeHostDetailModal">
                     <i class="fas fa-times"></i>
                 </button>
@@ -223,24 +208,24 @@
                     <div class="detail-card">
                         <div class="detail-card-header">
                             <i class="fas fa-server"></i>
-                            <span>基本信息</span>
+                            <span data-i18n="basicInfo"></span>
                         </div>
                         <div class="detail-card-body">
                             <div class="info-grid">
                                 <div class="info-item">
-                                    <label>主机名称</label>
+                                    <label data-i18n="hostName"></label>
                                     <span id="detailHostName">-</span>
                                 </div>
                                 <div class="info-item">
-                                    <label>IP地址</label>
+                                    <label data-i18n="ipAddress"></label>
                                     <span id="detailHostIP">-</span>
                                 </div>
                                 <div class="info-item">
-                                    <label>系统类型</label>
+                                    <label data-i18n="systemType"></label>
                                     <span id="detailHostOS">-</span>
                                 </div>
                                 <div class="info-item">
-                                    <label>运行时间</label>
+                                    <label data-i18n="runningTime"></label>
                                     <span id="detailUptime">-</span>
                                 </div>
                             </div>
@@ -251,16 +236,16 @@
                     <div class="detail-card">
                         <div class="detail-card-header">
                             <i class="fas fa-microchip"></i>
-                            <span>硬件信息</span>
+                            <span data-i18n="hardwareInfo"></span>
                         </div>
                         <div class="detail-card-body">
                             <div class="info-grid">
                                 <div class="info-item">
-                                    <label>CPU核心数</label>
+                                    <label data-i18n="cpuCores"></label>
                                     <span id="detailCPUCores">-</span>
                                 </div>
                                 <div class="info-item">
-                                    <label>内存总量</label>
+                                    <label data-i18n="memorySize"></label>
                                     <span id="detailMemoryTotal">-</span>
                                 </div>
                             </div>
@@ -271,13 +256,13 @@
                     <div class="detail-card">
                         <div class="detail-card-header">
                             <i class="fas fa-chart-line"></i>
-                            <span>性能监控</span>
+                            <span data-i18n="performanceMonitor"></span>
                         </div>
                         <div class="detail-card-body">
                             <div class="performance-grid">
                                 <div class="performance-chart-container">
                                     <div class="chart-title">
-                                        CPU使用率 (24小时)
+                                        <span data-i18n="cpuUsage24h"></span>
                                         <button class="zoom-btn" data-chart="cpu">
                                             <i class="fas fa-expand"></i>
                                         </button>
@@ -286,7 +271,7 @@
                                 </div>
                                 <div class="performance-chart-container">
                                     <div class="chart-title">
-                                        内存使用率 (24小时)
+                                        <span data-i18n="memoryUsage24h"></span>
                                         <button class="zoom-btn" data-chart="memory">
                                             <i class="fas fa-expand"></i>
                                         </button>
@@ -304,11 +289,11 @@
                             <div class="modal-header">
                                 <h2 id="zoomChartTitle"></h2>
                                 <div class="time-range-buttons">
-                                    <button class="time-btn" data-range="1h">1小时</button>
-                                    <button class="time-btn active" data-range="24h">24小时</button>
-                                    <button class="time-btn" data-range="7d">7天</button>
-                                    <button class="time-btn" data-range="15d">15天</button>
-                                    <button class="time-btn" data-range="30d">30天</button>
+                                    <button class="time-btn" data-range="1h" data-i18n="timeButtons.1h">1小时</button>
+                                    <button class="time-btn active" data-range="24h" data-i18n="timeButtons.24h">24小时</button>
+                                    <button class="time-btn" data-range="7d" data-i18n="timeButtons.7d">7天</button>
+                                    <button class="time-btn" data-range="15d" data-i18n="timeButtons.15d">15天</button>
+                                    <button class="time-btn" data-range="30d" data-i18n="timeButtons.30d">30天</button>
                                 </div>
                                 <button class="close-btn" id="closeZoomChartModal">
                                     <i class="fas fa-times"></i>
@@ -327,6 +312,7 @@
     <script src="js/api.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/i18n.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html> 

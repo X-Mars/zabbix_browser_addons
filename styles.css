@@ -542,50 +542,64 @@ body {
 
 /* 告警等级标签样式 */
 .severity-tag {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
+    padding: 2px 8px;
     border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: 12px;
+    display: inline-block;
+    text-align: center;
+    min-width: 80px;
 }
 
-.severity-tag.disaster {
-    background: rgba(234, 67, 53, 0.1);
-    color: #ea4335;
+/* 告警等级颜色 */
+.severity-tag.not-classified {
+    background: #97AAB3;  /* 灰色 */
+    color: #fff;
 }
 
-.severity-tag.high {
-    background: rgba(251, 188, 5, 0.1);
-    color: #fbbc05;
+.severity-tag.information {
+    background: #7499FF;  /* 浅蓝色 */
+    color: #fff;
 }
 
 .severity-tag.warning {
-    background: rgba(255, 167, 38, 0.1);
-    color: #ffa726;
+    background: #FFA059;  /* 橙色 */
+    color: #fff;
 }
 
-.severity-tag.info {
-    background: rgba(26, 115, 232, 0.1);
-    color: #1a73e8;
+.severity-tag.average {
+    background: #FFB689;  /* 深橙色 */
+    color: #fff;
+}
+
+.severity-tag.high {
+    background: #E97659;  /* 红色 */
+    color: #fff;
+}
+
+.severity-tag.disaster {
+    background: #E45959;  /* 深红色 */
+    color: #fff;
 }
 
 /* 告警状态标签样式 */
 .status-tag {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
+    padding: 2px 8px;
     border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: 12px;
+    display: inline-block;
+    text-align: center;
+    min-width: 80px;
 }
 
+/* 状态颜色 */
 .status-tag.resolved {
-    background: #e8f5e9;
-    color: #2e7d32;  /* 绿色 */
+    background: #59DB8F;  /* 绿色 */
+    color: #fff;
 }
 
 .status-tag.problem {
-    background: #fce8e6;
-    color: #ea4335;  /* 红色 */
+    background: #E45959;  /* 红色 */
+    color: #fff;
 }
 
 .last-refresh {

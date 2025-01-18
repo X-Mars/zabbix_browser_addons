@@ -66,24 +66,22 @@ class Settings {
     }
 
     async testConnection() {
-        this.testBtn.disabled = true;
-        this.testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
+        const testBtn = document.getElementById('testConnection');
+        const originalText = testBtn.innerHTML;
+        testBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${i18n.t('settings.messages.testing')}`;
+        testBtn.disabled = true;
 
         try {
-            // 在测试连接前先处理 URL
-            handleApiUrlInput(this.apiUrl);
-            
-            const api = new ZabbixAPI(
-                this.apiUrl.value.trim(),
-                this.apiToken.value.trim()
-            );
+            const settings = await this.getSettings();
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
             await api.testConnection();
-            alert('连接成功！');
+            
+            alert(i18n.t('settings.messages.connectionSuccess'));
         } catch (error) {
-            alert(error.message);
+            alert(i18n.t('settings.messages.connectionFailed').replace('{error}', error.message));
         } finally {
-            this.testBtn.disabled = false;
-            this.testBtn.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
+            testBtn.innerHTML = originalText;
+            testBtn.disabled = false;
         }
     }
 

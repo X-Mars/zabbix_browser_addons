@@ -1,6 +1,7 @@
 class ZabbixDashboard {
     constructor() {
         this.init();
+        this.initI18n();
         this.charts = {};
         this.refreshTimer = null;
         this.initHostsModal();
@@ -97,26 +98,30 @@ class ZabbixDashboard {
 
     getSeverityClass(severity) {
         const classes = {
-            '5': 'disaster',
-            '4': 'high',
-            '3': 'warning',
-            '2': 'warning',
-            '1': 'info',
-            '0': 'info'
+            '0': 'not-classified',  // 灰色
+            '1': 'information',     // 浅蓝色
+            '2': 'warning',         // 黄色
+            '3': 'average',         // 橙色
+            '4': 'high',           // 红色
+            '5': 'disaster'        // 深红色
         };
-        return classes[severity] || 'info';
+        return classes[severity] || 'not-classified';
     }
 
     getSeverityName(severity) {
-        const names = {
-            '5': '灾难',
-            '4': '严重',
-            '3': '一般严重',
-            '2': '警告',
-            '1': '信息',
-            '0': '未分类'
+        return i18n.t(`severity.${this.getSeverityKey(severity)}`);
+    }
+
+    getSeverityKey(severity) {
+        const keys = {
+            '0': 'notClassified',  // Not classified
+            '1': 'information',    // Information
+            '2': 'warning',        // Warning
+            '3': 'average',        // Average
+            '4': 'high',          // High
+            '5': 'disaster'       // Disaster
         };
-        return names[severity] || '未知';
+        return keys[severity] || 'notClassified';
     }
 
     formatTime(timestamp) {
@@ -146,13 +151,19 @@ class ZabbixDashboard {
     }
 
     updateLastRefreshTime() {
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('zh-CN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        });
-        document.getElementById('lastRefreshTime').textContent = timeStr;
+        const now = new Date().toLocaleString(
+            this.currentLang === 'zh' ? 'zh-CN' : 'en-US',
+            { 
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }
+        );
+        const element = document.getElementById('lastRefreshTime');
+        element.textContent = i18n.t('settings.messages.lastRefresh').replace('{time}', now);
     }
 
     initHostsModal() {
@@ -273,7 +284,7 @@ class ZabbixDashboard {
         } catch (error) {
             console.error('Failed to load hosts details:', error);
             const tbody = document.getElementById('hostsList');
-            tbody.innerHTML = '<tr><td colspan="8">加载失败</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="8">${i18n.t('settings.messages.loadingFailed')}</td></tr>`;
         }
     }
 
@@ -283,7 +294,8 @@ class ZabbixDashboard {
     }
 
     getStatusName(status) {
-        return status === '0' ? '已恢复' : '告警中';
+        const statusKey = status === '0' ? 'resolved' : 'problem';
+        return i18n.t(`statusTag.${statusKey}`);
     }
 
     formatDuration(seconds) {
@@ -294,11 +306,11 @@ class ZabbixDashboard {
         const minutes = Math.floor((seconds % 3600) / 60);
         
         const parts = [];
-        if (days > 0) parts.push(`${days}天`);
-        if (hours > 0) parts.push(`${hours}小时`);
-        if (minutes > 0) parts.push(`${minutes}分钟`);
+        if (days > 0) parts.push(`${days} ${i18n.t('time.days')}`);
+        if (hours > 0) parts.push(`${hours} ${i18n.t('time.hours')}`);
+        if (minutes > 0) parts.push(`${minutes} ${i18n.t('time.minutes')}`);
         
-        return parts.length > 0 ? parts.join(' ') : '小于1分钟';
+        return parts.length > 0 ? parts.join(' ') : i18n.t('time.lessThanOneMinute');
     }
 
     async showHostDetail(hostId) {
@@ -357,7 +369,11 @@ class ZabbixDashboard {
         const chartOption = {
             tooltip: {
                 trigger: 'axis',
-                formatter: '{b}<br/>{a}: {c}%'
+                formatter: function(params) {
+                    const value = params[0].value;
+                    const time = params[0].name;
+                    return `${time}<br/>${i18n.t('chart.tooltip.usage').replace('{value}', value)}`;
+                }
             },
             grid: {
                 top: 10,
@@ -385,7 +401,7 @@ class ZabbixDashboard {
                 }
             },
             series: [{
-                name: '使用率',
+                name: i18n.t('chart.usage'),
                 type: 'line',
                 smooth: true,
                 areaStyle: {
@@ -523,7 +539,8 @@ class ZabbixDashboard {
         this.currentItemId = itemId;
 
         // 设置标题
-        title.textContent = chartType === 'cpu' ? 'CPU使用率 (24小时)' : '内存使用率 (24小时)';
+        const titleText = i18n.t(`chartTitle.${chartType}`);
+        title.textContent = `${titleText} ${i18n.t('timeRange.24h')}`;
         
         // 显示模态框
         modal.classList.add('active');
@@ -532,7 +549,11 @@ class ZabbixDashboard {
         const zoomOption = {
             tooltip: {
                 trigger: 'axis',
-                formatter: '{b}<br/>{a}: {c}%',
+                formatter: function(params) {
+                    const value = params[0].value;
+                    const time = params[0].name;
+                    return `${time}<br/>${i18n.t('chart.tooltip.usage').replace('{value}', value)}`;
+                },
                 textStyle: {
                     fontSize: 14
                 }
@@ -570,7 +591,7 @@ class ZabbixDashboard {
                 }
             },
             series: [{
-                name: '使用率',
+                name: i18n.t('chart.usage'),
                 type: 'line',
                 smooth: true,
                 symbolSize: 6,     // 增加数据点大小
@@ -656,16 +677,16 @@ class ZabbixDashboard {
     // 更新图表数据
     async updateZoomChartData(chart, historyData, range) {
         const rangeText = {
-            '1h': '1小时',
-            '24h': '24小时',
-            '7d': '7天',
-            '15d': '15天',
-            '30d': '30天'
+            '1h': i18n.t('1h'),
+            '24h': i18n.t('24h'),
+            '7d': i18n.t('7d'),
+            '15d': i18n.t('15d'),
+            '30d': i18n.t('30d')
         };
 
         // 更新标题
-        const title = this.currentChartType === 'cpu' ? 'CPU使用率' : '内存使用率';
-        document.getElementById('zoomChartTitle').textContent = `${title} (${rangeText[range]})`;
+        const title = i18n.t(`chartTitle.${this.currentChartType}`);
+        document.getElementById('zoomChartTitle').textContent = `${title} ${i18n.t(`timeRange.${range}`)}`;
 
         // 处理数据值
         const values = this.currentChartType === 'cpu' && !this.isWindows ?
@@ -694,6 +715,14 @@ class ZabbixDashboard {
             day: '2-digit',
             hour: '2-digit',
             minute: '2-digit'
+        });
+    }
+
+    initI18n() {
+        // 初始化所有带有 data-i18n 属性的元素
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            element.textContent = i18n.t(key);
         });
     }
 }
