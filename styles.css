@@ -886,12 +886,12 @@ body {
 .detail-card {
     background: white;
     border-radius: var(--radius);
-    margin-bottom: 1rem;
+    flex-shrink: 0;  /* 防止卡片被压缩 */
     box-shadow: var(--shadow-sm);
 }
 
 .detail-card-header {
-    padding: 1rem;
+    padding: 0.75rem 1rem;  /* 减小上下内边距 */
     border-bottom: 1px solid var(--gray-200);
     display: flex;
     align-items: center;
@@ -905,41 +905,46 @@ body {
 }
 
 .detail-card-body {
-    padding: 1rem;
+    padding: 0.75rem 1rem;  /* 减小上下内边距 */
 }
 
 .info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    gap: 0.5rem;  /* 减小网格间距 */
+    margin: -0.25rem 0;  /* 负边距来减少垂直空间 */
 }
 
 .info-item {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.125rem;  /* 减小标签和值之间的间距 */
 }
 
 .info-item label {
     font-size: 0.875rem;
     color: var(--gray-600);
+    line-height: 1.2;  /* 减小行高 */
 }
 
 .info-item span {
     font-size: 1rem;
     color: var(--gray-800);
+    line-height: 1.2;  /* 减小行高 */
 }
 
 .performance-grid {
+    flex: 1;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
+    min-height: 0;  /* 重要：允许内容收缩 */
 }
 
 .performance-chart-container {
-    background: var(--gray-100);
-    border-radius: var(--radius);
-    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;  /* 重要：允许内容收缩 */
 }
 
 .chart-title {
@@ -949,8 +954,8 @@ body {
 }
 
 .performance-chart {
-    height: 200px;
-    width: 100%;
+    flex: 1;
+    min-height: 200px;  /* 设置最小高度 */
 }
 
 .chart-title {
@@ -1004,4 +1009,58 @@ body {
     background: var(--primary-color);
     border-color: var(--primary-color);
     color: white;
+}
+
+/* 主机详情对话框样式 */
+#hostDetailModal .modal-content {
+    height: 90vh;  /* 设置为视窗高度的90% */
+    display: flex;
+    flex-direction: column;
+}
+
+#hostDetailModal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+.host-detail {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;  /* 减小卡片之间的间距 */
+}
+
+/* 性能监控卡片特殊处理 */
+.detail-card:last-child {
+    flex: 1;  /* 让性能监控卡片占据剩余空间 */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;  /* 重要：允许内容收缩 */
+}
+
+.detail-card:last-child .detail-card-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.performance-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    min-height: 0;  /* 重要：允许内容收缩 */
+}
+
+.performance-chart-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;  /* 重要：允许内容收缩 */
+}
+
+.performance-chart {
+    flex: 1;
+    min-height: 200px;  /* 设置最小高度 */
 } 
