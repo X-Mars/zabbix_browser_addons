@@ -879,19 +879,19 @@ body {
 }
 
 /* 主机详情样式 */
-.host-detail {
+/* .host-detail {
     padding: 1rem;
-}
+} */
 
 .detail-card {
     background: white;
-    border-radius: var(--radius);
+    border-radius: var(--radius); /* 圆角 */
     flex-shrink: 0;  /* 防止卡片被压缩 */
     box-shadow: var(--shadow-sm);
 }
 
 .detail-card-header {
-    padding: 0.75rem 1rem;  /* 减小上下内边距 */
+    padding: 1.75rem 1rem;  /* 减小上下内边距 */
     border-bottom: 1px solid var(--gray-200);
     display: flex;
     align-items: center;
@@ -1013,7 +1013,7 @@ body {
 
 /* 主机详情对话框样式 */
 #hostDetailModal .modal-content {
-    height: 90vh;  /* 设置为视窗高度的90% */
+    height: 70vh;
     display: flex;
     flex-direction: column;
 }
@@ -1028,22 +1028,30 @@ body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;  /* 减小卡片之间的间距 */
+    gap: 0.75rem;
 }
 
-/* 性能监控卡片特殊处理 */
+/* 基本信息和硬件信息卡片 */
+.detail-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;  /* 防止卡片被压缩 */
+}
+
+/* 性能监控卡片 */
 .detail-card:last-child {
-    flex: 1;  /* 让性能监控卡片占据剩余空间 */
+    flex: 1;
     display: flex;
     flex-direction: column;
-    min-height: 0;  /* 重要：允许内容收缩 */
+    min-height: 400px;  /* 确保图表有足够的显示空间 */
 }
 
 .detail-card:last-child .detail-card-body {
     flex: 1;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-height: 350px;  /* 给图表区域设置最小高度 */
 }
 
 .performance-grid {
@@ -1051,16 +1059,17 @@ body {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
-    min-height: 0;  /* 重要：允许内容收缩 */
+    min-height: 300px;  /* 确保图表容器有最小高度 */
 }
 
 .performance-chart-container {
     display: flex;
     flex-direction: column;
-    min-height: 0;  /* 重要：允许内容收缩 */
+    height: 100%;
 }
 
 .performance-chart {
     flex: 1;
-    min-height: 200px;  /* 设置最小高度 */
+    min-height: 250px;  /* 设置图表最小高度 */
+    width: 100%;
 } 

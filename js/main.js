@@ -484,16 +484,16 @@ class ZabbixDashboard {
     formatUptime(seconds) {
         if (!seconds) return '-';
         
-        const days = Math.floor(seconds / (24 * 3600));
-        const hours = Math.floor((seconds % (24 * 3600)) / 3600);
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
         
         const parts = [];
-        if (days > 0) parts.push(`${days}天`);
-        if (hours > 0) parts.push(`${hours}小时`);
-        if (minutes > 0) parts.push(`${minutes}分钟`);
+        if (days > 0) parts.push(`${days}${i18n.t('time.days')}`);
+        if (hours > 0) parts.push(`${hours}${i18n.t('time.hours')}`);
+        if (minutes > 0) parts.push(`${minutes}${i18n.t('time.minutes')}`);
         
-        return parts.length > 0 ? parts.join(' ') : '小于1分钟';
+        return parts.length > 0 ? parts.join(' ') : i18n.t('time.lessThanOneMinute');
     }
 
     // 初始化放大图表的模态框

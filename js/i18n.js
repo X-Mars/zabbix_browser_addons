@@ -95,7 +95,9 @@ const translations = {
             'days': '天',
             'hours': '小时',
             'minutes': '分钟',
-            'lessThanOneMinute': '小于1分钟'
+            'seconds': '秒',
+            'lessThanOneMinute': '小于1分钟',
+            'runningTime': '运行时间'
         },
 
         // 图表标题
@@ -249,7 +251,9 @@ const translations = {
             'days': 'days',
             'hours': 'hours',
             'minutes': 'minutes',
-            'lessThanOneMinute': 'less than 1 minute'
+            'seconds': 'seconds',
+            'lessThanOneMinute': 'less than 1 minute',
+            'runningTime': 'Running Time'
         },
 
         // Chart titles
