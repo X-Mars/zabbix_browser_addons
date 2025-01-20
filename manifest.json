@@ -6,8 +6,7 @@
   "author": "火星小刘",
   "homepage_url": "https://github.com/X-Mars/zabbix_browser_addons",
   "permissions": [
-    "storage",
-    "tabs"
+    "storage"
   ],
   "host_permissions": [
     "*://*/*"
@@ -17,10 +16,18 @@
   },
   "web_accessible_resources": [{
     "resources": [
-      "assets/*",
-      "lib/webfonts/*",
-      "lib/css/*",
-      "lib/js/*"
+      "assets/icon16.png",
+      "assets/icon48.png",
+      "assets/icon128.png",
+      "assets/zabbix.png",
+      "lib/css/tailwind.min.css",
+      "lib/js/echarts.min.js",
+      "lib/js/echarts.min.js.map",
+      "js/api.js",
+      "js/main.js",
+      "js/settings.js",
+      "js/i18n.js",
+      "js/charts.js"
     ],
     "matches": ["<all_urls>"]
   }],
