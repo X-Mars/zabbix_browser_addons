@@ -82,7 +82,7 @@ class ZabbixDashboard {
 
     updateAlertsList(alerts) {
         const tbody = document.getElementById('alertsList');
-        console.log(alerts);
+        // console.log(alerts);
         tbody.innerHTML = alerts.map(alert => `
             <tr>
                 <td>${alert.hosts?.[0]?.name || '未知主机'}</td>
@@ -462,7 +462,7 @@ class ZabbixDashboard {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const hostId = parseInt(e.target.dataset.hostId);
-                console.log('Clicked Host ID:', hostId); // 添加调试日志
+                // console.log('Clicked Host ID:', hostId); // 添加调试日志
                 this.showHostDetail(hostId);
             });
         });

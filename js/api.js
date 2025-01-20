@@ -20,7 +20,7 @@ class ZabbixAPI {
         }
 
         try {
-            console.log(`Sending request to ${method}:`, body);  // 添加日志
+            // console.log(`Sending request to ${method}:`, body);  // 添加日志
             const response = await fetch(this.url, {
                 method: 'POST',
                 headers: {
@@ -34,7 +34,7 @@ class ZabbixAPI {
             }
 
             const data = await response.json();
-            console.log(`Response from ${method}:`, data);  // 添加日志
+            // console.log(`Response from ${method}:`, data);  // 添加日志
             
             if (data.error) {
                 console.error('API Error:', JSON.stringify(data.error, null, 2));  // 格式化错误输出
@@ -52,14 +52,14 @@ class ZabbixAPI {
         try {
             // 先测试 API 版本（不需要认证）
             const version = await this.request('apiinfo.version');
-            console.log('Zabbix API version:', version);
+            // console.log('Zabbix API version:', version);
 
             // 再测试认证
             const hosts = await this.request('host.get', {
                 countOutput: true,
                 limit: 1
             });
-            console.log('Connection test successful');
+            // console.log('Connection test successful');
             return true;
         } catch (error) {
             console.error('Connection test failed:', error);
@@ -436,9 +436,9 @@ class ZabbixAPI {
                 isWindows: isWindows  // 添加系统类型标识
             };
 
-            console.log('CPU History Response:', cpuHistoryResponse);
-            console.log('Memory History Response:', memoryHistoryResponse);
-            console.log('Final Result:', result);
+            // console.log('CPU History Response:', cpuHistoryResponse);
+            // console.log('Memory History Response:', memoryHistoryResponse);
+            // console.log('Final Result:', result);
             return result;
 
         } catch (error) {
