@@ -125,13 +125,8 @@ class ZabbixDashboard {
     }
 
     formatTime(timestamp) {
-        return new Date(timestamp * 1000).toLocaleString('zh-CN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        const date = new Date(timestamp * 1000);
+        return `${date.toISOString().slice(0, 10)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     }
 
     getAckClass(acknowledged) {
@@ -151,19 +146,10 @@ class ZabbixDashboard {
     }
 
     updateLastRefreshTime() {
-        const now = new Date().toLocaleString(
-            this.currentLang === 'zh' ? 'zh-CN' : 'en-US',
-            { 
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            }
-        );
+        const now = new Date();
+        const timeStr = `${now.toISOString().slice(0, 10)} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
         const element = document.getElementById('lastRefreshTime');
-        element.textContent = i18n.t('settings.messages.lastRefresh').replace('{time}', now);
+        element.textContent = i18n.t('settings.messages.lastRefresh').replace('{time}', timeStr);
     }
 
     initHostsModal() {

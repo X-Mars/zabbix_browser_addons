@@ -27,8 +27,8 @@ const translations = {
         'ipAddress': 'IP地址',
         'systemType': '系统类型',
         'uptime': '运行时间',
-        'cpuCores': 'CPU核心数',
-        'memoryTotal': '内存总量',
+        'cpuCores': 'CPU',
+        'memoryTotal': '内存',
         'cpuUsage': 'CPU使用率',
         'memoryUsage': '内存使用率',
 
@@ -84,8 +84,8 @@ const translations = {
         'hostName': '主机名称',
         'ipAddress': 'IP地址',
         'operatingSystem': '操作系统',
-        'cpuCores': 'CPU核心数',
-        'memoryTotal': '内存总量',
+        'cpuCores': 'CPU',
+        'memoryTotal': '内存',
         'cpuUsage': 'CPU使用率',
         'memoryUsage': '内存使用率',
         'alerts': '当前告警',
@@ -158,7 +158,7 @@ const translations = {
     en: {
         // Titles and buttons
         'hostCount': 'Host Count',
-        'alertCount': 'Current Alerts',
+        'alertCount': 'Alerting',
         'alertTrend': 'Alert Trend',
         'alertDistribution': 'Alert Distribution',
         'alertHistory': 'Alert History (7 Days)',
@@ -184,7 +184,7 @@ const translations = {
         'systemType': 'System Type',
         'uptime': 'Uptime',
         'cpuCores': 'CPU Cores',
-        'memoryTotal': 'Total Memory',
+        'memoryTotal': 'Memory',
         'cpuUsage': 'CPU Usage',
         'memoryUsage': 'Memory Usage',
 
@@ -225,7 +225,7 @@ const translations = {
         'memoryUsage24h': 'Memory Usage (24 Hours)',
 
         // Alert related
-        'currentAlertDistribution': 'Current Alert Distribution',
+        'currentAlertDistribution': 'Alerting Distribution',
         'weeklyAlertHistory': 'Weekly Alert History',
         'host': 'Host',
         'alertContent': 'Alert Content',
@@ -234,17 +234,17 @@ const translations = {
         'duration': 'Duration',
         'startTime': 'Start Time',
         'endTime': 'End Time',
-        'currentAlerts': 'Current Alerts',
+        'currentAlerts': 'Alerting',
 
         // Host list headers
         'hostName': 'Host Name',
         'ipAddress': 'IP Address',
         'operatingSystem': 'Operating System',
         'cpuCores': 'CPU Cores',
-        'memoryTotal': 'Total Memory',
+        'memoryTotal': 'Memory',
         'cpuUsage': 'CPU Usage',
         'memoryUsage': 'Memory Usage',
-        'alerts': 'Current Alerts',
+        'alerts': 'Alerting',
 
         // Time related
         'time': {

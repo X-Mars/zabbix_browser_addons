@@ -202,6 +202,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 1rem 1.5rem 0 1.5rem;
     margin-bottom: 1rem;
 }
 
@@ -671,6 +672,8 @@ body {
 }
 
 .hosts-list th {
+    padding: 0.75rem;
+    text-align: left;
     font-weight: 500;
     color: var(--gray-600);
     background: var(--gray-100);
@@ -679,35 +682,31 @@ body {
     z-index: 1;
 }
 
-.hosts-list tr:hover {
-    background: var(--gray-100);
-}
-
-/* 让主机卡片显示为可点击状态 */
-.status-card:first-child {
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.status-card:first-child:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-/* 设置各列的宽度比例 */
 .hosts-list th:nth-child(1),
 .hosts-list td:nth-child(1) {
-    width: 20%;
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .hosts-list th:nth-child(2),
 .hosts-list td:nth-child(2) {
-    width: 15%;
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .hosts-list th:nth-child(3),
 .hosts-list td:nth-child(3) {
-    width: 10%;
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
 }
 
 .hosts-list th:nth-child(4),
