@@ -16,8 +16,14 @@
 ![image](./assets/3.jpg)
 ![image](./assets/4.jpg)
 
+## 插件市场安装地址
+### Chrome
+[https://chromewebstore.google.com/detail/zabbix-dashboard/kcnnfpddapjgflocpeojnobdolfaejaa](https://chromewebstore.google.com/detail/zabbix-dashboard/kcnnfpddapjgflocpeojnobdolfaejaa)
+  
+### Edge
+[https://microsoftedge.microsoft.com/addons/detail/zabbix-dashboard/ccpgeajnamiengocljojcaapifmljiif](https://microsoftedge.microsoft.com/addons/detail/zabbix-dashboard/ccpgeajnamiengocljojcaapifmljiif)
 
-## 安装方法
+## 源码安装方法
 1. 下载项目代码
    - 下载地址：https://github.com/X-Mars/zabbix_browser_addons
    - 下载后解压到本地目录
