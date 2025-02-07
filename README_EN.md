@@ -17,7 +17,14 @@ This is a Chrome/Edge browser extension for the Zabbix monitoring system, provid
 ![image](./assets/3_en.jpg)
 ![image](./assets/4_en.jpg)
 
-## Installation
+## Webstore Url
+### Chrome
+[https://chromewebstore.google.com/detail/zabbix-dashboard/kcnnfpddapjgflocpeojnobdolfaejaa](https://chromewebstore.google.com/detail/zabbix-dashboard/kcnnfpddapjgflocpeojnobdolfaejaa)
+  
+### Edge
+[https://microsoftedge.microsoft.com/addons/detail/zabbix-dashboard/ccpgeajnamiengocljojcaapifmljiif](https://microsoftedge.microsoft.com/addons/detail/zabbix-dashboard/ccpgeajnamiengocljojcaapifmljiif)
+
+## Source Installation
 1. Download the project code
    - Download from: https://github.com/X-Mars/zabbix_browser_addons
    - Extract to a local directory
