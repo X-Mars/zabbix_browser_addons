@@ -24,21 +24,3 @@ export interface ChartData {
   name: string
   value: number | [number, number]
 }
-
-export interface HostGroup {
-  groupid: string
-  name: string
-}
-
-export interface Item {
-  itemid: string
-  name: string
-  key_: string
-  lastvalue: string
-  units: string
-}
-
-export interface Graph {
-  graphid: string
-  name: string
-}

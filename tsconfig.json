@@ -20,7 +20,9 @@
       "@/*": ["src/*"]
     },
     "types": [
+      "vite/client",
       "chrome",
+      "element-plus/global",
       "node"
     ]
   },

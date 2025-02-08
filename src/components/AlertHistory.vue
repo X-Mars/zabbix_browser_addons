@@ -55,7 +55,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { Warning, Monitor, Timer, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import type { Alert } from '@/types'
 
@@ -87,14 +86,6 @@ const getSeverityLabel = (severity: string) => {
   return labels[severity] || '未知'
 }
 
-const formatTime = (timestamp: string) => {
-  return new Date(parseInt(timestamp) * 1000).toLocaleString()
-}
-
-const getRowClassName = ({ row }: { row: any }) => {
-  return `severity-${row.severity}`
-}
-
 const getStatusType = (status: string) => {
   const types: Record<string, string> = {
     '0': 'success',  // 已恢复
@@ -113,6 +104,14 @@ const getStatusLabel = (status: string) => {
 
 const getStatusIcon = (status: string) => {
   return status === '0' ? CircleCheck : CircleClose
+}
+
+const formatTime = (timestamp: string) => {
+  return new Date(parseInt(timestamp) * 1000).toLocaleString()
+}
+
+const getRowClassName = ({ row }: { row: any }) => {
+  return `severity-${row.severity}`
 }
 </script>
 
@@ -168,17 +167,5 @@ const getStatusIcon = (status: string) => {
 
 :deep(.el-table__row:hover) {
   transform: translateX(4px);
-}
-
-:deep(.el-tag.el-tag--success) {
-  background-color: var(--el-color-success-light-9);
-  border-color: var(--el-color-success-light-5);
-  color: var(--el-color-success);
-}
-
-:deep(.el-tag.el-tag--danger) {
-  background-color: var(--el-color-danger-light-9);
-  border-color: var(--el-color-danger-light-5);
-  color: var(--el-color-danger);
 }
 </style> 

@@ -1,37 +1,41 @@
 <template>
-  <el-card class="chart-card">
+  <el-card class="trend-card">
     <template #header>
       <div class="card-header">
-        <span>告警趋势</span>
+        <div class="header-title">
+          <el-icon><TrendCharts /></el-icon>
+          告警趋势
+        </div>
       </div>
     </template>
-    <div ref="chartRef" class="chart"></div>
+    <div ref="chartRef" class="chart-container"></div>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { TrendCharts } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import type { EChartsOption } from 'echarts'
+import type { ChartData } from '@/types'
 
 const props = defineProps<{
-  data: Array<{ name: string, value: [number, number] }>
+  data: ChartData[]
 }>()
 
 const chartRef = ref<HTMLElement>()
 let chart: echarts.ECharts | null = null
 
-watch(() => props.data, (newData) => {
-  updateChart(newData)
-}, { deep: true })
-
 const initChart = () => {
   if (!chartRef.value) return
   
   chart = echarts.init(chartRef.value)
-  const option: EChartsOption = {
+  const option = {
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      formatter: (params: any) => {
+        const data = params[0].data
+        return `${new Date(data[0]).toLocaleString()}<br/>告警数量: ${data[1]}`
+      }
     },
     grid: {
       left: '3%',
@@ -47,58 +51,63 @@ const initChart = () => {
       type: 'value',
       minInterval: 1
     },
-    series: [{
-      name: '告警数量',
-      type: 'line',
-      smooth: true,
-      data: [],
-      areaStyle: {
-        opacity: 0.1
+    series: [
+      {
+        type: 'line',
+        smooth: true,
+        data: props.data.map(item => item.value),
+        areaStyle: {
+          opacity: 0.1
+        },
+        lineStyle: {
+          width: 2
+        },
+        itemStyle: {
+          color: '#409EFF'
+        }
       }
-    }]
+    ]
   }
+  
   chart.setOption(option)
 }
 
-const updateChart = (data: any[]) => {
-  if (!chart) return
-  chart.setOption({
-    series: [{
-      data: data
-    }]
-  })
-}
+watch(() => props.data, () => {
+  if (chart) {
+    chart.setOption({
+      series: [{
+        data: props.data.map(item => item.value)
+      }]
+    })
+  }
+}, { deep: true })
 
 onMounted(() => {
   initChart()
-  window.addEventListener('resize', handleResize)
+  window.addEventListener('resize', () => chart?.resize())
 })
-
-onUnmounted(() => {
-  if (chart) {
-    chart.dispose()
-    chart = null
-  }
-  window.removeEventListener('resize', handleResize)
-})
-
-const handleResize = () => {
-  chart?.resize()
-}
 </script>
 
 <style scoped>
-.chart-card {
-  height: calc((100vh - 200px) / 2);  /* 适应屏幕高度 */
-}
-
-.chart {
-  height: 100%;
+.trend-card {
+  height: 400px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.chart-container {
+  height: calc(100% - 20px);
 }
 </style> 

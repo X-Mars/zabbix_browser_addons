@@ -7,7 +7,6 @@
       <div class="card-info">
         <div class="card-title">
           {{ title }}
-          <!-- <el-tag v-if="title === '主机数量'" size="small" type="success">在线</el-tag> -->
         </div>
         <div class="card-value" :class="{ 'has-alerts': title === '当前告警' && value > 0 }">
           {{ value }}
@@ -18,18 +17,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
-const props = defineProps<{
+defineProps<{
   title: string
   value: number
   icon: string
 }>()
-
-const iconClass = computed(() => ({
-  'monitor-icon': props.icon === 'Monitor',
-  'warning-icon': props.icon === 'Warning'
-}))
 </script>
 
 <style scoped>

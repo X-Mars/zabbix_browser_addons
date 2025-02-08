@@ -1,21 +1,25 @@
 <template>
-  <el-card class="chart-card">
+  <el-card class="severity-card">
     <template #header>
       <div class="card-header">
-        <span>告警级别分布</span>
+        <div class="header-title">
+          <el-icon><PieChart /></el-icon>
+          告警级别分布
+        </div>
       </div>
     </template>
-    <div ref="chartRef" class="chart"></div>
+    <div ref="chartRef" class="chart-container"></div>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, watch, onUnmounted } from 'vue'
+import { PieChart } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import type { EChartsOption } from 'echarts'
+import type { ChartData } from '@/types'
 
 const props = defineProps<{
-  data: Array<{ name: string, value: number }>
+  data: ChartData[]
 }>()
 
 const chartRef = ref<HTMLElement>()
@@ -25,54 +29,59 @@ const initChart = () => {
   if (!chartRef.value) return
   
   chart = echarts.init(chartRef.value)
-  const option: EChartsOption = {
+  const option = {
     tooltip: {
       trigger: 'item',
       formatter: '{b}: {c} ({d}%)'
     },
     legend: {
       orient: 'vertical',
-      right: '5%',
+      right: 10,
       top: 'center'
     },
-    series: [{
-      name: '告警级别',
-      type: 'pie',
-      radius: ['40%', '70%'],
-      center: ['40%', '50%'],
-      avoidLabelOverlap: false,
-      itemStyle: {
-        borderRadius: 10,
-        borderColor: '#fff',
-        borderWidth: 2
-      },
-      label: {
-        show: false
-      },
-      emphasis: {
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: {
+          borderRadius: 10,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
         label: {
-          show: true,
-          fontSize: '14',
-          fontWeight: 'bold'
-        }
-      },
-      data: []
-    }]
+          show: false
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 16,
+            fontWeight: 'bold'
+          }
+        },
+        labelLine: {
+          show: false
+        },
+        data: props.data
+      }
+    ]
   }
+  
   chart.setOption(option)
 }
 
-const updateChart = (data: any[]) => {
-  if (!chart) return
-  chart.setOption({
-    series: [{
-      data: data
-    }]
-  })
+const handleResize = () => {
+  chart?.resize()
 }
 
-watch(() => props.data, (newData) => {
-  updateChart(newData)
+watch(() => props.data, () => {
+  if (chart) {
+    chart.setOption({
+      series: [{
+        data: props.data
+      }]
+    })
+  }
 }, { deep: true })
 
 onMounted(() => {
@@ -81,30 +90,31 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (chart) {
-    chart.dispose()
-    chart = null
-  }
+  chart?.dispose()
   window.removeEventListener('resize', handleResize)
 })
-
-const handleResize = () => {
-  chart?.resize()
-}
 </script>
 
 <style scoped>
-.chart-card {
-  height: calc((100vh - 200px) / 2);  /* 适应屏幕高度 */
-}
-
-.chart {
-  height: 100%;
+.severity-card {
+  height: 400px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.chart-container {
+  height: calc(100% - 20px);
 }
 </style> 

@@ -6,6 +6,24 @@
           <img src="@/assets/zabbix.png" class="logo" alt="logo">
           <h1 class="app-title">Zabbix Dashboard</h1>
         </div>
+        <div class="nav-menu">
+          <el-menu
+            mode="horizontal"
+            :ellipsis="false"
+            class="header-menu"
+            :default-active="activeMenu"
+            @select="handleSelect"
+          >
+            <el-menu-item index="dashboard">
+              <el-icon><DataBoard /></el-icon>
+              仪表盘
+            </el-menu-item>
+            <el-menu-item index="hosts">
+              <el-icon><Monitor /></el-icon>
+              主机列表
+            </el-menu-item>
+          </el-menu>
+        </div>
         <div class="header-actions">
           <span class="last-refresh">
             <el-icon><Timer /></el-icon>
@@ -22,25 +40,7 @@
     </el-header>
 
     <el-main>
-      <el-row :gutter="24">
-        <el-col :span="12">
-          <statistic-card title="主机数量" :value="store.hostCount" icon="Monitor" />
-        </el-col>
-        <el-col :span="12">
-          <statistic-card title="当前告警" :value="store.alertCount" icon="Warning" />
-        </el-col>
-      </el-row>
-
-      <el-row :gutter="24" class="mt-4">
-        <el-col :span="12">
-          <alert-trend :data="store.alertTrendData" />
-        </el-col>
-        <el-col :span="12">
-          <severity-chart :data="store.severityData" />
-        </el-col>
-      </el-row>
-
-      <alert-history class="mt-4" :alerts="store.alerts" />
+      <router-view />
     </el-main>
     <settings-dialog 
       ref="settingsDialogRef" 
@@ -51,20 +51,23 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { DataBoard, Monitor, Timer, Refresh, Setting } from '@element-plus/icons-vue'
 import { useZabbixStore } from '@/stores/zabbix'
 import storage from '@/utils/storage'
-import StatisticCard from '@/components/StatisticCard.vue'
-import AlertTrend from '@/components/AlertTrend.vue'
-import SeverityChart from '@/components/SeverityChart.vue'
-import AlertHistory from '@/components/AlertHistory.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 
 const store = useZabbixStore()
+const router = useRouter()
 const settingsDialogRef = ref<InstanceType<typeof SettingsDialog>>()
 const refreshTimer = ref<number | undefined>(undefined)
+const activeMenu = ref('dashboard')
 
-// 检查是否为浏览器插件模式
+const handleSelect = (key: string) => {
+  router.push({ name: key })
+}
+
 const isExtensionMode = () => {
   return typeof chrome !== 'undefined' && chrome.runtime?.id
 }
@@ -79,17 +82,13 @@ const refreshData = async () => {
 }
 
 const startRefreshTimer = (interval: number) => {
-  // 清除现有定时器
   if (refreshTimer.value) {
     clearInterval(refreshTimer.value)
     refreshTimer.value = undefined
   }
-  // 设置新的定时器
   if (isExtensionMode()) {
-    // 在插件模式下使用 chrome.alarms API
     chrome.alarms.create('refreshData', { periodInMinutes: interval / 60000 })
   } else {
-    // 在浏览器模式下使用 setInterval
     refreshTimer.value = window.setInterval(refreshData, interval)
   }
 }
@@ -104,21 +103,16 @@ const handleRefreshIntervalChange = (interval: number) => {
 
 onMounted(async () => {
   try {
-    // 从存储加载设置
     const settings = await storage.local.get(['apiUrl', 'apiToken', 'refreshInterval'])
-    
-    // 检查是否有API配置
     const hasApiConfig = settings.apiUrl && settings.apiToken
     
     if (hasApiConfig) {
       store.initApi(settings.apiUrl, settings.apiToken)
       await refreshData()
       
-      // 设置定时刷新
       const interval = settings.refreshInterval || 60000
       startRefreshTimer(interval)
 
-      // 在插件模式下设置 alarm 监听器
       if (isExtensionMode()) {
         chrome.alarms.onAlarm.addListener((alarm) => {
           if (alarm.name === 'refreshData') {
@@ -127,7 +121,6 @@ onMounted(async () => {
         })
       }
     } else if (isExtensionMode()) {
-      // 只在插件模式下自动显示设置对话框
       showSettings()
     }
   } catch (error) {
@@ -139,7 +132,6 @@ onMounted(async () => {
 onUnmounted(() => {
   if (refreshTimer.value) {
     clearInterval(refreshTimer.value)
-    refreshTimer.value = undefined
   }
   if (isExtensionMode()) {
     chrome.alarms.clear('refreshData')
@@ -166,27 +158,7 @@ onUnmounted(() => {
   align-items: center;
   height: 100%;
   padding: 0 20px;
-}
-
-.app-title {
-  color: white;
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin: 0;
-}
-
-.el-main {
-  padding: 24px;
-  height: calc(100vh - 60px);
-  overflow-y: auto;
-}
-
-.el-row {
-  margin-bottom: 5px;
-}
-
-.el-col {
-  margin-bottom: 5px;
+  gap: 24px;
 }
 
 .logo-title {
@@ -199,6 +171,42 @@ onUnmounted(() => {
   width: 32px;
   height: 32px;
   filter: brightness(0) invert(1);
+}
+
+.app-title {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.nav-menu {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.header-menu {
+  background: transparent;
+  border-bottom: none;
+}
+
+:deep(.header-menu .el-menu-item) {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  height: 60px;
+  border-bottom: 2px solid transparent;
+}
+
+:deep(.header-menu .el-menu-item.is-active) {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 2px solid white;
+}
+
+:deep(.header-menu .el-menu-item:hover) {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .header-actions {
@@ -216,6 +224,12 @@ onUnmounted(() => {
   opacity: 0.9;
 }
 
+.el-main {
+  padding: 24px;
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+
 .el-button {
   border-radius: 8px;
 }
@@ -229,20 +243,5 @@ onUnmounted(() => {
   background: rgba(255, 255, 255, 0.1);
   border: none;
   color: white;
-}
-
-.mt-4 {
-  margin-top: 5px;
-}
-
-:deep(.el-card) {
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-:deep(.el-card:hover) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
 }
 </style> 
