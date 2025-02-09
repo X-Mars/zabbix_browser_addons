@@ -1,9 +1,127 @@
+class Header {
+    constructor() {
+        this.init();
+    }
+
+    init() {
+        this.settingsBtn = document.getElementById('settingsBtn');
+        this.lastRefreshTimeElement = document.getElementById('lastRefreshTime');
+        this.settingsModal = document.getElementById('settingsModal');
+        this.closeModalBtn = document.getElementById('closeModal');
+        this.hostsModal = document.getElementById('hostsModal');
+        
+        this.initNavigation();
+        this.initSettingsButton();
+        this.initSettingsModal();
+
+        // 只在仪表盘页面初始化主机卡片点击事件
+        if (window.location.pathname.includes('index.html')) {
+            this.initHostsModal();
+        }
+    }
+
+    initNavigation() {
+        const currentPath = window.location.pathname;
+        document.querySelectorAll('.navbar a').forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+            }
+            
+            link.addEventListener('click', (e) => {
+                document.querySelectorAll('.navbar a').forEach(item => 
+                    item.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+            });
+        });
+    }
+
+    initSettingsButton() {
+        if (this.settingsBtn) {
+            this.settingsBtn.addEventListener('click', () => {
+                // 显示设置对话框
+                window.settingsManager.showDialog();
+            });
+        }
+    }
+
+    initSettingsModal() {
+        if (this.settingsModal) {
+            // 点击遮罩层关闭
+            this.settingsModal.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    this.settingsModal.classList.remove('active');
+                }
+            });
+        }
+
+        if (this.closeModalBtn && this.settingsModal) {
+            this.closeModalBtn.addEventListener('click', () => {
+                this.settingsModal.classList.remove('active');
+            });
+        }
+    }
+
+    initHostsModal() {
+        // 修改主机数量卡片点击事件，改为跳转到主机列表页面
+        const hostCard = document.querySelector('.status-card:first-child');
+        if (hostCard) {  // 添加存在性检查
+            hostCard.style.cursor = 'pointer';
+            hostCard.addEventListener('click', () => {
+                window.location.href = 'hosts.html';
+            });
+        }
+    }
+
+    updateLastRefreshTime() {
+        if (this.lastRefreshTimeElement) {
+            const now = new Date();
+            const timeStr = `${now.toISOString().slice(0, 10)} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            this.lastRefreshTimeElement.textContent = `最后刷新时间: ${timeStr}`;
+        }
+    }
+}
+
+class RefreshManager {
+    constructor(callback, defaultInterval = 300000) {
+        this.callback = callback;
+        this.defaultInterval = defaultInterval;
+        this.timer = null;
+    }
+
+    async start() {
+        const settings = await this.getSettings();
+        const interval = parseInt(settings.refreshInterval) || this.defaultInterval;
+        this.stop();
+        this.timer = setInterval(() => this.callback(), interval);
+    }
+
+    stop() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+    }
+
+    async getSettings() {
+        return new Promise((resolve, reject) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
+                    resolve(result);
+                }
+            });
+        });
+    }
+}
+
 class ZabbixDashboard {
     constructor() {
+        this.header = new Header();
+        this.refreshManager = new RefreshManager(() => this.loadDashboard());
         this.init();
         this.initI18n();
         this.charts = {};
-        this.refreshTimer = null;
         this.initHostsModal();
         this.currentSort = {
             column: null,
@@ -22,14 +140,12 @@ class ZabbixDashboard {
     async init() {
         const settings = await this.getSettings();
         if (!settings.apiUrl || !settings.apiToken) {
-            document.getElementById('settingsBtn').click();
+            document.getElementById('settingsModal').classList.add('active');
             return;
         }
         
         await this.loadDashboard();
-        // 使用设置的刷新间隔
-        const interval = parseInt(settings.refreshInterval) || 300000;  // 默认5分钟
-        this.refreshTimer = setInterval(() => this.loadDashboard(), interval);
+        await this.refreshManager.start();
     }
 
     async loadDashboard() {
@@ -38,7 +154,7 @@ class ZabbixDashboard {
             const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
 
             // 更新最后刷新时间
-            this.updateLastRefreshTime();
+            this.header.updateLastRefreshTime();
 
             // 加载统计数据
             const [hosts, alerts] = await Promise.all([
@@ -138,139 +254,25 @@ class ZabbixDashboard {
     }
 
     async getSettings() {
-        return new Promise((resolve) => {
-            chrome.storage.local.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+        return new Promise((resolve, reject) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                } else {
                 resolve(result);
+                }
             });
         });
     }
 
-    updateLastRefreshTime() {
-        const now = new Date();
-        const timeStr = `${now.toISOString().slice(0, 10)} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-        const element = document.getElementById('lastRefreshTime');
-        element.textContent = i18n.t('settings.messages.lastRefresh').replace('{time}', timeStr);
-    }
-
     initHostsModal() {
-        // 添加主机数量卡片点击事件
+        // 修改主机数量卡片点击事件，改为跳转到主机列表页面
         const hostCard = document.querySelector('.status-card:first-child');
+        if (hostCard) {  // 添加存在性检查
         hostCard.style.cursor = 'pointer';
-        hostCard.addEventListener('click', () => this.showHostsModal());
-
-        // 添加关闭按钮事件
-        document.getElementById('closeHostsModal').addEventListener('click', () => {
-            document.getElementById('hostsModal').classList.remove('active');
-        });
-
-        // 点击遮罩层关闭
-        document.getElementById('hostsModal').addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                document.getElementById('hostsModal').classList.remove('active');
-            }
-        });
-
-        // 添加表头排序事件
-        const sortableHeaders = document.querySelectorAll('.sortable');
-        sortableHeaders.forEach(header => {
-            header.addEventListener('click', () => this.sortTable(header.dataset.sort));
-        });
-    }
-
-    // 排序函数
-    sortTable(column) {
-        // 如果点击的是当前排序列，则切换排序方向
-        if (this.currentSort.column === column) {
-            this.currentSort.direction = this.currentSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            this.currentSort.column = column;
-            this.currentSort.direction = 'asc';
-        }
-
-        // 更新排序图标
-        this.updateSortIcons(column);
-
-        // 排序数据
-        this.hostsData.sort((a, b) => {
-            let valueA, valueB;
-
-            // 特殊处理告警数量列
-            if (column === 'alerts') {
-                valueA = parseInt(a[column]) || 0;
-                valueB = parseInt(b[column]) || 0;
-            } else {
-                valueA = this.getSortValue(a[column]);
-                valueB = this.getSortValue(b[column]);
-            }
-            
-            if (valueA === valueB) return 0;
-            
-            const direction = this.currentSort.direction === 'asc' ? 1 : -1;
-            return valueA < valueB ? -1 * direction : 1 * direction;
-        });
-
-        // 重新渲染表格
-        this.renderHostsTable();
-    }
-
-    // 获取排序值
-    getSortValue(value) {
-        if (value === '-') return -1;
-        // 移除百分号和 GB 后缀
-        value = String(value).replace(/%/g, '').replace(/GB/g, '').trim();
-        return parseFloat(value) || 0;
-    }
-
-    // 更新排序图标
-    updateSortIcons(activeColumn) {
-        const headers = document.querySelectorAll('.sortable');
-        headers.forEach(header => {
-            const icon = header.querySelector('i');
-            if (header.dataset.sort === activeColumn) {
-                header.setAttribute('data-active', 'true');
-                header.setAttribute('title', `点击${this.currentSort.direction === 'asc' ? '降序' : '升序'}排序`);
-                icon.className = `fas fa-sort-${this.currentSort.direction === 'asc' ? 'up' : 'down'}`;
-            } else {
-                header.removeAttribute('data-active');
-                header.setAttribute('title', '点击排序');
-                icon.className = 'fas fa-sort';
-            }
-        });
-    }
-
-    // 渲染主机表格
-    renderHostsTable() {
-        const tbody = document.getElementById('hostsList');
-        tbody.innerHTML = this.hostsData.map(host => `
-            <tr class="${parseInt(host.alerts) > 0 ? 'has-alerts' : 'no-alerts'}">
-                <td>${host.name}</td>
-                <td>${host.ip}</td>
-                <td>${host.os}</td>
-                <td>${host.cpuCores}</td>
-                <td>${host.memoryTotal}</td>
-                <td style="min-width: 150px">${getProgressBarHTML(host.cpu)}</td>
-                <td style="min-width: 150px">${getProgressBarHTML(host.memory)}</td>
-                <td>${host.alerts}</td>
-            </tr>
-        `).join('');
-    }
-
-    async showHostsModal() {
-        const modal = document.getElementById('hostsModal');
-        modal.classList.add('active');
-
-        try {
-            const settings = await this.getSettings();
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
-            this.hostsData = await api.getHostsDetails();  // 存储数据
-            
-            // 使用类的 renderHostsList 方法
-            this.renderHostsList(this.hostsData);  // 修改这里，使用 this.renderHostsList
-            
-        } catch (error) {
-            console.error('Failed to load hosts details:', error);
-            const tbody = document.getElementById('hostsList');
-            tbody.innerHTML = `<tr><td colspan="8">${i18n.t('settings.messages.loadingFailed')}</td></tr>`;
+            hostCard.addEventListener('click', () => {
+                window.location.href = 'hosts.html';
+            });
         }
     }
 
@@ -470,16 +472,16 @@ class ZabbixDashboard {
     formatUptime(seconds) {
         if (!seconds) return '-';
         
-        const days = Math.floor(seconds / 86400);
-        const hours = Math.floor((seconds % 86400) / 3600);
-        const minutes = Math.floor((seconds % 3600) / 60);
+        const days = Math.floor(seconds / (24 * 60 * 60));
+        const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+        const minutes = Math.floor((seconds % (60 * 60)) / 60);
         
-        const parts = [];
-        if (days > 0) parts.push(`${days}${i18n.t('time.days')}`);
-        if (hours > 0) parts.push(`${hours}${i18n.t('time.hours')}`);
-        if (minutes > 0) parts.push(`${minutes}${i18n.t('time.minutes')}`);
+        let result = '';
+        if (days > 0) result += `${days}天 `;
+        if (hours > 0) result += `${hours}小时 `;
+        if (minutes > 0) result += `${minutes}分钟`;
         
-        return parts.length > 0 ? parts.join(' ') : i18n.t('time.lessThanOneMinute');
+        return result.trim() || '小于1分钟';
     }
 
     // 初始化放大图表的模态框
@@ -506,139 +508,152 @@ class ZabbixDashboard {
     }
 
     // 显示放大的图表
-    showZoomChart(chartType) {
-        const modal = document.getElementById('zoomChartModal');
-        const title = document.getElementById('zoomChartTitle');
-        const chart = echarts.init(document.getElementById('zoomChart'));
-        
-        // 保存当前图表类型
+    async showZoomChart(chartType) {
         this.currentChartType = chartType;
-        
-        // 获取原始图表数据
-        const originalChart = echarts.getInstanceByDom(
-            document.getElementById(chartType === 'cpu' ? 'detailCPUChart' : 'detailMemoryChart')
-        );
-        const option = originalChart.getOption();
+        const modal = document.getElementById('zoomChartModal');
+        modal.style.display = 'flex';
 
-        // 从原始图表获取 itemId
-        const itemId = chartType === 'cpu' ? this.currentCpuItemId : this.currentMemoryItemId;
-        this.currentItemId = itemId;
+        // 根据图表类型设置标题
+        const titleText = chartType === 'cpu' ? 'CPU利用率' : '内存利用率';
+        document.getElementById('zoomChartTitle').textContent = `性能监控 - ${titleText}`;
 
-        // 设置标题
-        const titleText = i18n.t(`chartTitle.${chartType}`);
-        title.textContent = `${titleText} ${i18n.t('timeRange.24h')}`;
-        
-        // 显示模态框
-        modal.classList.add('active');
+        const chart = echarts.init(document.getElementById('zoomChart'));
+        chart.clear();
 
-        // 设置放大图表的配置
-        const zoomOption = {
-            tooltip: {
-                trigger: 'axis',
-                formatter: function(params) {
-                    const value = params[0].value;
-                    const time = params[0].name;
-                    return `${time}<br/>${i18n.t('chart.tooltip.usage').replace('{value}', value)}`;
-                },
-                textStyle: {
-                    fontSize: 14
-                }
-            },
-            grid: {
-                top: 60,      // 增加顶部空间
-                right: 80,    // 增加右侧空间
-                bottom: 60,   // 增加底部空间
-                left: 80,     // 增加左侧空间
-                containLabel: true
-            },
-            xAxis: {
-                type: 'category',
-                boundaryGap: false,
-                data: option.xAxis[0].data,
-                axisLabel: {
-                    fontSize: 12,
-                    margin: 16,    // 增加标签与轴的距离
-                    rotate: 45     // 斜角显示时间标签
-                }
-            },
-            yAxis: {
-                type: 'value',
-                min: 0,
-                max: 100,
-                splitLine: {
-                    lineStyle: {
-                        color: '#eee'
+        try {
+            const settings = await this.getSettings();
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            
+            // 获取监控项ID
+            const itemId = chartType === 'cpu' ? this.currentCpuItemId : this.currentMemoryItemId;
+            
+            // 默认显示24小时数据
+            const now = Math.floor(Date.now() / 1000);
+            const timeFrom = now - 24 * 3600;
+            
+            // 获取历史数据
+            const historyResponse = await api.request('history.get', {
+                itemids: [parseInt(itemId)],
+                time_from: timeFrom,
+                output: 'extend',
+                history: 0,
+                sortfield: 'clock',
+                sortorder: 'ASC'
+            });
+
+            // 处理数据
+            const historyData = historyResponse.map(record => ({
+                time: this.formatHistoryTime(record.clock),
+                value: this.currentChartType === 'cpu' && !this.isWindows ?
+                    (100 - parseFloat(record.value)).toFixed(2) :
+                    parseFloat(record.value).toFixed(2)
+            }));
+
+            // 初始化图表选项
+            const option = {
+                title: {
+                    text: titleText,
+                    left: 'center',
+                    top: 10,
+                    textStyle: {
+                        fontSize: 16,
+                        fontWeight: 'bold'
                     }
                 },
-                axisLabel: {
-                    fontSize: 12,
-                    margin: 16,    // 增加标签与轴的距离
-                    formatter: '{value}%'
-                }
-            },
-            series: [{
-                name: i18n.t('chart.usage'),
-                type: 'line',
-                smooth: true,
-                symbolSize: 6,     // 增加数据点大小
-                lineStyle: {
-                    width: 2       // 增加线条宽度
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const value = params[0].value;
+                        const time = params[0].name;
+                        return `${time}<br/>${titleText}: ${value}%`;
+                    }
                 },
-                areaStyle: {
-                    opacity: 0.3
+                grid: {
+                    top: 30,
+                    right: 20,
+                    bottom: 30,
+                    left: 50,
+                    containLabel: true
                 },
-                itemStyle: {
-                    color: '#1a73e8'
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: historyData.map(item => item.time),
+                    axisLabel: {
+                        fontSize: 10,
+                        rotate: 45
+                    }
                 },
-                data: option.series[0].data
-            }]
-        };
+                yAxis: {
+                    type: 'value',
+                    min: 0,
+                    max: 100,
+                    splitLine: {
+                        lineStyle: {
+                            color: '#eee'
+                        }
+                    }
+                },
+                series: [{
+                    type: 'line',
+                    smooth: true,
+                    areaStyle: {
+                        opacity: 0.3
+                    },
+                    itemStyle: {
+                        color: '#1a73e8'
+                    },
+                    data: historyData.map(item => item.value)
+                }]
+            };
 
-        // 设置图表
-        chart.setOption(zoomOption);
+            chart.setOption(option);
 
-        // 等待模态框动画完成后重新调整图表大小
-        setTimeout(() => {
-            chart.resize();
-        }, 300);
-
-        // 监听窗口大小变化
-        window.addEventListener('resize', () => {
-            chart.resize();
-        });
-
-        // 添加时间范围按钮点击事件
-        document.querySelectorAll('.time-btn').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                // 更新按钮状态
-                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-
-                // 获取选择的时间范围
-                const range = e.target.dataset.range;
-                const timeFrom = this.getTimeFromByRange(range);
-
-                try {
-                    const settings = await this.getSettings();
-                    const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
-                    
-                    // 获取历史数据
-                    const historyData = await api.request('history.get', {
-                        itemids: [parseInt(this.currentItemId)],
+            // 添加时间范围按钮事件
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const range = btn.dataset.range;
+                    const timeFrom = this.getTimeFromByRange(range);
+                    const historyResponse = await api.request('history.get', {
+                        itemids: [parseInt(itemId)],
                         time_from: timeFrom,
+                        time_till: now,
                         output: 'extend',
                         history: 0,
                         sortfield: 'clock',
                         sortorder: 'ASC'
                     });
 
-                    // 更新图表标题和数据
-                    await this.updateZoomChartData(chart, historyData, range);
-                } catch (error) {
-                    console.error('Failed to update chart:', error);
-                }
+                    const historyData = historyResponse.map(record => ({
+                        time: this.formatHistoryTime(record.clock),
+                        value: this.currentChartType === 'cpu' && !this.isWindows ?
+                            (100 - parseFloat(record.value)).toFixed(2) :
+                            parseFloat(record.value).toFixed(2)
+                    }));
+
+                    chart.setOption({
+                        xAxis: {
+                            data: historyData.map(item => item.time)
+                        },
+                        series: [{
+                            data: historyData.map(item => item.value)
+                        }]
+                    });
+
+                    // 更新按钮状态
+                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
             });
-        });
+
+            // 监听窗口大小变化
+            window.addEventListener('resize', () => {
+                chart.resize();
+            });
+
+        } catch (error) {
+            console.error('Failed to load chart data:', error);
+        }
     }
 
     // 根据时间范围计算起始时间
@@ -660,40 +675,6 @@ class ZabbixDashboard {
         }
     }
 
-    // 更新图表数据
-    async updateZoomChartData(chart, historyData, range) {
-        const rangeText = {
-            '1h': i18n.t('1h'),
-            '24h': i18n.t('24h'),
-            '7d': i18n.t('7d'),
-            '15d': i18n.t('15d'),
-            '30d': i18n.t('30d')
-        };
-
-        // 更新标题
-        const title = i18n.t(`chartTitle.${this.currentChartType}`);
-        document.getElementById('zoomChartTitle').textContent = `${title} ${i18n.t(`timeRange.${range}`)}`;
-
-        // 处理数据值
-        const values = this.currentChartType === 'cpu' && !this.isWindows ?
-            historyData.map(record => (100 - parseFloat(record.value)).toFixed(2)) :
-            historyData.map(record => parseFloat(record.value).toFixed(2));
-
-        // 获取 API 实例来使用其格式化方法
-        const settings = await this.getSettings();
-        const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
-
-        // 更新图表数据
-        chart.setOption({
-            xAxis: {
-                data: historyData.map(record => api.formatHistoryTime(record.clock))
-            },
-            series: [{
-                data: values
-            }]
-        });
-    }
-
     // 添加格式化时间方法
     formatHistoryTime(timestamp) {
         return new Date(timestamp * 1000).toLocaleString('zh-CN', {
@@ -713,51 +694,694 @@ class ZabbixDashboard {
     }
 }
 
-// 初始化应用
-new ZabbixDashboard(); 
+// 新增 ZabbixHosts 类
+class ZabbixHosts {
+    constructor() {
+        this.header = new Header();
+        this.refreshManager = new RefreshManager(() => this.loadHosts());
+        this.init();
+        this.initHostDetailModal();
+        this.initZoomChartModal();
+        this.currentItemId = null;
+        this.currentChartType = null;
+        this.currentCpuItemId = null;
+        this.currentMemoryItemId = null;
+        this.isWindows = false;
+        this.hostGroups = [];  // 存储主机组数据
+        this.hosts = [];       // 存储所有主机数据
+        this.initFilters();    // 初始化筛选功能
+    }
 
-// 初始化设置对话框
-document.getElementById('settingsBtn').addEventListener('click', () => {
-    document.getElementById('settingsModal').classList.add('active');
-});
+    async init() {
+        await this.loadHosts();
+        await this.refreshManager.start();
+    }
 
-// 通过关闭按钮或点击遮罩层关闭设置对话框
-document.getElementById('settingsModal').addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal-overlay')) {
-        document.getElementById('settingsModal').classList.remove('active');
+    async loadHosts() {
+        try {
+            const settings = await this.getSettings();
+            if (!settings.apiUrl || !settings.apiToken) {
+                if (this.header.settingsModal) {
+                    this.header.settingsModal.classList.add('active');
+                }
+                return;
+            }
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            
+            // 使用 getHostsDetails 替代 getHosts
+            const hosts = await api.getHostsDetails();
+            
+            this.renderHosts(hosts);
+            // 更新最后刷新时间
+            this.header.updateLastRefreshTime();
+        } catch (error) {
+            console.error('加载主机列表失败:', error);
+        }
+    }
+
+    async getSettings() {
+        return new Promise((resolve, reject) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+            } else {
+                    resolve(result);
+            }
+            });
+        });
+    }
+
+    renderHosts(hosts) {
+        const tbody = document.getElementById('hostsList');
+        if (tbody) {
+            tbody.innerHTML = hosts.map(host => {
+                // 格式化 CPU 使用率
+                const cpuUsage = host.cpu ? getProgressBarHTML(host.cpu) : '未知';
+                // 格式化内存使用率
+                const memoryUsage = host.memory ? getProgressBarHTML(host.memory) : '未知';
+                // 格式化告警信息
+                const alerts = host.alerts ? `<span class="alert-count">${host.alerts}</span>` : '无';
+
+                return `
+                    <tr>
+                        <td>
+                            <a href="#" class="host-name" data-host-id="${host.hostid}" style="color: var(--primary-color); text-decoration: none;">
+                                ${host.name}
+                            </a>
+                        </td>
+                        <td>${host.ip || '未知'}</td>
+                        <td>${host.os || '未知'}</td>
+                        <td>${host.cpuCores || '未知'}</td>
+                        <td>${host.memoryTotal || '未知'}</td>
+                        <td>${cpuUsage}</td>
+                        <td>${memoryUsage}</td>
+                        <td>${alerts}</td>
+            </tr>
+                `;
+            }).join('');
+
+            // 添加主机名称点击事件
+            document.querySelectorAll('.host-name').forEach(link => {
+                link.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const hostId = e.target.dataset.hostId;
+                    await this.showHostDetail(hostId);
+                });
+            });
+        }
+    }
+
+    // 初始化主机详情对话框
+    initHostDetailModal() {
+        const closeBtn = document.getElementById('closeHostDetailModal');
+        const modal = document.getElementById('hostDetailModal');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    }
+
+    // 初始化图表放大对话框
+    initZoomChartModal() {
+        const closeBtn = document.getElementById('closeZoomChartModal');
+        const modal = document.getElementById('zoomChartModal');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // 添加放大按钮点击事件
+        document.querySelectorAll('.zoom-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const chartType = e.currentTarget.dataset.chart;
+                this.showZoomChart(chartType);
+            });
+        });
+    }
+
+    // 显示主机详情
+    async showHostDetail(hostId) {
+        const modal = document.getElementById('hostDetailModal');
+        modal.style.display = 'flex';
+
+        // 清空详情页数据
+        document.getElementById('detailHostName').textContent = '-';
+        document.getElementById('detailHostIP').textContent = '-';
+        document.getElementById('detailHostOS').textContent = '-';
+        document.getElementById('detailUptime').textContent = '-';
+        document.getElementById('detailCPUCores').textContent = '-';
+        document.getElementById('detailMemoryTotal').textContent = '-';
+
+        // 清空图表
+        const cpuChart = echarts.init(document.getElementById('detailCPUChart'));
+        const memoryChart = echarts.init(document.getElementById('detailMemoryChart'));
+        cpuChart.clear();
+        memoryChart.clear();
+
+        try {
+            const settings = await this.getSettings();
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            
+            // 获取主机详细信息
+            const hostDetails = await api.getHostDetail(hostId);
+            
+            // 保存监控项 ID 和系统类型
+            this.currentCpuItemId = hostDetails.cpuItemId;
+            this.currentMemoryItemId = hostDetails.memoryItemId;
+            this.isWindows = hostDetails.isWindows;
+
+            // 更新基本信息
+            document.getElementById('detailHostName').textContent = hostDetails.name;
+            document.getElementById('detailHostIP').textContent = hostDetails.ip;
+            document.getElementById('detailHostOS').textContent = hostDetails.os;
+            document.getElementById('detailUptime').textContent = this.formatUptime(hostDetails.uptime);
+            
+            // 更新硬件信息
+            document.getElementById('detailCPUCores').textContent = hostDetails.cpuCores;
+            document.getElementById('detailMemoryTotal').textContent = hostDetails.memoryTotal;
+
+            // 初始化性能图表
+            this.initPerformanceCharts(hostDetails);
+
+        } catch (error) {
+            console.error('Failed to load host details:', error);
+        }
+    }
+
+    // 添加 formatUptime 方法
+    formatUptime(seconds) {
+        if (!seconds) return '-';
+        
+        const days = Math.floor(seconds / (24 * 60 * 60));
+        const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+        const minutes = Math.floor((seconds % (60 * 60)) / 60);
+        
+        let result = '';
+        if (days > 0) result += `${days}天 `;
+        if (hours > 0) result += `${hours}小时 `;
+        if (minutes > 0) result += `${minutes}分钟`;
+        
+        return result.trim() || '小于1分钟';
+    }
+
+    // 初始化性能图表
+    initPerformanceCharts(hostDetails) {
+        const cpuChart = echarts.init(document.getElementById('detailCPUChart'));
+        const memoryChart = echarts.init(document.getElementById('detailMemoryChart'));
+        
+        const chartOption = {
+            tooltip: {
+                trigger: 'axis',
+                formatter: function(params) {
+                    const value = params[0].value;
+                    const time = params[0].name;
+                    return `${time}<br/>${i18n.t('chart.tooltip.usage').replace('{value}', value)}`;
+                }
+            },
+            grid: {
+                top: 10,
+                right: 10,
+                bottom: 20,
+                left: 40,
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: hostDetails.history.time,
+                axisLabel: {
+                    fontSize: 10
+                }
+            },
+            yAxis: {
+                type: 'value',
+                min: 0,
+                max: 100,
+                splitLine: {
+                    lineStyle: {
+                        color: '#eee'
+                    }
+                }
+            },
+            series: [{
+                name: i18n.t('chart.usage'),
+                type: 'line',
+                smooth: true,
+                areaStyle: {
+                    opacity: 0.3
+                },
+                itemStyle: {
+                    color: '#1a73e8'
+                }
+            }]
+        };
+
+        // 设置CPU图表数据
+        cpuChart.setOption({
+            ...chartOption,
+            series: [{
+                ...chartOption.series[0],
+                data: hostDetails.history.cpu
+            }]
+        });
+
+        // 设置内存图表数据
+        memoryChart.setOption({
+            ...chartOption,
+            series: [{
+                ...chartOption.series[0],
+                data: hostDetails.history.memory
+            }]
+        });
+
+        // 监听窗口大小变化，调整图表大小
+        window.addEventListener('resize', () => {
+            cpuChart.resize();
+            memoryChart.resize();
+        });
+
+        // 重新初始化放大按钮事件
+        this.initZoomChartModal();
+    }
+
+    // 添加 showZoomChart 方法
+    async showZoomChart(chartType) {
+        this.currentChartType = chartType;
+        const modal = document.getElementById('zoomChartModal');
+        modal.style.display = 'flex';
+
+        // 根据图表类型设置标题
+        const titleText = chartType === 'cpu' ? 'CPU利用率' : '内存利用率';
+        document.getElementById('zoomChartTitle').textContent = `性能监控 - ${titleText}`;
+
+        const chart = echarts.init(document.getElementById('zoomChart'));
+        chart.clear();
+
+        try {
+            const settings = await this.getSettings();
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            
+            // 获取监控项ID
+            const itemId = chartType === 'cpu' ? this.currentCpuItemId : this.currentMemoryItemId;
+            
+            // 默认显示24小时数据
+            const now = Math.floor(Date.now() / 1000);
+            const timeFrom = now - 24 * 3600;
+            
+            // 获取历史数据
+            const historyResponse = await api.request('history.get', {
+                itemids: [parseInt(itemId)],
+                time_from: timeFrom,
+                output: 'extend',
+                history: 0,
+                sortfield: 'clock',
+                sortorder: 'ASC'
+            });
+
+            // 处理数据
+            const historyData = historyResponse.map(record => ({
+                time: this.formatHistoryTime(record.clock),
+                value: this.currentChartType === 'cpu' && !this.isWindows ?
+                    (100 - parseFloat(record.value)).toFixed(2) :
+                    parseFloat(record.value).toFixed(2)
+            }));
+
+            // 初始化图表选项
+            const option = {
+                title: {
+                    text: titleText,
+                    left: 'center',
+                    top: 10,
+                    textStyle: {
+                        fontSize: 16,
+                        fontWeight: 'bold'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const value = params[0].value;
+                        const time = params[0].name;
+                        return `${time}<br/>${titleText}: ${value}%`;
+                    }
+                },
+                grid: {
+                    top: 30,
+                    right: 20,
+                    bottom: 30,
+                    left: 50,
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: historyData.map(item => item.time),
+                    axisLabel: {
+                        fontSize: 10,
+                        rotate: 45
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    min: 0,
+                    max: 100,
+                    splitLine: {
+                        lineStyle: {
+                            color: '#eee'
+                        }
+                    }
+                },
+                series: [{
+                    type: 'line',
+                    smooth: true,
+                    areaStyle: {
+                        opacity: 0.3
+                    },
+                    itemStyle: {
+                        color: '#1a73e8'
+                    },
+                    data: historyData.map(item => item.value)
+                }]
+            };
+
+            chart.setOption(option);
+
+            // 添加时间范围按钮事件
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const range = btn.dataset.range;
+                    const timeFrom = this.getTimeFromByRange(range);
+                    const historyResponse = await api.request('history.get', {
+                        itemids: [parseInt(itemId)],
+                        time_from: timeFrom,
+                        time_till: now,
+                        output: 'extend',
+                        history: 0,
+                        sortfield: 'clock',
+                        sortorder: 'ASC'
+                    });
+
+                    const historyData = historyResponse.map(record => ({
+                        time: this.formatHistoryTime(record.clock),
+                        value: this.currentChartType === 'cpu' && !this.isWindows ?
+                            (100 - parseFloat(record.value)).toFixed(2) :
+                            parseFloat(record.value).toFixed(2)
+                    }));
+
+                    chart.setOption({
+                        xAxis: {
+                            data: historyData.map(item => item.time)
+                        },
+                        series: [{
+                            data: historyData.map(item => item.value)
+                        }]
+                    });
+
+                    // 更新按钮状态
+                    document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+
+            // 监听窗口大小变化
+            window.addEventListener('resize', () => {
+                chart.resize();
+            });
+
+        } catch (error) {
+            console.error('Failed to load chart data:', error);
+        }
+    }
+
+    // 添加 getTimeFromByRange 方法
+    getTimeFromByRange(range) {
+        const now = Math.floor(Date.now() / 1000);
+        switch (range) {
+            case '1h':
+                return now - 3600;
+            case '24h':
+                return now - 24 * 3600;
+            case '7d':
+                return now - 7 * 24 * 3600;
+            case '15d':
+                return now - 15 * 24 * 3600;
+            case '30d':
+                return now - 30 * 24 * 3600;
+            default:
+                return now - 24 * 3600;
+        }
+    }
+
+    // 添加 formatHistoryTime 方法
+    formatHistoryTime(timestamp) {
+        return new Date(timestamp * 1000).toLocaleString('zh-CN', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // 初始化筛选功能
+    async initFilters() {
+        const groupSelect = document.getElementById('hostGroupSelect');
+        const hostSelect = document.getElementById('hostSelect');
+
+        // 添加事件监听
+        groupSelect.addEventListener('change', () => this.onGroupChange());
+        hostSelect.addEventListener('change', () => this.onHostChange());
+
+        try {
+            const settings = await this.getSettings();
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            
+            // 获取所有主机组
+            const groups = await api.request('hostgroup.get', {
+                output: ['groupid', 'name'],
+                sortfield: 'name'
+            });
+
+            // 更新主机组下拉框
+            this.hostGroups = groups;
+            groupSelect.innerHTML = `
+                <option value="all">所有主机组</option>
+                ${groups.map(group => `
+                    <option value="${group.groupid}">${group.name}</option>
+                `).join('')}
+            `;
+        } catch (error) {
+            console.error('Failed to load host groups:', error);
+        }
+    }
+
+    // 主机组变更处理
+    async onGroupChange() {
+        const groupSelect = document.getElementById('hostGroupSelect');
+        const hostSelect = document.getElementById('hostSelect');
+        const selectedGroupId = groupSelect.value;
+
+        try {
+            const settings = await this.getSettings();
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+
+            // 获取选中组的主机
+            let hosts;
+            if (selectedGroupId === 'all') {
+                hosts = await api.request('host.get', {
+                    output: ['hostid', 'name', 'status'],
+                    selectInterfaces: ['ip'],
+                    selectInventory: ['os', 'os_full', 'hw_arch'],
+                    selectHostGroups: ['groupid', 'name'],
+                    sortfield: 'name'
+                });
+            } else {
+                hosts = await api.request('host.get', {
+                    output: ['hostid', 'name', 'status'],
+                    selectInterfaces: ['ip'],
+                    selectInventory: ['os', 'os_full', 'hw_arch'],
+                    selectHostGroups: ['groupid', 'name'],
+                    groupids: selectedGroupId,
+                    sortfield: 'name'
+                });
+            }
+
+            // 获取所有监控项
+            const items = await api.request('item.get', {
+                output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue'],
+                groupids: selectedGroupId === 'all' ? undefined : selectedGroupId,
+                search: {
+                    key_: ['system.cpu.util', 'vm.memory.util']
+                },
+                searchByAny: true
+            });
+
+            // 格式化主机数据
+            const formattedHosts = hosts.map(host => {
+                // 找到当前主机的监控项
+                const hostItems = items.filter(item => item.hostid === host.hostid);
+                const cpuItem = hostItems.find(item => item.key_.includes('system.cpu.util'));
+                const memoryItem = hostItems.find(item => item.key_.includes('vm.memory.util'));
+
+                return {
+                    hostid: host.hostid,
+                    name: host.name,
+                    ip: host.interfaces[0]?.ip || '-',
+                    os: host.inventory.os_full || host.inventory.os || '-',
+                    cpuCores: '2', // 这里可以添加获取CPU核心数的逻辑
+                    memoryTotal: '2 GB', // 这里可以添加获取内存总量的逻辑
+                    cpu: cpuItem ? parseFloat(cpuItem.lastvalue).toFixed(2) : '-',
+                    memory: memoryItem ? parseFloat(memoryItem.lastvalue).toFixed(2) : '-',
+                    alerts: 0 // 这里可以添加获取告警数的逻辑
+                };
+            });
+
+            // 更新主机下拉框
+            this.hosts = formattedHosts;
+            hostSelect.innerHTML = `
+                <option value="all">所有主机</option>
+                ${formattedHosts.map(host => `
+                    <option value="${host.hostid}">${host.name}</option>
+                `).join('')}
+            `;
+
+            // 更新主机列表
+            this.renderHosts(formattedHosts);
+
+        } catch (error) {
+            console.error('Failed to load hosts:', error);
+        }
+    }
+
+    // 主机选择变更处理
+    async onHostChange() {
+        const hostSelect = document.getElementById('hostSelect');
+        const selectedHostId = hostSelect.value;
+        const groupSelect = document.getElementById('hostGroupSelect');
+        const selectedGroupId = groupSelect.value;
+
+        try {
+            if (selectedHostId === 'all') {
+                // 获取当前组的所有监控项
+                const settings = await this.getSettings();
+                const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+
+                // 获取监控项，根据当前选中的组进行过滤
+                const items = await api.request('item.get', {
+                    output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue'],
+                    groupids: selectedGroupId === 'all' ? undefined : selectedGroupId,
+                    search: {
+                        key_: ['system.cpu.util', 'vm.memory.util']
+                    },
+                    searchByAny: true
+                });
+
+                // 更新所有主机的监控数据
+                const updatedHosts = this.hosts.map(host => {
+                    const hostItems = items.filter(item => item.hostid === host.hostid);
+                    const cpuItem = hostItems.find(item => item.key_.includes('system.cpu.util'));
+                    const memoryItem = hostItems.find(item => item.key_.includes('vm.memory.util'));
+
+                    return {
+                        ...host,
+                        cpu: cpuItem ? parseFloat(cpuItem.lastvalue).toFixed(2) : '-',
+                        memory: memoryItem ? parseFloat(memoryItem.lastvalue).toFixed(2) : '-'
+                    };
+                });
+
+                // 显示更新后的主机列表
+                this.renderHosts(updatedHosts);
+            } else {
+                const settings = await this.getSettings();
+                const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+
+                // 获取选中主机的监控项
+                const items = await api.request('item.get', {
+                    output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue'],
+                    hostids: selectedHostId,  // 指定主机ID
+                    search: {
+                        key_: ['system.cpu.util', 'vm.memory.util']
+                    },
+                    searchByAny: true
+                });
+
+                // 找到选中的主机
+                const selectedHost = this.hosts.find(host => host.hostid === selectedHostId);
+                if (selectedHost) {
+                    // 更新主机的监控数据
+                    const cpuItem = items.find(item => item.key_.includes('system.cpu.util'));
+                    const memoryItem = items.find(item => item.key_.includes('vm.memory.util'));
+
+                    const updatedHost = {
+                        ...selectedHost,
+                        cpu: cpuItem ? parseFloat(cpuItem.lastvalue).toFixed(2) : '-',
+                        memory: memoryItem ? parseFloat(memoryItem.lastvalue).toFixed(2) : '-'
+                    };
+
+                    // 显示更新后的主机数据
+                    this.renderHosts([updatedHost]);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load host items:', error);
+        }
+    }
+}
+
+// 根据当前页面初始化相应的类
+document.addEventListener('DOMContentLoaded', () => {
+    const currentPath = window.location.pathname;
+    
+    if (currentPath.includes('index.html')) {
+        new ZabbixDashboard();
+    } else if (currentPath.includes('hosts.html')) {
+        new ZabbixHosts();
     }
 });
-
-document.getElementById('closeModal').addEventListener('click', () => {
-    document.getElementById('settingsModal').classList.remove('active');
-});
-
-// 主机列表对话框保持原有行为
-document.getElementById('hostsModal').addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal-overlay')) {
-        document.getElementById('hostsModal').classList.remove('active');
-    }
-}); 
 
 function getProgressBarHTML(value) {
     const percentage = parseFloat(value);
     let colorClass = 'medium';  // 默认绿色
+    let textColor = '#333';     // 默认黑色文字
     
     if (percentage >= 90) {
         colorClass = 'danger';  // 红色
+        textColor = 'white';    // 白色文字
     } else if (percentage >= 80) {
-        colorClass = 'warning';  // 橙色
+        colorClass = 'warning'; // 橙色
+        textColor = 'white';    // 白色文字
     } else if (percentage >= 60) {
-        colorClass = 'low';  // 蓝色
+        colorClass = 'low';     // 蓝色
     }
 
-    // 当百分比小于15%时，添加额外的左边距
-    const textStyle = percentage < 15 ? 'margin-left: 48px;' : '';
+    // 当百分比小于15%时，将文字显示在进度条外部右侧
+    const textPosition = percentage < 15 
+        ? `position: absolute; left: 100%; margin-left: 8px; color: #333;` 
+        : `color: ${textColor}`;
 
     return `
-        <div class="progress-bar">
+        <div class="progress-bar" style="position: relative;">
             <div class="progress-fill ${colorClass}" style="width: ${percentage}%">
-                <span style="${textStyle}">${percentage} %</span>
+                <span style="white-space: nowrap; ${textPosition}">${percentage} %</span>
             </div>
         </div>
     `;

@@ -40,12 +40,10 @@ body {
 }
 
 .header-content {
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 0 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0 1.5rem;
 }
 
 .logo {
@@ -232,24 +230,30 @@ body {
 }
 
 .modal-overlay {
-    position: absolute;
-    inset: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     background: rgba(0, 0, 0, 0.5);
-    animation: fadeIn 0.2s ease-out;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
 }
 
 .modal-content {
-    position: relative;
     background: white;
-    border-radius: var(--radius);
-    width: 80%;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 100%;
     max-width: 1200px;
     height: 80vh;
-    margin: 1rem;
-    box-shadow: var(--shadow-md);
-    animation: slideUp 0.3s ease-out;
+    margin: 20px;
     display: flex;
     flex-direction: column;
+    position: relative;
+    transform: translateY(0);  /* 确保不会被其他transform影响 */
 }
 
 .modal-header {
@@ -642,92 +646,21 @@ body {
 
 /* 主机列表样式 */
 .hosts-list {
-    flex: 1;
-    overflow: auto;
-    margin: -1.5rem;
-    padding: 1.5rem;
+    margin: 20px;
 }
 
 .hosts-list table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed;
 }
 
-.hosts-list thead {
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 1;
-}
-
-.hosts-list th,
-.hosts-list td {
-    padding: 0.75rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--gray-200);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.hosts-list th, .hosts-list td {
+    border: 1px solid #ddd;
+    padding: 8px;
 }
 
 .hosts-list th {
-    padding: 0.75rem;
-    text-align: left;
-    font-weight: 500;
-    color: var(--gray-600);
-    background: var(--gray-100);
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-.hosts-list th:nth-child(1),
-.hosts-list td:nth-child(1) {
-    width: 120px;
-    min-width: 120px;
-    max-width: 120px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.hosts-list th:nth-child(2),
-.hosts-list td:nth-child(2) {
-    width: 120px;
-    min-width: 120px;
-    max-width: 120px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.hosts-list th:nth-child(3),
-.hosts-list td:nth-child(3) {
-    width: 100px;
-    min-width: 100px;
-    max-width: 100px;
-}
-
-.hosts-list th:nth-child(4),
-.hosts-list td:nth-child(4),
-.hosts-list th:nth-child(5),
-.hosts-list td:nth-child(5) {
-    width: 8%;
-}
-
-/* CPU和内存使用率列的宽度 */
-.hosts-list th:nth-child(6),
-.hosts-list td:nth-child(6),
-.hosts-list th:nth-child(7),
-.hosts-list td:nth-child(7) {
-    width: 20%;  /* 增加宽度 */
-    min-width: 180px;  /* 设置最小宽度 */
-}
-
-.hosts-list th:nth-child(8),
-.hosts-list td:nth-child(8) {
-    width: 9%;
+    background-color: #f2f2f2;
 }
 
 /* 可排序的表头样式 */
@@ -884,108 +817,81 @@ body {
 
 .detail-card {
     background: white;
-    border-radius: var(--radius); /* 圆角 */
-    flex-shrink: 0;  /* 防止卡片被压缩 */
+    border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
+    margin-bottom: 16px;
 }
 
 .detail-card-header {
-    padding: 1.75rem 1rem;  /* 减小上下内边距 */
+    padding: 5px;
     border-bottom: 1px solid var(--gray-200);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 500;
-    color: var(--gray-800);
 }
 
-.detail-card-header i {
-    color: var(--primary-color);
+.detail-card-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
 }
 
 .detail-card-body {
-    padding: 0.75rem 1rem;  /* 减小上下内边距 */
+    padding: 20px;
 }
 
 .info-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;  /* 减小网格间距 */
-    margin: -0.25rem 0;  /* 负边距来减少垂直空间 */
+    gap: 20px;
 }
 
 .info-item {
     display: flex;
     flex-direction: column;
-    gap: 0.125rem;  /* 减小标签和值之间的间距 */
+    gap: 8px;
 }
 
 .info-item label {
-    font-size: 0.875rem;
+    font-size: 14px;
     color: var(--gray-600);
-    line-height: 1.2;  /* 减小行高 */
+    font-weight: 500;
 }
 
 .info-item span {
-    font-size: 1rem;
+    font-size: 16px;
     color: var(--gray-800);
-    line-height: 1.2;  /* 减小行高 */
+    font-weight: 600;
 }
 
-.performance-grid {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-    min-height: 0;  /* 重要：允许内容收缩 */
+/* 性能监控图表标题 */
+.chart-header h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
 }
 
-.performance-chart-container {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;  /* 重要：允许内容收缩 */
-}
-
-.chart-title {
-    font-size: 0.875rem;
-    color: var(--gray-600);
-    margin-bottom: 0.5rem;
-}
-
-.performance-chart {
-    flex: 1;
-    min-height: 200px;  /* 设置最小高度 */
-}
-
-.chart-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
+/* 放大按钮样式 */
 .zoom-btn {
     background: none;
     border: none;
-    color: var(--primary-color);
+    color: var(--gray-600);
     cursor: pointer;
-    padding: 4px;
+    padding: 4px 8px;
     border-radius: 4px;
-    transition: background-color 0.2s;
+    transition: all 0.2s;
 }
 
 .zoom-btn:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-}
-
-.zoom-btn i {
-    font-size: 16px;
+    background-color: var(--gray-100);
+    color: var(--gray-800);
 }
 
 .time-range-buttons {
+    margin-bottom: 20px;
     display: flex;
-    gap: 8px;
-    margin: 0 auto;  /* 居中显示 */
+    gap: 10px;
+    justify-content: center;
 }
 
 .time-btn {
@@ -1012,7 +918,8 @@ body {
 
 /* 主机详情对话框样式 */
 #hostDetailModal .modal-content {
-    height: 70vh;
+    height: 80vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
 }
@@ -1020,7 +927,7 @@ body {
 #hostDetailModal .modal-body {
     flex: 1;
     overflow-y: auto;
-    padding: 1.5rem;
+    padding: 20px;
 }
 
 .host-detail {
@@ -1031,14 +938,6 @@ body {
 }
 
 /* 基本信息和硬件信息卡片 */
-.detail-card {
-    background: white;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-sm);
-    flex-shrink: 0;  /* 防止卡片被压缩 */
-}
-
-/* 性能监控卡片 */
 .detail-card:last-child {
     flex: 1;
     display: flex;
@@ -1071,4 +970,124 @@ body {
     flex: 1;
     min-height: 250px;  /* 设置图表最小高度 */
     width: 100%;
+}
+
+.navbar {
+    display: flex;
+    justify-content: center;
+    flex-grow: 1;
+}
+
+.navbar ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+.navbar a {
+    text-decoration: none;
+    color: #007bff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    display: flex; /* 使图标和文本在同一行 */
+    align-items: center; /* 垂直居中对齐 */
+    transition: background-color 0.3s, color 0.3s; /* 添加过渡效果 */
+    font-size: 1rem; /* 设置与 Zabbix Dashboard 一致的字体大小 */
+}
+
+.navbar a i {
+    margin-right: 8px; /* 图标与文本之间的间距 */
+}
+
+.navbar a:hover {
+    background-color: rgba(0, 123, 255, 0.1); /* 悬浮时背景色 */
+    color: #0056b3; /* 悬浮时文字颜色 */
+}
+
+.navbar a.active {
+    background-color: rgba(0, 123, 255, 0.2); /* 选中时背景色 */
+    color: #0056b3; /* 选中时文字颜色 */
+}
+
+/* 主机列表表格样式 */
+.hosts-table {
+    padding: 20px;
+    overflow-x: auto;
+}
+
+.hosts-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.hosts-table th,
+.hosts-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.hosts-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.hosts-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.hosts-table .alert-count {
+    display: inline-block;
+    padding: 2px 8px;
+    background-color: #F56C6C;
+    color: white;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+/* 进度条样式 */
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #f5f5f5;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    transition: width 0.3s ease;
+}
+
+.progress-fill.low { background-color: #409EFF; }
+.progress-fill.medium { background-color: #67C23A; }
+.progress-fill.warning { background-color: #E6A23C; }
+.progress-fill.danger { background-color: #F56C6C; }
+
+/* 图表放大对话框特定样式 */
+#zoomChartModal .modal-content {
+    height: 600px;  /* 设置固定高度 */
+    width: 90vw;
+    max-width: 1200px;
+}
+
+#zoomChartModal .modal-body {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.zoom-chart {
+    flex: 1;
+    min-height: 450px;  /* 确保图表有足够的显示高度 */
 } 

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>主机列表</title>
+    <link href="lib/css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="lib/js/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="js/settings.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+</head>
+<body>
+    <!-- 顶部栏 -->
+    <header class="header">
+        <div class="header-content flex">
+            <div class="flex items-center">
+                <img src="assets/zabbix.png" class="logo" alt="logo">
+                <h1>Zabbix Dashboard</h1>
+            </div>
+            <nav class="navbar">
+                <ul>
+                    <li><a href="index.html"><i class="fas fa-tachometer-alt"></i> 仪表盘</a></li>
+                    <li><a href="hosts.html" class="active"><i class="fas fa-server"></i> 主机列表</a></li>
+                </ul>
+            </nav>
+            <div class="header-actions">
+                <div class="last-refresh">
+                    <span id="lastRefreshTime" data-i18n="settings.messages.lastRefresh"></span>
+                </div>
+                <a href="https://github.com/X-Mars" target="_blank" class="icon-btn">
+                    <i class="fas fa-github"></i>
+                </a>
+                <button id="settingsBtn" class="icon-btn">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+</body>
+</html> 

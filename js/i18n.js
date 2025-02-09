@@ -135,23 +135,28 @@ const translations = {
         // 设置对话框
         'settings': {
             'title': '设置',
-            'apiUrl': 'Zabbix API 地址',
-            'apiToken': 'API Token',
-            'refreshInterval': '刷新间隔',
-            'testConnection': '测试连接',
-            'saveSettings': '保存设置',
+            'apiUrl': 'API URL:',
+            'apiToken': 'API Token:',
+            'refreshInterval': '刷新间隔:',
             'intervals': {
-                '5s': '5 秒',
-                '30s': '30 秒',
-                '1m': '1 分钟',
-                '5m': '5 分钟'
+                '5s': '5秒',
+                '1m': '1分钟',
+                '5m': '5分钟',
+                '10m': '10分钟',
+                '30m': '30分钟'
+            },
+            'buttons': {
+                'test': '测试连接',
+                'save': '保存设置'
             },
             'messages': {
-                'testing': '测试中...',
-                'connectionSuccess': '连接成功！',
-                'connectionFailed': '连接失败：{error}',
-                'loadingFailed': '加载失败',
-                'lastRefresh': '最后刷新：{time}'
+                'testing': '正在测试连接...',
+                'connectionSuccess': '连接成功',
+                'connectionFailed': '连接失败',
+                'apiUrlAutoComplete': '已自动补充 api_jsonrpc.php 路径',
+                'savingSettings': '正在保存设置...',
+                'settingsSaved': '设置已保存',
+                'settingsSaveFailed': '保存设置失败'
             }
         }
     },
@@ -291,23 +296,28 @@ const translations = {
         // Settings dialog
         'settings': {
             'title': 'Settings',
-            'apiUrl': 'Zabbix API URL',
-            'apiToken': 'API Token',
-            'refreshInterval': 'Refresh Interval',
-            'testConnection': 'Test Connection',
-            'saveSettings': 'Save Settings',
+            'apiUrl': 'API URL:',
+            'apiToken': 'API Token:',
+            'refreshInterval': 'Refresh Interval:',
             'intervals': {
                 '5s': '5 seconds',
-                '30s': '30 seconds',
                 '1m': '1 minute',
-                '5m': '5 minutes'
+                '5m': '5 minutes',
+                '10m': '10 minutes',
+                '30m': '30 minutes'
+            },
+            'buttons': {
+                'test': 'Test Connection',
+                'save': 'Save Settings'
             },
             'messages': {
-                'testing': 'Testing...',
-                'connectionSuccess': 'Connection successful!',
-                'connectionFailed': 'Connection failed: {error}',
-                'loadingFailed': 'Loading failed',
-                'lastRefresh': 'Last refresh: {time}'
+                'testing': 'Testing connection...',
+                'connectionSuccess': 'Connection successful',
+                'connectionFailed': 'Connection failed',
+                'apiUrlAutoComplete': 'Automatically added api_jsonrpc.php path',
+                'savingSettings': 'Saving settings...',
+                'settingsSaved': 'Settings saved',
+                'settingsSaveFailed': 'Failed to save settings'
             }
         }
     }

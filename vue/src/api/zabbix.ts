@@ -50,12 +50,14 @@ export default class ZabbixAPI {
   }
 
   async getAlerts() {
+    const oneWeekAgo = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60; // 当前时间减去一周的秒数
+
     return request.post<Alert[]>('', {
-      method: 'problem.get',
+      method: 'event.get',
       params: {
         output: ['eventid', 'objectid', 'name', 'severity', 'clock'],
-        recent: true,
-        sortfield: 'eventid',
+        time_from: oneWeekAgo,
+        sortfield: 'clock',
         sortorder: 'DESC',
         limit: 100
       }

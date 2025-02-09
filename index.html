@@ -20,11 +20,17 @@
     <div class="dashboard">
         <!-- 顶部栏 -->
         <header class="header">
-            <div class="header-content">
+            <div class="header-content flex">
                 <div class="flex items-center">
                     <img src="assets/zabbix.png" class="logo" alt="logo">
                     <h1>Zabbix Dashboard</h1>
                 </div>
+                <nav class="navbar">
+                    <ul>
+                        <li><a href="index.html" class="active"><i class="fas fa-tachometer-alt"></i> 仪表盘</a></li>
+                        <li><a href="hosts.html"><i class="fas fa-server"></i> 主机列表</a></li>
+                    </ul>
+                </nav>
                 <div class="header-actions">
                     <div class="last-refresh">
                         <span id="lastRefreshTime" data-i18n="settings.messages.lastRefresh"></span>
@@ -35,9 +41,7 @@
                         </svg>
                     </a>
                     <button id="settingsBtn" class="icon-btn">
-                        <svg viewBox="0 0 24 24" width="24" height="24" class="icon">
-                            <path fill="currentColor" d="M24 13.616v-3.232l-2.869-1.02c-.198-.687-.472-1.342-.811-1.955l1.308-2.751-2.285-2.285-2.751 1.307c-.613-.339-1.268-.613-1.955-.811l-1.02-2.869h-3.232l-1.021 2.869c-.687.198-1.342.472-1.955.811l-2.751-1.308-2.285 2.285 1.308 2.752c-.339.613-.614 1.268-.811 1.955l-2.869 1.02v3.232l2.869 1.02c.198.687.472 1.342.811 1.955l-1.308 2.751 2.285 2.286 2.751-1.308c.613.339 1.268.613 1.955.811l1.021 2.869h3.232l1.02-2.869c.687-.198 1.342-.472 1.955-.811l2.751 1.308 2.285-2.286-1.308-2.751c.339-.613.614-1.268.811-1.955l2.869-1.02zm-12 2.384c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z"/>
-                        </svg>
+                        <i class="fas fa-cog"></i>
                     </button>
                 </div>
             </div>
