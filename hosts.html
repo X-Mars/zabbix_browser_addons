@@ -42,17 +42,8 @@
         </div>
     </header>
 
-    <!-- 在主机列表表格前添加筛选区域 -->
-    <div class="filter-section">
-        <div class="filter-group">
-            <select id="hostGroupSelect" class="filter-select">
-                <option value="all">所有主机组</option>
-            </select>
-            <select id="hostSelect" class="filter-select">
-                <option value="all">所有主机</option>
-            </select>
-        </div>
-    </div>
+    <!-- 设置对话框容器 -->
+    <div id="settingsContainer"></div>
 
     <!-- 主机列表表格 -->
     <div class="hosts-table">
@@ -106,27 +97,16 @@
                                     <span id="detailHostOS">-</span>
                                 </div>
                                 <div class="info-item">
-                                    <label data-i18n="time.runningTime">运行时间</label>
-                                    <span id="detailUptime">-</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 硬件信息 -->
-                    <div class="detail-card">
-                        <div class="detail-card-header">
-                            <h3 data-i18n="hardwareInfo">硬件信息</h3>
-                        </div>
-                        <div class="detail-card-body">
-                            <div class="info-grid">
-                                <div class="info-item">
                                     <label data-i18n="cpuCores">CPU核心数</label>
                                     <span id="detailCPUCores">-</span>
                                 </div>
                                 <div class="info-item">
                                     <label data-i18n="memoryTotal">内存总量</label>
                                     <span id="detailMemoryTotal">-</span>
+                                </div>
+                                <div class="info-item">
+                                    <label data-i18n="time.runningTime">运行时间</label>
+                                    <span id="detailUptime">-</span>
                                 </div>
                             </div>
                         </div>
@@ -183,6 +163,34 @@
                     <button class="time-btn" data-range="30d" data-i18n="timeButtons.30d">30天</button>
                 </div>
                 <div id="zoomChart" class="zoom-chart"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 告警详情对话框 -->
+    <div id="alertDetailModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="width: 80%; max-width: 800px;">
+            <div class="modal-header">
+                <h2>告警详情</h2>
+                <button id="closeAlertDetailModal" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <table class="alert-table">
+                    <thead>
+                        <tr>
+                            <th>告警名称</th>
+                            <th>级别</th>
+                            <th>监控值</th>
+                            <th>开始时间</th>
+                            <th>持续时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alertsList">
+                        <!-- 告警列表将通过 JavaScript 动态添加 -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

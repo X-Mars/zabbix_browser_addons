@@ -102,21 +102,34 @@
         </div>
         <div class="modal-body">
             <div class="form-group">
-                <label for="apiUrl" data-i18n="settings.apiUrl">API URL:</label>
+                <label for="apiUrl" data-i18n="settings.apiUrl">ZABBIX API URL:</label>
                 <input type="text" id="apiUrl" class="form-control" placeholder="http://your-zabbix-server/api_jsonrpc.php">
             </div>
             <div class="form-group">
-                <label for="apiToken" data-i18n="settings.apiToken">API Token:</label>
+                <label for="apiToken" data-i18n="settings.apiToken">ZABBIX API TOKEN:</label>
                 <input type="password" id="apiToken" class="form-control">
             </div>
             <div class="form-group">
-                <label for="refreshInterval" data-i18n="settings.refreshInterval">刷新间隔 (毫秒):</label>
-                <input type="number" id="refreshInterval" class="form-control" value="300000">
+                <label data-i18n="settings.refreshInterval">刷新间隔</label>
+                <select id="refreshInterval" class="form-select">
+                    <option value="5000">5秒</option>
+                    <option value="30000">30秒</option>
+                    <option value="60000">1分钟</option>
+                    <option value="300000" selected>5分钟</option>
+                    <option value="600000">10分钟</option>
+                    <option value="1800000">30分钟</option>
+                </select>
             </div>
         </div>
         <div class="modal-footer">
-            <button id="testConnection" class="btn btn-secondary" data-i18n="settings.buttons.test">测试连接</button>
-            <button id="saveSettings" class="btn btn-primary" data-i18n="settings.buttons.save">保存设置</button>
+            <button id="testConnection" class="btn btn-secondary">
+                <i class="fas fa-plug"></i>
+                <span data-i18n="settings.buttons.test">测试连接</span>
+            </button>
+            <button id="saveSettings" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                <span data-i18n="settings.buttons.save">保存设置</span>
+            </button>
         </div>
     </div>
 </body>

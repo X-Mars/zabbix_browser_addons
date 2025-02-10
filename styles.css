@@ -248,7 +248,7 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 1200px;
-    height: 80vh;
+    height: 70vh;
     margin: 20px;
     display: flex;
     flex-direction: column;
@@ -257,12 +257,12 @@ body {
 }
 
 .modal-header {
-    padding: 1.5rem;
     border-bottom: 1px solid var(--gray-200);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
+    padding: 0.5rem 1.5rem;
 }
 
 .modal-header h2 {
@@ -294,7 +294,7 @@ body {
 }
 
 .modal-footer {
-    padding: 1.5rem;
+    padding: 0.5rem;
     background: var(--gray-100);
     border-top: 1px solid var(--gray-200);
     border-radius: 0 0 var(--radius) var(--radius);
@@ -841,7 +841,7 @@ body {
 
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
 }
 
@@ -849,18 +849,40 @@ body {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-width: 0;  /* 防止内容溢出 */
+    position: relative;
 }
 
 .info-item label {
-    font-size: 14px;
+    font-size: 0.875rem;
     color: var(--gray-600);
-    font-weight: 500;
 }
 
 .info-item span {
-    font-size: 16px;
+    font-size: 1rem;
     color: var(--gray-800);
-    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: default;
+}
+
+/* 自定义 tooltip */
+.info-item span[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 0;
+    top: 100%;
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: normal;
+    max-width: 300px;
+    word-wrap: break-word;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 /* 性能监控图表标题 */
@@ -1090,4 +1112,176 @@ body {
 .zoom-chart {
     flex: 1;
     min-height: 450px;  /* 确保图表有足够的显示高度 */
-} 
+}
+
+#settingsContainer .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#settingsContainer .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1000;
+}
+
+#settingsContainer .modal-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 560px;
+    height: 500px;
+    padding: 24px;
+    position: relative;
+    z-index: 1001;
+}
+
+#settingsContainer .form-group {
+    position: relative;
+    z-index: 1002;
+}
+
+#settingsContainer input,
+#settingsContainer select,
+#settingsContainer button {
+    position: relative;
+    z-index: 1002;
+}
+
+#settingsContainer select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+    cursor: pointer;
+    appearance: none;  /* 移除默认的下拉箭头 */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8.825L1.175 4 2.238 2.938 6 6.7l3.763-3.763L10.825 4z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+}
+
+#settingsContainer select:hover {
+    border-color: #409EFF;
+}
+
+#settingsContainer select:focus {
+    border-color: #409EFF;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(64,158,255,0.2);
+}
+
+#settingsContainer button {
+    position: relative;
+    z-index: 1002;
+}
+
+#settingsContainer .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+#settingsContainer .btn-secondary {
+    background-color: #f4f4f5;
+    color: #606266;
+    border: 1px solid #dcdfe6;
+}
+
+#settingsContainer .btn-secondary:hover {
+    background-color: #ecf5ff;
+    color: #409eff;
+    border-color: #c6e2ff;
+}
+
+#settingsContainer .btn-secondary:active {
+    background-color: #e6f0fc;
+    border-color: #b3d8ff;
+}
+
+#settingsContainer .btn-primary {
+    background-color: #409eff;
+    color: white;
+    border: 1px solid #409eff;
+}
+
+#settingsContainer .btn-primary:hover {
+    background-color: #66b1ff;
+    border-color: #66b1ff;
+}
+
+#settingsContainer .btn-primary:active {
+    background-color: #3a8ee6;
+    border-color: #3a8ee6;
+}
+
+#settingsContainer .btn:disabled {
+    background-color: #f5f7fa;
+    border-color: #e4e7ed;
+    color: #c0c4cc;
+    cursor: not-allowed;
+}
+
+#settingsContainer .btn i {
+    font-size: 14px;
+}
+
+#settingsContainer .modal-body {
+    height: calc(100% - 140px);  /* 减去header和footer的高度 */
+    overflow-y: auto;
+}
+
+/* 告警表格样式 */
+.alert-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.alert-table th,
+.alert-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.alert-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+/* 告警级别样式 */
+.severity {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+}
+
+.severity-not-classified { background-color: #97AAB3; }
+.severity-information { background-color: #7499FF; }
+.severity-warning { background-color: #FFC859; }
+.severity-average { background-color: #FFA059; }
+.severity-high { background-color: #E97659; }
+.severity-disaster { background-color: #E45959; } 

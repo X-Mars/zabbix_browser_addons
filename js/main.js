@@ -38,8 +38,8 @@ class Header {
     initSettingsButton() {
         if (this.settingsBtn) {
             this.settingsBtn.addEventListener('click', () => {
-                // 显示设置对话框
-                window.settingsManager.showDialog();
+                // 使用 settingsManager 显示设置对话框
+                window.settingsManager?.showDialog();
             });
         }
     }
@@ -140,7 +140,8 @@ class ZabbixDashboard {
     async init() {
         const settings = await this.getSettings();
         if (!settings.apiUrl || !settings.apiToken) {
-            document.getElementById('settingsModal').classList.add('active');
+            // 使用 settingsManager 显示设置对话框
+            window.settingsManager?.showDialog();
             return;
         }
         
@@ -306,18 +307,27 @@ class ZabbixDashboard {
         modal.classList.add('active');
 
         // 清空详情页数据
-        document.getElementById('detailHostName').textContent = '-';
-        document.getElementById('detailHostIP').textContent = '-';
-        document.getElementById('detailHostOS').textContent = '-';
-        document.getElementById('detailUptime').textContent = '-';
-        document.getElementById('detailCPUCores').textContent = '-';
-        document.getElementById('detailMemoryTotal').textContent = '-';
+        const setElementContent = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                element.setAttribute('title', value); // 添加 title 属性用于悬浮展示
+            }
+        };
 
         // 清空图表
         const cpuChart = echarts.init(document.getElementById('detailCPUChart'));
         const memoryChart = echarts.init(document.getElementById('detailMemoryChart'));
         cpuChart.clear();
         memoryChart.clear();
+
+        // 清空详情页数据时设置默认值和 title
+        setElementContent('detailHostName', '-');
+        setElementContent('detailHostIP', '-');
+        setElementContent('detailHostOS', '-');
+        setElementContent('detailUptime', '-');
+        setElementContent('detailCPUCores', '-');
+        setElementContent('detailMemoryTotal', '-');
 
         try {
             const settings = await this.getSettings();
@@ -332,14 +342,14 @@ class ZabbixDashboard {
             this.isWindows = hostDetails.isWindows;
 
             // 更新基本信息
-            document.getElementById('detailHostName').textContent = hostDetails.name;
-            document.getElementById('detailHostIP').textContent = hostDetails.ip;
-            document.getElementById('detailHostOS').textContent = hostDetails.os;
-            document.getElementById('detailUptime').textContent = this.formatUptime(hostDetails.uptime);
+            setElementContent('detailHostName', hostDetails.name);
+            setElementContent('detailHostIP', hostDetails.ip);
+            setElementContent('detailHostOS', hostDetails.os);
+            setElementContent('detailUptime', this.formatUptime(hostDetails.uptime));
             
             // 更新硬件信息
-            document.getElementById('detailCPUCores').textContent = hostDetails.cpuCores;
-            document.getElementById('detailMemoryTotal').textContent = hostDetails.memoryTotal;
+            setElementContent('detailCPUCores', hostDetails.cpuCores);
+            setElementContent('detailMemoryTotal', hostDetails.memoryTotal);
 
             // 初始化性能图表
             this.initPerformanceCharts(hostDetails);
@@ -698,44 +708,91 @@ class ZabbixDashboard {
 class ZabbixHosts {
     constructor() {
         this.header = new Header();
-        this.refreshManager = new RefreshManager(() => this.loadHosts());
+        this.hosts = [];                // 存储所有主机数据
+        this.refreshManager = new RefreshManager(() => this.refreshHostsList());
         this.init();
-        this.initHostDetailModal();
-        this.initZoomChartModal();
-        this.currentItemId = null;
-        this.currentChartType = null;
-        this.currentCpuItemId = null;
-        this.currentMemoryItemId = null;
-        this.isWindows = false;
-        this.hostGroups = [];  // 存储主机组数据
-        this.hosts = [];       // 存储所有主机数据
-        this.initFilters();    // 初始化筛选功能
+        this.initModals();  // 初始化主机详情和图表放大模态框
+        this.initAlertDetailModal();  // 初始化告警详情模态框
+    }
+
+    // 添加初始化模态框方法
+    initModals() {
+        // 初始化主机详情模态框
+        const hostDetailModal = document.getElementById('hostDetailModal');
+        const closeHostDetailBtn = document.getElementById('closeHostDetailModal');
+
+        if (closeHostDetailBtn) {
+            closeHostDetailBtn.addEventListener('click', () => {
+                hostDetailModal.style.display = 'none';
+            });
+        }
+
+        // 点击模态框遮罩层关闭
+        if (hostDetailModal) {
+            hostDetailModal.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    hostDetailModal.style.display = 'none';
+                }
+            });
+        }
+
+        // 初始化图表放大模态框
+        const zoomChartModal = document.getElementById('zoomChartModal');
+        const closeZoomChartBtn = document.getElementById('closeZoomChartModal');
+
+        if (closeZoomChartBtn) {
+            closeZoomChartBtn.addEventListener('click', () => {
+                zoomChartModal.style.display = 'none';
+            });
+        }
+
+        // 点击模态框遮罩层关闭
+        if (zoomChartModal) {
+            zoomChartModal.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    zoomChartModal.style.display = 'none';
+                }
+            });
+        }
     }
 
     async init() {
-        await this.loadHosts();
-        await this.refreshManager.start();
+        try {
+            await this.loadHosts();
+            await this.refreshManager.start();
+        } catch (error) {
+            console.error('Failed to initialize hosts page:', error);
+        }
     }
 
     async loadHosts() {
+        const settings = await this.getSettings();
+        if (!settings.apiUrl || !settings.apiToken) {
+            window.settingsManager?.showDialog();
+            return;
+        }
+
         try {
-            const settings = await this.getSettings();
-            if (!settings.apiUrl || !settings.apiToken) {
-                if (this.header.settingsModal) {
-                    this.header.settingsModal.classList.add('active');
-                }
-                return;
-            }
             const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
-            
-            // 使用 getHostsDetails 替代 getHosts
-            const hosts = await api.getHostsDetails();
-            
+            const hosts = await api.getHosts();
+            this.hosts = hosts;
             this.renderHosts(hosts);
             // 更新最后刷新时间
-            this.header.updateLastRefreshTime();
+            const lastRefreshTimeElement = document.getElementById('lastRefreshTime');
+            if (lastRefreshTimeElement) {
+                const now = new Date();
+                lastRefreshTimeElement.textContent = `最后刷新时间: ${now.toLocaleString('zh-CN')}`;
+            }
         } catch (error) {
-            console.error('加载主机列表失败:', error);
+            console.error('Failed to load hosts:', error);
+        }
+    }
+
+    async refreshHostsList() {
+        try {
+            await this.loadHosts();
+        } catch (error) {
+            console.error('Failed to refresh hosts list:', error);
         }
     }
 
@@ -744,9 +801,9 @@ class ZabbixHosts {
             chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
-            } else {
+                } else {
                     resolve(result);
-            }
+                }
             });
         });
     }
@@ -760,7 +817,9 @@ class ZabbixHosts {
                 // 格式化内存使用率
                 const memoryUsage = host.memory ? getProgressBarHTML(host.memory) : '未知';
                 // 格式化告警信息
-                const alerts = host.alerts ? `<span class="alert-count">${host.alerts}</span>` : '无';
+                const alerts = host.alerts ? 
+                    `<span class="alert-count" style="cursor: pointer" data-host-id="${host.hostid}">${host.alerts}</span>` : 
+                    '无';
 
                 return `
                     <tr>
@@ -776,87 +835,58 @@ class ZabbixHosts {
                         <td>${cpuUsage}</td>
                         <td>${memoryUsage}</td>
                         <td>${alerts}</td>
-            </tr>
+                    </tr>
                 `;
             }).join('');
 
             // 添加主机名称点击事件
-            document.querySelectorAll('.host-name').forEach(link => {
-                link.addEventListener('click', async (e) => {
+            tbody.querySelectorAll('.host-name').forEach(link => {
+                link.addEventListener('click', (e) => {
                     e.preventDefault();
                     const hostId = e.target.dataset.hostId;
-                    await this.showHostDetail(hostId);
+                    this.showHostDetail(hostId);
+                });
+            });
+
+            // 添加告警点击事件
+            tbody.querySelectorAll('.alert-count').forEach(alert => {
+                alert.addEventListener('click', (e) => {
+                    const hostId = e.currentTarget.dataset.hostId;
+                    this.showAlertDetail(hostId);
                 });
             });
         }
     }
 
-    // 初始化主机详情对话框
-    initHostDetailModal() {
-        const closeBtn = document.getElementById('closeHostDetailModal');
-        const modal = document.getElementById('hostDetailModal');
-
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                modal.style.display = 'none';
-            });
-        }
-
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        }
-    }
-
-    // 初始化图表放大对话框
-    initZoomChartModal() {
-        const closeBtn = document.getElementById('closeZoomChartModal');
-        const modal = document.getElementById('zoomChartModal');
-
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                modal.style.display = 'none';
-            });
-        }
-
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        }
-
-        // 添加放大按钮点击事件
-        document.querySelectorAll('.zoom-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const chartType = e.currentTarget.dataset.chart;
-                this.showZoomChart(chartType);
-            });
-        });
-    }
-
     // 显示主机详情
     async showHostDetail(hostId) {
         const modal = document.getElementById('hostDetailModal');
-        modal.style.display = 'flex';
+        if (!modal) return;
+
+        modal.style.display = 'flex';  // 使用 flex 而不是 block
 
         // 清空详情页数据
-        document.getElementById('detailHostName').textContent = '-';
-        document.getElementById('detailHostIP').textContent = '-';
-        document.getElementById('detailHostOS').textContent = '-';
-        document.getElementById('detailUptime').textContent = '-';
-        document.getElementById('detailCPUCores').textContent = '-';
-        document.getElementById('detailMemoryTotal').textContent = '-';
+        const setElementContent = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+                element.setAttribute('title', value); // 添加 title 属性用于悬浮展示
+            }
+        };
 
         // 清空图表
         const cpuChart = echarts.init(document.getElementById('detailCPUChart'));
         const memoryChart = echarts.init(document.getElementById('detailMemoryChart'));
         cpuChart.clear();
         memoryChart.clear();
+
+        // 清空详情页数据时设置默认值和 title
+        setElementContent('detailHostName', '-');
+        setElementContent('detailHostIP', '-');
+        setElementContent('detailHostOS', '-');
+        setElementContent('detailUptime', '-');
+        setElementContent('detailCPUCores', '-');
+        setElementContent('detailMemoryTotal', '-');
 
         try {
             const settings = await this.getSettings();
@@ -871,14 +901,14 @@ class ZabbixHosts {
             this.isWindows = hostDetails.isWindows;
 
             // 更新基本信息
-            document.getElementById('detailHostName').textContent = hostDetails.name;
-            document.getElementById('detailHostIP').textContent = hostDetails.ip;
-            document.getElementById('detailHostOS').textContent = hostDetails.os;
-            document.getElementById('detailUptime').textContent = this.formatUptime(hostDetails.uptime);
+            setElementContent('detailHostName', hostDetails.name);
+            setElementContent('detailHostIP', hostDetails.ip);
+            setElementContent('detailHostOS', hostDetails.os);
+            setElementContent('detailUptime', this.formatUptime(hostDetails.uptime));
             
             // 更新硬件信息
-            document.getElementById('detailCPUCores').textContent = hostDetails.cpuCores;
-            document.getElementById('detailMemoryTotal').textContent = hostDetails.memoryTotal;
+            setElementContent('detailCPUCores', hostDetails.cpuCores);
+            setElementContent('detailMemoryTotal', hostDetails.memoryTotal);
 
             // 初始化性能图表
             this.initPerformanceCharts(hostDetails);
@@ -984,7 +1014,35 @@ class ZabbixHosts {
         this.initZoomChartModal();
     }
 
-    // 添加 showZoomChart 方法
+    // 初始化图表放大对话框
+    initZoomChartModal() {
+        const closeBtn = document.getElementById('closeZoomChartModal');
+        const modal = document.getElementById('zoomChartModal');
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        // 添加放大按钮点击事件
+        document.querySelectorAll('.zoom-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const chartType = e.currentTarget.dataset.chart;
+                this.showZoomChart(chartType);
+            });
+        });
+    }
+
+    // 显示放大图表
     async showZoomChart(chartType) {
         this.currentChartType = chartType;
         const modal = document.getElementById('zoomChartModal');
@@ -1162,196 +1220,68 @@ class ZabbixHosts {
         });
     }
 
-    // 初始化筛选功能
-    async initFilters() {
-        const groupSelect = document.getElementById('hostGroupSelect');
-        const hostSelect = document.getElementById('hostSelect');
-
-        // 添加事件监听
-        groupSelect.addEventListener('change', () => this.onGroupChange());
-        hostSelect.addEventListener('change', () => this.onHostChange());
-
+    async showAlertDetail(hostId) {
+        const modal = document.getElementById('alertDetailModal');
+        const tbody = document.getElementById('alertsList');
+        
+        modal.style.display = 'flex';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">加载中...</td></tr>';
+        
         try {
             const settings = await this.getSettings();
             const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const alerts = await api.getHostAlerts(hostId);
             
-            // 获取所有主机组
-            const groups = await api.request('hostgroup.get', {
-                output: ['groupid', 'name'],
-                sortfield: 'name'
-            });
-
-            // 更新主机组下拉框
-            this.hostGroups = groups;
-            groupSelect.innerHTML = `
-                <option value="all">所有主机组</option>
-                ${groups.map(group => `
-                    <option value="${group.groupid}">${group.name}</option>
-                `).join('')}
-            `;
-        } catch (error) {
-            console.error('Failed to load host groups:', error);
-        }
-    }
-
-    // 主机组变更处理
-    async onGroupChange() {
-        const groupSelect = document.getElementById('hostGroupSelect');
-        const hostSelect = document.getElementById('hostSelect');
-        const selectedGroupId = groupSelect.value;
-
-        try {
-            const settings = await this.getSettings();
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
-
-            // 获取选中组的主机
-            let hosts;
-            if (selectedGroupId === 'all') {
-                hosts = await api.request('host.get', {
-                    output: ['hostid', 'name', 'status'],
-                    selectInterfaces: ['ip'],
-                    selectInventory: ['os', 'os_full', 'hw_arch'],
-                    selectHostGroups: ['groupid', 'name'],
-                    sortfield: 'name'
-                });
-            } else {
-                hosts = await api.request('host.get', {
-                    output: ['hostid', 'name', 'status'],
-                    selectInterfaces: ['ip'],
-                    selectInventory: ['os', 'os_full', 'hw_arch'],
-                    selectHostGroups: ['groupid', 'name'],
-                    groupids: selectedGroupId,
-                    sortfield: 'name'
-                });
+            if (alerts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">暂无告警</td></tr>';
+                return;
             }
-
-            // 获取所有监控项
-            const items = await api.request('item.get', {
-                output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue'],
-                groupids: selectedGroupId === 'all' ? undefined : selectedGroupId,
-                search: {
-                    key_: ['system.cpu.util', 'vm.memory.util']
-                },
-                searchByAny: true
-            });
-
-            // 格式化主机数据
-            const formattedHosts = hosts.map(host => {
-                // 找到当前主机的监控项
-                const hostItems = items.filter(item => item.hostid === host.hostid);
-                const cpuItem = hostItems.find(item => item.key_.includes('system.cpu.util'));
-                const memoryItem = hostItems.find(item => item.key_.includes('vm.memory.util'));
-
-                return {
-                    hostid: host.hostid,
-                    name: host.name,
-                    ip: host.interfaces[0]?.ip || '-',
-                    os: host.inventory.os_full || host.inventory.os || '-',
-                    cpuCores: '2', // 这里可以添加获取CPU核心数的逻辑
-                    memoryTotal: '2 GB', // 这里可以添加获取内存总量的逻辑
-                    cpu: cpuItem ? parseFloat(cpuItem.lastvalue).toFixed(2) : '-',
-                    memory: memoryItem ? parseFloat(memoryItem.lastvalue).toFixed(2) : '-',
-                    alerts: 0 // 这里可以添加获取告警数的逻辑
-                };
-            });
-
-            // 更新主机下拉框
-            this.hosts = formattedHosts;
-            hostSelect.innerHTML = `
-                <option value="all">所有主机</option>
-                ${formattedHosts.map(host => `
-                    <option value="${host.hostid}">${host.name}</option>
-                `).join('')}
-            `;
-
-            // 更新主机列表
-            this.renderHosts(formattedHosts);
-
+            
+            tbody.innerHTML = alerts.map(alert => `
+                <tr>
+                    <td>${alert.name}</td>
+                    <td><span class="severity ${alert.severity.class}">${alert.severity.name}</span></td>
+                    <td>${alert.value}</td>
+                    <td>${alert.startTime}</td>
+                    <td>${alert.duration}</td>
+                </tr>
+            `).join('');
+            
         } catch (error) {
-            console.error('Failed to load hosts:', error);
+            console.error('Failed to load alerts:', error);
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">加载失败</td></tr>';
         }
     }
 
-    // 主机选择变更处理
-    async onHostChange() {
-        const hostSelect = document.getElementById('hostSelect');
-        const selectedHostId = hostSelect.value;
-        const groupSelect = document.getElementById('hostGroupSelect');
-        const selectedGroupId = groupSelect.value;
-
-        try {
-            if (selectedHostId === 'all') {
-                // 获取当前组的所有监控项
-                const settings = await this.getSettings();
-                const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
-
-                // 获取监控项，根据当前选中的组进行过滤
-                const items = await api.request('item.get', {
-                    output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue'],
-                    groupids: selectedGroupId === 'all' ? undefined : selectedGroupId,
-                    search: {
-                        key_: ['system.cpu.util', 'vm.memory.util']
-                    },
-                    searchByAny: true
-                });
-
-                // 更新所有主机的监控数据
-                const updatedHosts = this.hosts.map(host => {
-                    const hostItems = items.filter(item => item.hostid === host.hostid);
-                    const cpuItem = hostItems.find(item => item.key_.includes('system.cpu.util'));
-                    const memoryItem = hostItems.find(item => item.key_.includes('vm.memory.util'));
-
-                    return {
-                        ...host,
-                        cpu: cpuItem ? parseFloat(cpuItem.lastvalue).toFixed(2) : '-',
-                        memory: memoryItem ? parseFloat(memoryItem.lastvalue).toFixed(2) : '-'
-                    };
-                });
-
-                // 显示更新后的主机列表
-                this.renderHosts(updatedHosts);
-            } else {
-                const settings = await this.getSettings();
-                const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
-
-                // 获取选中主机的监控项
-                const items = await api.request('item.get', {
-                    output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue'],
-                    hostids: selectedHostId,  // 指定主机ID
-                    search: {
-                        key_: ['system.cpu.util', 'vm.memory.util']
-                    },
-                    searchByAny: true
-                });
-
-                // 找到选中的主机
-                const selectedHost = this.hosts.find(host => host.hostid === selectedHostId);
-                if (selectedHost) {
-                    // 更新主机的监控数据
-                    const cpuItem = items.find(item => item.key_.includes('system.cpu.util'));
-                    const memoryItem = items.find(item => item.key_.includes('vm.memory.util'));
-
-                    const updatedHost = {
-                        ...selectedHost,
-                        cpu: cpuItem ? parseFloat(cpuItem.lastvalue).toFixed(2) : '-',
-                        memory: memoryItem ? parseFloat(memoryItem.lastvalue).toFixed(2) : '-'
-                    };
-
-                    // 显示更新后的主机数据
-                    this.renderHosts([updatedHost]);
+    initAlertDetailModal() {
+        const modal = document.getElementById('alertDetailModal');
+        const closeBtn = document.getElementById('closeAlertDetailModal');
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+        
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target.classList.contains('modal-overlay')) {
+                    modal.style.display = 'none';
                 }
-            }
-        } catch (error) {
-            console.error('Failed to load host items:', error);
+            });
         }
     }
 }
 
-// 根据当前页面初始化相应的类
+// 确保在 DOM 加载完成后再初始化
 document.addEventListener('DOMContentLoaded', () => {
-    const currentPath = window.location.pathname;
+    // 确保 settingsManager 已经初始化
+    if (!window.settingsManager) {
+        window.settingsManager = new Settings();
+    }
     
-    if (currentPath.includes('index.html')) {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('index.html') || currentPath === '/') {
         new ZabbixDashboard();
     } else if (currentPath.includes('hosts.html')) {
         new ZabbixHosts();

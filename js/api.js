@@ -68,13 +68,50 @@ class ZabbixAPI {
     }
 
     async getHosts() {
-        return await this.request('host.get', {
-            output: ['hostid', 'host', 'name', 'status'],
-            selectInterfaces: ['ip'],
-            filter: {
-                status: 0
-            }
-        });
+        try {
+            // 获取主机基本信息
+            const hostsResponse = await this.request('host.get', {
+                output: ['hostid', 'host', 'name', 'status'],
+                selectInterfaces: ['ip'],
+                selectInventory: ['os'],
+                selectItems: ['itemid', 'name', 'key_', 'lastvalue'],
+                selectTriggers: ['triggerid', 'description', 'priority', 'value'],
+                filter: {
+                    status: 0  // 只获取启用的主机
+                }
+            });
+
+            return await Promise.all(hostsResponse.map(async host => {
+                // 获取主机的监控项
+                const items = host.items || [];
+                
+                // 获取 CPU 和内存相关的监控项
+                const cpuItem = items.find(item => item.key_.includes('system.cpu.util'));
+                const memoryItem = items.find(item => item.key_.includes('vm.memory.util'));
+                const cpuCoresItem = items.find(item => item.key_.includes('system.cpu.num'));
+                const memoryTotalItem = items.find(item => item.key_.includes('vm.memory.size[total]'));
+
+                // 获取活动的告警数量
+                const activeProblems = (host.triggers || []).filter(trigger => 
+                    trigger.value === '1'  // 1 表示问题状态
+                ).length;
+
+                return {
+                    hostid: host.hostid,
+                    name: host.name || host.host,
+                    ip: host.interfaces?.[0]?.ip || '未知',
+                    os: this.formatOS(host.inventory?.os) || '未知',
+                    cpuCores: cpuCoresItem?.lastvalue || '未知',
+                    memoryTotal: memoryTotalItem ? this.formatMemorySize(memoryTotalItem.lastvalue) : '未知',
+                    cpu: cpuItem?.lastvalue ? parseFloat(cpuItem.lastvalue).toFixed(2) : '未知',
+                    memory: memoryItem?.lastvalue ? parseFloat(memoryItem.lastvalue).toFixed(2) : '未知',
+                    alerts: activeProblems || 0
+                };
+            }));
+        } catch (error) {
+            console.error('Failed to get hosts:', error);
+            throw error;
+        }
     }
 
     async getAlerts() {
@@ -506,5 +543,101 @@ class ZabbixAPI {
         if (bytes === 0) return '0 B';
         const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
         return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+    }
+
+    // 添加内存大小格式化方法
+    formatMemorySize(bytes) {
+        if (!bytes) return '未知';
+        
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+    }
+
+    // 添加操作系统格式化方法
+    formatOS(os) {
+        if (!os) return '未知';
+        // 提取第一个单词
+        const firstWord = os.split(/[\s,\/]/)[0];
+        return firstWord;
+    }
+
+    async getHostAlerts(hostId) {
+        try {
+            const problems = await this.request('problem.get', {
+                output: ['eventid', 'name', 'clock', 'severity', 'r_clock', 'objectid'],
+                hostids: [hostId],
+                recent: true,
+                sortfield: ['eventid'],
+                sortorder: 'DESC'
+            });
+
+            // 获取所有触发器的最新数据
+            const triggerIds = problems.map(p => p.objectid);
+            const triggers = await this.request('trigger.get', {
+                output: ['triggerid', 'lastvalue', 'units'],
+                triggerids: triggerIds,
+                selectItems: ['itemid', 'name', 'lastvalue', 'units']
+            });
+
+            // 创建触发器查找映射
+            const triggerMap = triggers.reduce((map, t) => {
+                map[t.triggerid] = t;
+                return map;
+            }, {});
+
+            return problems.map(problem => {
+                const trigger = triggerMap[problem.objectid];
+                const item = trigger?.items?.[0];
+                const value = item ? `${item.lastvalue}${item.units || ''}` : '-';
+
+                return {
+                    name: problem.name,
+                    severity: this.getSeverityName(problem.severity),
+                    value: value,
+                    startTime: this.formatDateTime(problem.clock),
+                    duration: this.calculateDuration(problem.clock)
+                };
+            });
+        } catch (error) {
+            console.error('Failed to get host alerts:', error);
+            throw error;
+        }
+    }
+
+    getSeverityName(severity) {
+        const severities = {
+            '0': { name: '未分类', class: 'severity-not-classified' },
+            '1': { name: '信息', class: 'severity-information' },
+            '2': { name: '警告', class: 'severity-warning' },
+            '3': { name: '一般', class: 'severity-average' },
+            '4': { name: '严重', class: 'severity-high' },
+            '5': { name: '灾难', class: 'severity-disaster' }
+        };
+        return severities[severity] || severities['0'];
+    }
+
+    formatDateTime(timestamp) {
+        return new Date(timestamp * 1000).toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
+    calculateDuration(startTime) {
+        const duration = Math.floor(Date.now() / 1000) - startTime;
+        const days = Math.floor(duration / 86400);
+        const hours = Math.floor((duration % 86400) / 3600);
+        const minutes = Math.floor((duration % 3600) / 60);
+        
+        let result = '';
+        if (days > 0) result += `${days}天`;
+        if (hours > 0) result += `${hours}小时`;
+        if (minutes > 0) result += `${minutes}分钟`;
+        return result || '刚刚';
     }
 } 
