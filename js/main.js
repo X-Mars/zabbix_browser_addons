@@ -443,34 +443,6 @@ class ZabbixDashboard {
         this.initZoomChartModal();
     }
 
-    // 修改主机列表渲染函数，添加点击事件
-    renderHostsList(hosts) {
-        const hostsListElement = document.getElementById('hostsList');
-        hostsListElement.innerHTML = hosts.map(host => `
-            <tr class="${parseInt(host.alerts) > 0 ? 'has-alerts' : 'no-alerts'}">
-                <td><a href="#" class="host-name" data-host-id="${parseInt(host.hostid)}" style="color: var(--primary-color); text-decoration: none;">${host.name}</a></td>
-                <td>${host.hostname}</td>
-                <td>${host.ip}</td>
-                <td>${host.os}</td>
-                <td>${host.cpuCores}</td>
-                <td>${host.memoryTotal}</td>
-                <td style="min-width: 150px">${getProgressBarHTML(host.cpu)}</td>
-                <td style="min-width: 150px">${getProgressBarHTML(host.memory)}</td>
-                <td>${host.alerts}</td>
-            </tr>
-        `).join('');
-
-        // 添加主机名称点击事件
-        document.querySelectorAll('.host-name').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const hostId = parseInt(e.target.dataset.hostId);
-                // console.log('Clicked Host ID:', hostId); // 添加调试日志
-                this.showHostDetail(hostId);
-            });
-        });
-    }
-
     // 初始化主机详情对话框
     initHostDetailModal() {
         document.getElementById('closeHostDetailModal').addEventListener('click', () => {
@@ -840,11 +812,11 @@ class ZabbixHosts {
                         </td>
                         <td>${host.hostname}</td>
                         <td>${host.ip || '未知'}</td>
-                        <td>${host.os || '未知'}</td>
+                        <td class="system-info"><span>${host.os || '未知'}</span></td>
                         <td>${host.cpuCores || '未知'}</td>
                         <td>${host.memoryTotal || '未知'}</td>
-                        <td>${cpuUsage}</td>
-                        <td>${memoryUsage}</td>
+                        <td style="min-width: 150px">${cpuUsage}</td>
+                        <td style="min-width: 150px">${memoryUsage}</td>
                         <td>${alerts}</td>
                     </tr>
                 `;
@@ -1315,7 +1287,7 @@ function getProgressBarHTML(value) {
     }
 
     // 当百分比小于15%时，将文字显示在进度条外部右侧
-    const textPosition = percentage < 15 
+    const textPosition = percentage < 25 
         ? `position: absolute; left: 100%; margin-left: 8px; color: #333;` 
         : `color: ${textColor}`;
 

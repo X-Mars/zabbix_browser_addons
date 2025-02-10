@@ -53,7 +53,7 @@
                     <th data-i18n="hostName">名称</th>
                     <th data-i18n="hostname">主机名称</th>
                     <th data-i18n="ipAddress">IP地址</th>
-                    <th data-i18n="operatingSystem">操作系统</th>
+                    <th data-i18n="operatingSystem" style="width: 200px;">系统详情</th>
                     <th data-i18n="cpuCores">CPU核心数</th>
                     <th data-i18n="memoryTotal">内存总量</th>
                     <th data-i18n="cpuUsage">CPU使用率</th>
@@ -170,7 +170,7 @@
 
     <!-- 告警详情对话框 -->
     <div id="alertDetailModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="width: 80%; max-width: 800px;">
+        <div class="modal-content" style="width: 100%; max-width: 1000px;">
             <div class="modal-header">
                 <h2>告警详情</h2>
                 <button id="closeAlertDetailModal" class="close-btn">
@@ -182,10 +182,10 @@
                     <thead>
                         <tr>
                             <th>告警名称</th>
-                            <th>级别</th>
-                            <th>监控值</th>
-                            <th>开始时间</th>
-                            <th>持续时间</th>
+                            <th style="width: 100px;">级别</th>
+                            <th style="width: 100px;">监控值</th>
+                            <th style="width: 100px;">持续时间</th>
+                            <th style="width: 200px;">开始时间</th>
                         </tr>
                     </thead>
                     <tbody id="alertsList">

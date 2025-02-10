@@ -72,25 +72,21 @@ class ZabbixAPI {
             // 先获取所需的监控项
             const items = await this.request('item.get', {
                 output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue'],
-                filter: {
-                    key_: [
-                        'system.cpu.util',  // 使用更通用的前缀匹配
-                        'vm.memory.size[used]',
-                        'vm.memory.size[total]',
-                        'vm.memory.size[available]',
-                        'vm.memory.size[free]',
-                        'vm.memory.utilization',    // 直接的内存使用率
-                        'system.cpu.num',
-                        'system.hostname',
-                        'system.uname',
-                        'system.sw.os',
-                        'system.sw.os.name'
+                search: {
+                    name: [
+                        'System name',                // 主机名称
+                        'System description',         // 操作系统
+                        'CPU utilization',            // CPU使用率
+                        'Memory utilization',         // 内存使用率
+                        'Number of CPUs',             // CPU核心数
+                        'Total memory'                // 内存总量
                     ]
                 },
-                monitored: true,  // 只获取已监控的项目
-                webitems: false,  // 排除 web 监控项
+                searchByAny: true,                    // 匹配任意关键字
+                monitored: true,                      // 只获取已监控的项目
+                webitems: false,                      // 排除 web 监控项
                 filter_flags: {
-                    not_supported: false  // 排除不支持的项目
+                    not_supported: false              // 排除不支持的项目
                 }
             });
 
@@ -115,37 +111,24 @@ class ZabbixAPI {
             });
 
             return await Promise.all(hostsResponse.map(async host => {
-                // 获取主机的监控项
                 const items = hostItemsMap[host.hostid] || [];
                 
-                // 获取 CPU 和内存相关的监控项
-                const cpuItem = items.find(item => item.key_.startsWith('system.cpu.util'));
-                // 获取内存使用率相关的监控项
-                const memoryUtilItem = items.find(item => item.key_ === 'vm.memory.utilization');
-                const memoryUsedItem = items.find(item => item.key_.includes('vm.memory.size[used]'));
-                const memoryTotalItem = items.find(item => item.key_.includes('vm.memory.size[total]'));
-                const memoryAvailableItem = items.find(item => item.key_.includes('vm.memory.size[available]'));
-                const memoryFreeItem = items.find(item => item.key_.includes('vm.memory.size[free]'));
+                // 通过名称获取监控项
+                const cpuItem = items.find(item => item.name.includes('CPU utilization'));
+                const memoryUtilItem = items.find(item => item.name.includes('Memory utilization'));
+                const hostnameItem = items.find(item => item.name.includes('System name'));
+                const osItem = items.find(item => item.name.includes('System description'));
+                const cpuCoresItem = items.find(item => item.name.includes('Number of CPUs'));
+                const memoryTotalItem = items.find(item => item.name.includes('Total memory'));
                 
                 // 计算内存使用率，优先使用直接的使用率值
                 let memoryUsage = '未知';
                 if (memoryUtilItem?.lastvalue) {
                     memoryUsage = parseFloat(memoryUtilItem.lastvalue).toFixed(2);
-                } else if (memoryUsedItem?.lastvalue && memoryTotalItem?.lastvalue) {
-                    const used = parseFloat(memoryUsedItem.lastvalue);
-                    const total = parseFloat(memoryTotalItem.lastvalue);
-                    if (!isNaN(used) && !isNaN(total) && total > 0) {
-                        memoryUsage = ((used / total) * 100).toFixed(2);
-                    }
                 }
                 
-                const cpuCoresItem = items.find(item => item.key_.includes('system.cpu.num'));
-                const hostnameItem = items.find(item => item.key_ === 'system.hostname');
-                const osItem = items.find(item => 
-                    item.key_.includes('system.uname') ||      // Linux系统信息
-                    item.key_.includes('system.sw.os') ||      // Windows系统信息
-                    item.key_.includes('system.sw.os.name')    // 通用系统名称
-                );
+                const cpuCores = cpuCoresItem?.lastvalue || '未知';
+                const hostname = hostnameItem?.lastvalue || '未知';
 
                 // 获取活动的告警数量
                 const activeProblems = (host.triggers || []).filter(trigger => 
@@ -155,10 +138,10 @@ class ZabbixAPI {
                 return {
                     hostid: host.hostid,
                     name: host.name || host.host,
-                    hostname: hostnameItem?.lastvalue || '未知',
+                    hostname: hostname,
                     ip: host.interfaces?.[0]?.ip || '未知',
-                    os: this.formatOS(host.inventory?.os || osItem?.lastvalue) || '未知',
-                    cpuCores: cpuCoresItem?.lastvalue || '未知',
+                    os: osItem?.lastvalue || '未知',  // 直接使用 System description 的值
+                    cpuCores: cpuCores,
                     memoryTotal: memoryTotalItem ? this.formatMemorySize(memoryTotalItem.lastvalue) : '未知',
                     cpu: cpuItem?.lastvalue ? parseFloat(cpuItem.lastvalue).toFixed(2) : '未知',
                     memory: memoryUsage,
@@ -405,7 +388,7 @@ class ZabbixAPI {
                 os: getOsType(osItem?.lastvalue),
                 cpuCores: cpuNumItem ? cpuNumItem.lastvalue : '-',
                 memoryTotal: memTotalItem ? formatMemorySize(memTotalItem.lastvalue) : '-',
-                cpu: formatPercentage(cpuItem?.lastvalue),
+                cpu: cpuItem?.lastvalue ? parseFloat(cpuItem.lastvalue).toFixed(2) : '未知',
                 memory: formatPercentage(memoryItem?.lastvalue),
                 alerts: alertCounts[host.hostid] || 0
             };
@@ -414,59 +397,42 @@ class ZabbixAPI {
 
     async getHostDetail(hostId) {
         try {
-            const numericHostId = parseInt(hostId);
+            const [hostResponse, itemsResponse] = await Promise.all([
+                this.request('host.get', {
+                    output: ['hostid', 'host', 'name', 'status'],
+                    selectInterfaces: ['ip'],
+                    hostids: [hostId]
+                }),
+                this.request('item.get', {
+                    output: ['itemid', 'name', 'key_', 'lastvalue', 'units'],
+                    hostids: [hostId],
+                    search: {
+                        name: [
+                            'CPU utilization',            // CPU使用率
+                            'Memory utilization',         // 内存使用率
+                            'Number of CPUs',             // CPU核心数
+                            'System name',                // 主机名称
+                            'System description',         // 系统详情
+                            'System uptime',              // 运行时间
+                            'Total memory'                // 内存总量
+                        ]
+                    },
+                    searchByAny: true
+                })
+            ]);
 
-            // 获取主机基本信息
-            const hostResponse = await this.request('host.get', {
-                hostids: [numericHostId],
-                output: ['host', 'name', 'status', 'available'],
-                selectInterfaces: ['ip'],
-                selectInventory: ['os', 'hardware', 'software', 'contact']
-            });
-
-            if (!hostResponse || !hostResponse[0]) {
+            if (!hostResponse || !hostResponse.length) {
                 throw new Error('Host not found');
             }
 
-            // 获取主机的监控项数据
-            const itemsResponse = await this.request('item.get', {
-                hostids: [numericHostId],
-                output: ['itemid', 'name', 'lastvalue', 'units', 'key_'],
-                filter: {
-                    key_: [
-                        'system.cpu.util[,idle]',    // Linux CPU 空闲率
-                        'system.cpu.util',           // Windows CPU 使用率
-                        'vm.memory.utilization',     // Linux 内存使用率
-                        'vm.memory.util',            // Windows 内存使用率
-                        'system.cpu.num',            // Linux CPU 核心数
-                        'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
-                        'vm.memory.size[total]',
-                        'system.sw.os',
-                        'system.uptime'
-                    ]
-                }
-            });
-
-            // 找到操作系统类型
-            const osItem = itemsResponse.find(item => item.key_ === 'system.sw.os');
-            const isWindows = osItem?.lastvalue?.toLowerCase().includes('windows');
-
-            // 根据操作系统类型选择正确的 CPU 使用率监控项
-            const cpuItem = itemsResponse.find(item => {
-                if (isWindows) {
-                    return item.key_ === 'system.cpu.util';
-                } else {
-                    return item.key_ === 'system.cpu.util[,idle]';
-                }
-            });
-
-            const memoryItem = itemsResponse.find(item => {
-                if (isWindows) {
-                    return item.key_ === 'vm.memory.util';
-                } else {
-                    return item.key_ === 'vm.memory.utilization';
-                }
-            });
+            const host = hostResponse[0];
+            const cpuItem = itemsResponse.find(item => item.name.includes('CPU utilization'));
+            const memoryItem = itemsResponse.find(item => item.name.includes('Memory utilization'));
+            const cpuCoresItem = itemsResponse.find(item => item.name.includes('Number of CPUs'));
+            const hostnameItem = itemsResponse.find(item => item.name.includes('System name'));
+            const osItem = itemsResponse.find(item => item.name.includes('System description'));
+            const uptimeItem = itemsResponse.find(item => item.name.includes('System uptime'));
+            const memoryTotalItem = itemsResponse.find(item => item.name.includes('Total memory'));
 
             // 获取历史数据（最近24小时）
             const timeFrom = Math.floor(Date.now() / 1000) - 24 * 3600;
@@ -498,10 +464,7 @@ class ZabbixAPI {
 
             // 处理 CPU 历史数据
             cpuHistoryResponse.forEach(record => {
-                const value = isWindows ? 
-                    parseFloat(record.value) :  // Windows 直接使用值
-                    (100 - parseFloat(record.value));  // Linux 需要转换空闲率为使用率
-                
+                const value = parseFloat(record.value);  // 直接使用 CPU utilization 的值
                 history.time.push(this.formatHistoryTime(record.clock));
                 history.cpu.push(value.toFixed(2));
             });
@@ -514,24 +477,19 @@ class ZabbixAPI {
                 history.memory.push(parseFloat(record.value).toFixed(2));
             });
 
-            const host = hostResponse[0];
-            const items = this.processItems(itemsResponse, isWindows);
-
             const result = {
                 name: host.name,
                 ip: host.interfaces[0]?.ip || '-',
-                os: items.os || '-',
-                uptime: items.uptime || 0,
-                cpuCores: items.cpuCores || '-',
-                memoryTotal: items.memoryTotal || '-',
+                os: osItem?.lastvalue || '-',
+                uptime: uptimeItem?.lastvalue || 0,
+                cpuCores: cpuCoresItem?.lastvalue || '-',
+                memoryTotal: this.formatMemorySize(memoryTotalItem?.lastvalue) || '-',
                 history: history,
-                cpuItemId: cpuItem?.itemid,  // 添加 CPU 监控项 ID
-                memoryItemId: memoryItem?.itemid,  // 添加内存监控项 ID
-                isWindows: isWindows  // 添加系统类型标识
+                cpuItemId: cpuItem?.itemid,
+                memoryItemId: memoryItem?.itemid,
             };
 
             return result;
-
         } catch (error) {
             console.error('Failed to get host details:', error);
             throw error;
@@ -606,14 +564,6 @@ class ZabbixAPI {
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(1024));
         return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
-    }
-
-    // 添加操作系统格式化方法
-    formatOS(os) {
-        if (!os) return '未知';
-        // 提取第一个单词
-        const firstWord = os.split(/[\s,\/]/)[0];
-        return firstWord;
     }
 
     async getHostAlerts(hostId) {
