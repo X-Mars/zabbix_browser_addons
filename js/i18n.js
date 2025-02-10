@@ -23,7 +23,7 @@ const translations = {
         'basicInfo': '基本信息',
         'hardwareInfo': '硬件信息',
         'performanceMonitor': '性能监控',
-        'hostName': '主机名称',
+        'hostName': '名称',
         'ipAddress': 'IP地址',
         'systemType': '系统类型',
         'uptime': '运行时间',
@@ -57,7 +57,7 @@ const translations = {
 
         // 主机详情页面
         'basicInfo': '基本信息',
-        'hostName': '主机名称',
+        'hostName': '名称',
         'ipAddress': 'IP地址',
         'systemType': '系统类型',
         'runningTime': '运行时间',
@@ -81,7 +81,8 @@ const translations = {
         'currentAlerts': '当前告警',
 
         // 主机列表表头
-        'hostName': '主机名称',
+        'hostName': '名称',
+        'hostname': '主机名称',
         'ipAddress': 'IP地址',
         'operatingSystem': '操作系统',
         'cpuCores': 'CPU',
@@ -243,6 +244,7 @@ const translations = {
 
         // Host list headers
         'hostName': 'Host Name',
+        'hostname': 'Host Name',
         'ipAddress': 'IP Address',
         'operatingSystem': 'Operating System',
         'cpuCores': 'CPU Cores',

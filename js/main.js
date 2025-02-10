@@ -75,8 +75,12 @@ class Header {
     updateLastRefreshTime() {
         if (this.lastRefreshTimeElement) {
             const now = new Date();
-            const timeStr = `${now.toISOString().slice(0, 10)} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-            this.lastRefreshTimeElement.textContent = `最后刷新时间: ${timeStr}`;
+            this.lastRefreshTimeElement.textContent = `最后刷新时间: ${now.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            })}`;
         }
     }
 }
@@ -445,6 +449,7 @@ class ZabbixDashboard {
         hostsListElement.innerHTML = hosts.map(host => `
             <tr class="${parseInt(host.alerts) > 0 ? 'has-alerts' : 'no-alerts'}">
                 <td><a href="#" class="host-name" data-host-id="${parseInt(host.hostid)}" style="color: var(--primary-color); text-decoration: none;">${host.name}</a></td>
+                <td>${host.hostname}</td>
                 <td>${host.ip}</td>
                 <td>${host.os}</td>
                 <td>${host.cpuCores}</td>
@@ -781,7 +786,12 @@ class ZabbixHosts {
             const lastRefreshTimeElement = document.getElementById('lastRefreshTime');
             if (lastRefreshTimeElement) {
                 const now = new Date();
-                lastRefreshTimeElement.textContent = `最后刷新时间: ${now.toLocaleString('zh-CN')}`;
+                lastRefreshTimeElement.textContent = `最后刷新时间: ${now.toLocaleTimeString('zh-CN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                })}`;
             }
         } catch (error) {
             console.error('Failed to load hosts:', error);
@@ -828,6 +838,7 @@ class ZabbixHosts {
                                 ${host.name}
                             </a>
                         </td>
+                        <td>${host.hostname}</td>
                         <td>${host.ip || '未知'}</td>
                         <td>${host.os || '未知'}</td>
                         <td>${host.cpuCores || '未知'}</td>

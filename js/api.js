@@ -69,12 +69,45 @@ class ZabbixAPI {
 
     async getHosts() {
         try {
+            // 先获取所需的监控项
+            const items = await this.request('item.get', {
+                output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue'],
+                filter: {
+                    key_: [
+                        'system.cpu.util',  // 使用更通用的前缀匹配
+                        'vm.memory.size[used]',
+                        'vm.memory.size[total]',
+                        'vm.memory.size[available]',
+                        'vm.memory.size[free]',
+                        'vm.memory.utilization',    // 直接的内存使用率
+                        'system.cpu.num',
+                        'system.hostname',
+                        'system.uname',
+                        'system.sw.os',
+                        'system.sw.os.name'
+                    ]
+                },
+                monitored: true,  // 只获取已监控的项目
+                webitems: false,  // 排除 web 监控项
+                filter_flags: {
+                    not_supported: false  // 排除不支持的项目
+                }
+            });
+
+            // 创建主机ID到监控项的映射
+            const hostItemsMap = items.reduce((map, item) => {
+                if (!map[item.hostid]) {
+                    map[item.hostid] = [];
+                }
+                map[item.hostid].push(item);
+                return map;
+            }, {});
+
             // 获取主机基本信息
             const hostsResponse = await this.request('host.get', {
                 output: ['hostid', 'host', 'name', 'status'],
                 selectInterfaces: ['ip'],
                 selectInventory: ['os'],
-                selectItems: ['itemid', 'name', 'key_', 'lastvalue'],
                 selectTriggers: ['triggerid', 'description', 'priority', 'value'],
                 filter: {
                     status: 0  // 只获取启用的主机
@@ -83,13 +116,36 @@ class ZabbixAPI {
 
             return await Promise.all(hostsResponse.map(async host => {
                 // 获取主机的监控项
-                const items = host.items || [];
+                const items = hostItemsMap[host.hostid] || [];
                 
                 // 获取 CPU 和内存相关的监控项
-                const cpuItem = items.find(item => item.key_.includes('system.cpu.util'));
-                const memoryItem = items.find(item => item.key_.includes('vm.memory.util'));
-                const cpuCoresItem = items.find(item => item.key_.includes('system.cpu.num'));
+                const cpuItem = items.find(item => item.key_.startsWith('system.cpu.util'));
+                // 获取内存使用率相关的监控项
+                const memoryUtilItem = items.find(item => item.key_ === 'vm.memory.utilization');
+                const memoryUsedItem = items.find(item => item.key_.includes('vm.memory.size[used]'));
                 const memoryTotalItem = items.find(item => item.key_.includes('vm.memory.size[total]'));
+                const memoryAvailableItem = items.find(item => item.key_.includes('vm.memory.size[available]'));
+                const memoryFreeItem = items.find(item => item.key_.includes('vm.memory.size[free]'));
+                
+                // 计算内存使用率，优先使用直接的使用率值
+                let memoryUsage = '未知';
+                if (memoryUtilItem?.lastvalue) {
+                    memoryUsage = parseFloat(memoryUtilItem.lastvalue).toFixed(2);
+                } else if (memoryUsedItem?.lastvalue && memoryTotalItem?.lastvalue) {
+                    const used = parseFloat(memoryUsedItem.lastvalue);
+                    const total = parseFloat(memoryTotalItem.lastvalue);
+                    if (!isNaN(used) && !isNaN(total) && total > 0) {
+                        memoryUsage = ((used / total) * 100).toFixed(2);
+                    }
+                }
+                
+                const cpuCoresItem = items.find(item => item.key_.includes('system.cpu.num'));
+                const hostnameItem = items.find(item => item.key_ === 'system.hostname');
+                const osItem = items.find(item => 
+                    item.key_.includes('system.uname') ||      // Linux系统信息
+                    item.key_.includes('system.sw.os') ||      // Windows系统信息
+                    item.key_.includes('system.sw.os.name')    // 通用系统名称
+                );
 
                 // 获取活动的告警数量
                 const activeProblems = (host.triggers || []).filter(trigger => 
@@ -99,12 +155,13 @@ class ZabbixAPI {
                 return {
                     hostid: host.hostid,
                     name: host.name || host.host,
+                    hostname: hostnameItem?.lastvalue || '未知',
                     ip: host.interfaces?.[0]?.ip || '未知',
-                    os: this.formatOS(host.inventory?.os) || '未知',
+                    os: this.formatOS(host.inventory?.os || osItem?.lastvalue) || '未知',
                     cpuCores: cpuCoresItem?.lastvalue || '未知',
                     memoryTotal: memoryTotalItem ? this.formatMemorySize(memoryTotalItem.lastvalue) : '未知',
                     cpu: cpuItem?.lastvalue ? parseFloat(cpuItem.lastvalue).toFixed(2) : '未知',
-                    memory: memoryItem?.lastvalue ? parseFloat(memoryItem.lastvalue).toFixed(2) : '未知',
+                    memory: memoryUsage,
                     alerts: activeProblems || 0
                 };
             }));
@@ -473,9 +530,6 @@ class ZabbixAPI {
                 isWindows: isWindows  // 添加系统类型标识
             };
 
-            // console.log('CPU History Response:', cpuHistoryResponse);
-            // console.log('Memory History Response:', memoryHistoryResponse);
-            // console.log('Final Result:', result);
             return result;
 
         } catch (error) {
