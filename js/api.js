@@ -74,23 +74,27 @@ class ZabbixAPI {
                 output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue'],
                 search: {
                     name: [
-                        'System name',                // 主机名称
-                        'System description',         // 操作系统
                         'CPU utilization',            // CPU使用率
                         'Memory utilization',         // 内存使用率
                         'Number of CPUs',             // CPU核心数
+                        'System name',                // 主机名称
+                        'System description',         // 系统详情
+                        'System uptime',              // 运行时间
                         'Total memory'                // 内存总量
                     ],
                     key_: [
+                        'system.cpu.util[,idle]',     // CPU使用率
+                        'system.cpu.util[,system]',   // CPU使用率
+                        'system.cpu.util',            // CPU使用率
+                        'vm.memory.utilization',      // 内存使用率
+                        'vm.memory.util',             // 内存使用率
+                        'system.cpu.num',             // CPU核心数
+                        'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
                         'system.hostname',            // 主机名称
                         'system.uname',               // 系统详情
                         'system.sw.os',               // 系统详情
-                        'system.cpu.util[,idle]',     // CPU使用率
-                        'system.cpu.util[,system]',   // CPU使用率
-                        'system.cpu.num',             // CPU核心数
-                        'vm.memory.size[total]',      // 内存总量
-                        'vm.memory.utilization',      // 内存使用率
-                        'vm.memory.util'              // 内存使用率
+                        'system.uptime',              // 运行时间
+                        'vm.memory.size[total]'       // 内存总量
                     ]
                 },
                 searchByAny: true,                    // 匹配任意关键字
@@ -127,6 +131,7 @@ class ZabbixAPI {
                 // 通过名称或key获取监控项
                 const cpuItem = items.find(item => item.name.includes('CPU utilization')) ||
                               items.find(item => item.key_ === 'system.cpu.util[,system]') ||
+                              items.find(item => item.key_ === 'system.cpu.util') ||
                               items.find(item => {
                                   if (item.key_ === 'system.cpu.util[,idle]') {
                                       item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
@@ -137,7 +142,8 @@ class ZabbixAPI {
 
                 const memoryUtilItem = items.find(item => item.name.includes('Memory utilization')) ||
                                      items.find(item => item.key_ === 'vm.memory.utilization') ||
-                                     items.find(item => item.key_.startsWith('vm.memory.util['));
+                                     items.find(item => item.key_.startsWith('vm.memory.util['))
+                                     items.find(item => item.key_ === ('vm.memory.util'));
 
                 const hostnameItem = items.find(item => item.name.includes('System name')) ||
                                    items.find(item => item.key_ === 'system.hostname');
@@ -147,7 +153,8 @@ class ZabbixAPI {
                              items.find(item => item.key_ === 'system.sw.os');
 
                 const cpuCoresItem = items.find(item => item.name.includes('Number of CPUs')) ||
-                                   items.find(item => item.key_ === 'system.cpu.num');
+                                   items.find(item => item.key_ === 'system.cpu.num')
+                                   items.find(item => item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]');
 
                 const memoryTotalItem = items.find(item => item.name.includes('Total memory')) ||
                                       items.find(item => item.key_ === 'vm.memory.size[total]');
@@ -450,9 +457,11 @@ class ZabbixAPI {
                         key_: [
                             'system.cpu.util[,idle]',     // CPU使用率
                             'system.cpu.util[,system]',   // CPU使用率
+                            'system.cpu.util',            // CPU使用率
                             'vm.memory.utilization',      // 内存使用率
                             'vm.memory.util',             // 内存使用率
                             'system.cpu.num',             // CPU核心数
+                            'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
                             'system.hostname',            // 主机名称
                             'system.uname',               // 系统详情
                             'system.sw.os',               // 系统详情
@@ -472,6 +481,7 @@ class ZabbixAPI {
             // 通过名称或key获取监控项
             const cpuItem = itemsResponse.find(item => item.name.includes('CPU utilization')) ||
                           itemsResponse.find(item => item.key_ === 'system.cpu.util[,system]') ||
+                          itemsResponse.find(item => item.key_ === 'system.cpu.util') ||
                           itemsResponse.find(item => {
                               if (item.key_ === 'system.cpu.util[,idle]') {
                                   item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
@@ -482,10 +492,12 @@ class ZabbixAPI {
 
             const memoryItem = itemsResponse.find(item => item.name.includes('Memory utilization')) ||
                               itemsResponse.find(item => item.key_ === 'vm.memory.utilization') ||
-                              itemsResponse.find(item => item.key_.startsWith('vm.memory.util['));
+                              itemsResponse.find(item => item.key_.startsWith('vm.memory.util[')) ||
+                              itemsResponse.find(item => item.key_ === ('vm.memory.util'));
 
             const cpuCoresItem = itemsResponse.find(item => item.name.includes('Number of CPUs')) ||
-                                itemsResponse.find(item => item.key_ === 'system.cpu.num');
+                                itemsResponse.find(item => item.key_ === 'system.cpu.num') ||
+                                itemsResponse.find(item => item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]');
 
             const hostnameItem = itemsResponse.find(item => item.name.includes('System name')) ||
                                 itemsResponse.find(item => item.key_ === 'system.hostname');
