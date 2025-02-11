@@ -80,6 +80,17 @@ class ZabbixAPI {
                         'Memory utilization',         // 内存使用率
                         'Number of CPUs',             // CPU核心数
                         'Total memory'                // 内存总量
+                    ],
+                    key_: [
+                        'system.hostname',            // 主机名称
+                        'system.uname',               // 系统详情
+                        'system.sw.os',               // 系统详情
+                        'system.cpu.util[,idle]',     // CPU使用率
+                        'system.cpu.util[,system]',   // CPU使用率
+                        'system.cpu.num',             // CPU核心数
+                        'vm.memory.size[total]',      // 内存总量
+                        'vm.memory.utilization',      // 内存使用率
+                        'vm.memory.util'              // 内存使用率
                     ]
                 },
                 searchByAny: true,                    // 匹配任意关键字
@@ -113,13 +124,33 @@ class ZabbixAPI {
             return await Promise.all(hostsResponse.map(async host => {
                 const items = hostItemsMap[host.hostid] || [];
                 
-                // 通过名称获取监控项
-                const cpuItem = items.find(item => item.name.includes('CPU utilization'));
-                const memoryUtilItem = items.find(item => item.name.includes('Memory utilization'));
-                const hostnameItem = items.find(item => item.name.includes('System name'));
-                const osItem = items.find(item => item.name.includes('System description'));
-                const cpuCoresItem = items.find(item => item.name.includes('Number of CPUs'));
-                const memoryTotalItem = items.find(item => item.name.includes('Total memory'));
+                // 通过名称或key获取监控项
+                const cpuItem = items.find(item => item.name.includes('CPU utilization')) ||
+                              items.find(item => item.key_ === 'system.cpu.util[,system]') ||
+                              items.find(item => {
+                                  if (item.key_ === 'system.cpu.util[,idle]') {
+                                      item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
+                                      return true;
+                                  }
+                                  return false;
+                              });
+
+                const memoryUtilItem = items.find(item => item.name.includes('Memory utilization')) ||
+                                     items.find(item => item.key_ === 'vm.memory.utilization') ||
+                                     items.find(item => item.key_.startsWith('vm.memory.util['));
+
+                const hostnameItem = items.find(item => item.name.includes('System name')) ||
+                                   items.find(item => item.key_ === 'system.hostname');
+
+                const osItem = items.find(item => item.name.includes('System description')) ||
+                             items.find(item => item.key_ === 'system.uname') ||
+                             items.find(item => item.key_ === 'system.sw.os');
+
+                const cpuCoresItem = items.find(item => item.name.includes('Number of CPUs')) ||
+                                   items.find(item => item.key_ === 'system.cpu.num');
+
+                const memoryTotalItem = items.find(item => item.name.includes('Total memory')) ||
+                                      items.find(item => item.key_ === 'vm.memory.size[total]');
                 
                 // 计算内存使用率，优先使用直接的使用率值
                 let memoryUsage = '未知';
@@ -415,6 +446,18 @@ class ZabbixAPI {
                             'System description',         // 系统详情
                             'System uptime',              // 运行时间
                             'Total memory'                // 内存总量
+                        ],
+                        key_: [
+                            'system.cpu.util[,idle]',     // CPU使用率
+                            'system.cpu.util[,system]',   // CPU使用率
+                            'vm.memory.utilization',      // 内存使用率
+                            'vm.memory.util',             // 内存使用率
+                            'system.cpu.num',             // CPU核心数
+                            'system.hostname',            // 主机名称
+                            'system.uname',               // 系统详情
+                            'system.sw.os',               // 系统详情
+                            'system.uptime',              // 运行时间
+                            'vm.memory.size[total]'       // 内存总量
                         ]
                     },
                     searchByAny: true
@@ -426,13 +469,36 @@ class ZabbixAPI {
             }
 
             const host = hostResponse[0];
-            const cpuItem = itemsResponse.find(item => item.name.includes('CPU utilization'));
-            const memoryItem = itemsResponse.find(item => item.name.includes('Memory utilization'));
-            const cpuCoresItem = itemsResponse.find(item => item.name.includes('Number of CPUs'));
-            const hostnameItem = itemsResponse.find(item => item.name.includes('System name'));
-            const osItem = itemsResponse.find(item => item.name.includes('System description'));
-            const uptimeItem = itemsResponse.find(item => item.name.includes('System uptime'));
-            const memoryTotalItem = itemsResponse.find(item => item.name.includes('Total memory'));
+            // 通过名称或key获取监控项
+            const cpuItem = itemsResponse.find(item => item.name.includes('CPU utilization')) ||
+                          itemsResponse.find(item => item.key_ === 'system.cpu.util[,system]') ||
+                          itemsResponse.find(item => {
+                              if (item.key_ === 'system.cpu.util[,idle]') {
+                                  item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
+                                  return true;
+                              }
+                              return false;
+                          });
+
+            const memoryItem = itemsResponse.find(item => item.name.includes('Memory utilization')) ||
+                              itemsResponse.find(item => item.key_ === 'vm.memory.utilization') ||
+                              itemsResponse.find(item => item.key_.startsWith('vm.memory.util['));
+
+            const cpuCoresItem = itemsResponse.find(item => item.name.includes('Number of CPUs')) ||
+                                itemsResponse.find(item => item.key_ === 'system.cpu.num');
+
+            const hostnameItem = itemsResponse.find(item => item.name.includes('System name')) ||
+                                itemsResponse.find(item => item.key_ === 'system.hostname');
+
+            const osItem = itemsResponse.find(item => item.name.includes('System description')) ||
+                          itemsResponse.find(item => item.key_ === 'system.uname') ||
+                          itemsResponse.find(item => item.key_ === 'system.sw.os');
+
+            const uptimeItem = itemsResponse.find(item => item.name.includes('System uptime')) ||
+                              itemsResponse.find(item => item.key_ === 'system.uptime');
+
+            const memoryTotalItem = itemsResponse.find(item => item.name.includes('Total memory')) ||
+                                   itemsResponse.find(item => item.key_ === 'vm.memory.size[total]');
 
             // 获取历史数据（最近24小时）
             const timeFrom = Math.floor(Date.now() / 1000) - 24 * 3600;
