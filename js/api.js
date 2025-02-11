@@ -90,10 +90,12 @@ class ZabbixAPI {
                         'vm.memory.util',             // 内存使用率
                         'system.cpu.num',             // CPU核心数
                         'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
+                        'system.name',                // 主机名称
                         'system.hostname',            // 主机名称
                         'system.uname',               // 系统详情
                         'system.sw.os',               // 系统详情
                         'system.uptime',              // 运行时间
+                        'system.net.uptime',          // 运行时间
                         'system.descr[sysDescr.0]',    // 系统详情
                         'vm.memory.size[total]'       // 内存总量
                     ]
@@ -133,6 +135,7 @@ class ZabbixAPI {
                 const cpuItem = items.find(item => item.name.includes('CPU utilization')) ||
                               items.find(item => item.key_ === 'system.cpu.util[,system]') ||
                               items.find(item => item.key_ === 'system.cpu.util') ||
+                              items.find(item => item.key_.startsWith('system.cpu.util[')) ||
                               items.find(item => {
                                   if (item.key_ === 'system.cpu.util[,idle]') {
                                       item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
@@ -140,14 +143,14 @@ class ZabbixAPI {
                                   }
                                   return false;
                               });
-
                 const memoryUtilItem = items.find(item => item.name.includes('Memory utilization')) ||
                                      items.find(item => item.key_ === 'vm.memory.utilization') ||
-                                     items.find(item => item.key_.startsWith('vm.memory.util['))
-                                     items.find(item => item.key_ === ('vm.memory.util'));
+                                     items.find(item => item.key_.startsWith('vm.memory.util[')) ||
+                                     items.find(item => item.key_ === 'vm.memory.util');
 
                 const hostnameItem = items.find(item => item.name.includes('System name')) ||
-                                   items.find(item => item.key_ === 'system.hostname');
+                                   items.find(item => item.key_ === 'system.hostname') ||
+                                   items.find(item => item.key_ === 'system.name');
 
                 const osItem = items.find(item => item.name.includes('System description')) ||
                              items.find(item => item.key_ === 'system.uname') ||
@@ -155,7 +158,7 @@ class ZabbixAPI {
                              items.find(item => item.key_ === 'system.descr[sysDescr.0]');
 
                 const cpuCoresItem = items.find(item => item.name.includes('Number of CPUs')) ||
-                                   items.find(item => item.key_ === 'system.cpu.num')
+                                   items.find(item => item.key_ === 'system.cpu.num') ||
                                    items.find(item => item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]');
 
                 const memoryTotalItem = items.find(item => item.name.includes('Total memory')) ||
@@ -464,10 +467,12 @@ class ZabbixAPI {
                             'vm.memory.util',             // 内存使用率
                             'system.cpu.num',             // CPU核心数
                             'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
+                            'system.name',                // 主机名称
                             'system.hostname',            // 主机名称
                             'system.uname',               // 系统详情
                             'system.sw.os',               // 系统详情
                             'system.uptime',              // 运行时间
+                            'system.net.uptime',          // 运行时间
                             'system.descr[sysDescr.0]',    // 系统详情
                             'vm.memory.size[total]'       // 内存总量
                         ]
@@ -485,6 +490,7 @@ class ZabbixAPI {
             const cpuItem = itemsResponse.find(item => item.name.includes('CPU utilization')) ||
                           itemsResponse.find(item => item.key_ === 'system.cpu.util[,system]') ||
                           itemsResponse.find(item => item.key_ === 'system.cpu.util') ||
+                          itemsResponse.find(item => item.key_.startsWith('system.cpu.util[')) ||
                           itemsResponse.find(item => {
                               if (item.key_ === 'system.cpu.util[,idle]') {
                                   item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
@@ -494,16 +500,17 @@ class ZabbixAPI {
                           });
 
             const memoryItem = itemsResponse.find(item => item.name.includes('Memory utilization')) ||
-                              itemsResponse.find(item => item.key_ === 'vm.memory.utilization') ||
-                              itemsResponse.find(item => item.key_.startsWith('vm.memory.util[')) ||
-                              itemsResponse.find(item => item.key_ === ('vm.memory.util'));
+                            itemsResponse.find(item => item.key_ === 'vm.memory.utilization') ||
+                            itemsResponse.find(item => item.key_.startsWith('vm.memory.util[')) ||
+                            itemsResponse.find(item => item.key_ === 'vm.memory.util');
 
             const cpuCoresItem = itemsResponse.find(item => item.name.includes('Number of CPUs')) ||
                                 itemsResponse.find(item => item.key_ === 'system.cpu.num') ||
                                 itemsResponse.find(item => item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]');
 
             const hostnameItem = itemsResponse.find(item => item.name.includes('System name')) ||
-                                itemsResponse.find(item => item.key_ === 'system.hostname');
+                                itemsResponse.find(item => item.key_ === 'system.hostname') ||
+                                itemsResponse.find(item => item.key_ === 'system.name');
 
             const osItem = itemsResponse.find(item => item.name.includes('System description')) ||
                           itemsResponse.find(item => item.key_ === 'system.uname') ||
@@ -511,53 +518,70 @@ class ZabbixAPI {
                           itemsResponse.find(item => item.key_ === 'system.descr[sysDescr.0]');
 
             const uptimeItem = itemsResponse.find(item => item.name.includes('System uptime')) ||
-                              itemsResponse.find(item => item.key_ === 'system.uptime');
+                              itemsResponse.find(item => item.key_ === 'system.uptime') ||
+                              itemsResponse.find(item => item.key_ === 'system.net.uptime');
 
             const memoryTotalItem = itemsResponse.find(item => item.name.includes('Total memory')) ||
                                    itemsResponse.find(item => item.key_ === 'vm.memory.size[total]');
 
-            // 获取历史数据（最近24小时）
-            const timeFrom = Math.floor(Date.now() / 1000) - 24 * 3600;
-            const [cpuHistoryResponse, memoryHistoryResponse] = await Promise.all([
-                this.request('history.get', {
-                    itemids: [parseInt(cpuItem?.itemid)],
-                    time_from: timeFrom,
-                    output: 'extend',
-                    history: 0,
-                    sortfield: 'clock',
-                    sortorder: 'ASC'
-                }),
-                this.request('history.get', {
-                    itemids: [parseInt(memoryItem?.itemid)],
-                    time_from: timeFrom,
-                    output: 'extend',
-                    history: 0,
-                    sortfield: 'clock',
-                    sortorder: 'ASC'
-                })
-            ]);
-
-            // 处理历史数据
-            const history = {
-                time: [],
-                cpu: [],
-                memory: []
-            };
-
-            // 处理 CPU 历史数据
-            cpuHistoryResponse.forEach(record => {
-                const value = parseFloat(record.value);  // 直接使用 CPU utilization 的值
-                history.time.push(this.formatHistoryTime(record.clock));
-                history.cpu.push(value.toFixed(2));
-            });
-
-            // 处理内存历史数据
-            memoryHistoryResponse.forEach((record, index) => {
-                if (!history.time[index]) {
-                    history.time.push(this.formatHistoryTime(record.clock));
+            // 初始化历史数据结构
+            const history = { time: [], cpu: [], memory: [] };
+            
+            // 只有当监控项存在时才获取历史数据
+            if (cpuItem || memoryItem) {
+                // 获取历史数据（最近24小时）
+                const timeFrom = Math.floor(Date.now() / 1000) - 24 * 3600;
+                const historyRequests = [];
+                
+                if (cpuItem) {
+                    historyRequests.push(
+                        this.request('history.get', {
+                            itemids: [parseInt(cpuItem.itemid)],
+                            time_from: timeFrom,
+                            output: 'extend',
+                            history: 0,
+                            sortfield: 'clock',
+                            sortorder: 'ASC'
+                        })
+                    );
                 }
-                history.memory.push(parseFloat(record.value).toFixed(2));
-            });
+                
+                if (memoryItem) {
+                    historyRequests.push(
+                        this.request('history.get', {
+                            itemids: [parseInt(memoryItem.itemid)],
+                            time_from: timeFrom,
+                            output: 'extend',
+                            history: 0,
+                            sortfield: 'clock',
+                            sortorder: 'ASC'
+                        })
+                    );
+                }
+                
+                const responses = await Promise.all(historyRequests);
+                const cpuHistoryResponse = cpuItem ? responses[0] : [];
+                const memoryHistoryResponse = memoryItem ? responses[cpuItem ? 1 : 0] : [];
+
+                // 处理 CPU 历史数据
+                if (cpuItem) {
+                    cpuHistoryResponse.forEach(record => {
+                        const value = parseFloat(record.value);
+                        history.time.push(this.formatHistoryTime(record.clock));
+                        history.cpu.push(value.toFixed(2));
+                    });
+                }
+
+                // 处理内存历史数据
+                if (memoryItem) {
+                    memoryHistoryResponse.forEach((record, index) => {
+                        if (!history.time[index]) {
+                            history.time.push(this.formatHistoryTime(record.clock));
+                        }
+                        history.memory.push(parseFloat(record.value).toFixed(2));
+                    });
+                }
+            }
 
             const result = {
                 name: host.name,

@@ -123,7 +123,7 @@
                                 <div class="performance-chart-container">
                                     <div class="chart-header">
                                         <h4 data-i18n="cpuUsage24h">CPU使用率 (24小时)</h4>
-                                        <button class="zoom-btn" data-chart="cpu">
+                                        <button class="zoom-btn" data-chart="cpu" style="display: none;">
                                             <i class="fas fa-expand-arrows-alt"></i>
                                         </button>
                                     </div>
@@ -132,7 +132,7 @@
                                 <div class="performance-chart-container">
                                     <div class="chart-header">
                                         <h4 data-i18n="memoryUsage24h">内存使用率 (24小时)</h4>
-                                        <button class="zoom-btn" data-chart="memory">
+                                        <button class="zoom-btn" data-chart="memory" style="display: none;">
                                             <i class="fas fa-expand-arrows-alt"></i>
                                         </button>
                                     </div>
@@ -184,8 +184,8 @@
                             <th>告警名称</th>
                             <th style="width: 100px;">级别</th>
                             <th style="width: 100px;">监控值</th>
-                            <th style="width: 100px;">持续时间</th>
                             <th style="width: 200px;">开始时间</th>
+                            <th style="width: 100px;">持续时间</th>
                         </tr>
                     </thead>
                     <tbody id="alertsList">

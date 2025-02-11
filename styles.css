@@ -1268,6 +1268,9 @@ body {
 .alert-table th {
     background-color: #f8f9fa;
     font-weight: 600;
+    position: sticky;  /* 表头固定 */
+    top: 0;           /* 固定在顶部 */
+    z-index: 1;       /* 确保表头在内容之上 */
 }
 
 /* 告警级别样式 */
@@ -1316,4 +1319,15 @@ body {
     max-width: 800px;
     line-height: 1.5;
     top: 0;  /* 与单元格顶部对齐 */
+}
+
+/* 告警详情对话框的内容区域添加滚动 */
+#alertDetailModal .modal-body {
+    max-height: 70vh;  /* 最大高度为视窗高度的70% */
+    overflow-y: auto;  /* 垂直方向可滚动 */
+}
+
+/* 确保表头背景色完整显示 */
+.alert-table thead {
+    background-color: #f8f9fa;
 } 

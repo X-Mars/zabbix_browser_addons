@@ -358,6 +358,26 @@ class ZabbixDashboard {
             // 初始化性能图表
             this.initPerformanceCharts(hostDetails);
 
+            // 根据监控项是否存在来控制放大按钮
+            const cpuZoomBtn = document.querySelector('.zoom-btn[data-chart="cpu"]');
+            const memoryZoomBtn = document.querySelector('.zoom-btn[data-chart="memory"]');
+            
+            if (cpuZoomBtn) {
+                if (!hostDetails.cpuItemId) {
+                    cpuZoomBtn.style.display = 'none';  // 或者使用 disabled
+                } else {
+                    cpuZoomBtn.style.display = 'block';
+                }
+            }
+            
+            if (memoryZoomBtn) {
+                if (!hostDetails.memoryItemId) {
+                    memoryZoomBtn.style.display = 'none';  // 或者使用 disabled
+                } else {
+                    memoryZoomBtn.style.display = 'block';
+                }
+            }
+
         } catch (error) {
             console.error('Failed to load host details:', error);
         }
@@ -895,6 +915,26 @@ class ZabbixHosts {
 
             // 初始化性能图表
             this.initPerformanceCharts(hostDetails);
+
+            // 根据监控项是否存在来控制放大按钮
+            const cpuZoomBtn = document.querySelector('.zoom-btn[data-chart="cpu"]');
+            const memoryZoomBtn = document.querySelector('.zoom-btn[data-chart="memory"]');
+            
+            if (cpuZoomBtn) {
+                if (!hostDetails.cpuItemId) {
+                    cpuZoomBtn.style.display = 'none';  // 或者使用 disabled
+                } else {
+                    cpuZoomBtn.style.display = 'block';
+                }
+            }
+            
+            if (memoryZoomBtn) {
+                if (!hostDetails.memoryItemId) {
+                    memoryZoomBtn.style.display = 'none';  // 或者使用 disabled
+                } else {
+                    memoryZoomBtn.style.display = 'block';
+                }
+            }
 
         } catch (error) {
             console.error('Failed to load host details:', error);
