@@ -94,6 +94,7 @@ class ZabbixAPI {
                         'system.uname',               // 系统详情
                         'system.sw.os',               // 系统详情
                         'system.uptime',              // 运行时间
+                        'system.descr[sysDescr.0]',    // 系统详情
                         'vm.memory.size[total]'       // 内存总量
                     ]
                 },
@@ -150,7 +151,8 @@ class ZabbixAPI {
 
                 const osItem = items.find(item => item.name.includes('System description')) ||
                              items.find(item => item.key_ === 'system.uname') ||
-                             items.find(item => item.key_ === 'system.sw.os');
+                             items.find(item => item.key_ === 'system.sw.os') ||
+                             items.find(item => item.key_ === 'system.descr[sysDescr.0]');
 
                 const cpuCoresItem = items.find(item => item.name.includes('Number of CPUs')) ||
                                    items.find(item => item.key_ === 'system.cpu.num')
@@ -466,6 +468,7 @@ class ZabbixAPI {
                             'system.uname',               // 系统详情
                             'system.sw.os',               // 系统详情
                             'system.uptime',              // 运行时间
+                            'system.descr[sysDescr.0]',    // 系统详情
                             'vm.memory.size[total]'       // 内存总量
                         ]
                     },
@@ -504,7 +507,8 @@ class ZabbixAPI {
 
             const osItem = itemsResponse.find(item => item.name.includes('System description')) ||
                           itemsResponse.find(item => item.key_ === 'system.uname') ||
-                          itemsResponse.find(item => item.key_ === 'system.sw.os');
+                          itemsResponse.find(item => item.key_ === 'system.sw.os') ||
+                          itemsResponse.find(item => item.key_ === 'system.descr[sysDescr.0]');
 
             const uptimeItem = itemsResponse.find(item => item.name.includes('System uptime')) ||
                               itemsResponse.find(item => item.key_ === 'system.uptime');
