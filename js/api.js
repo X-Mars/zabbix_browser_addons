@@ -165,30 +165,36 @@ class ZabbixAPI {
                                       items.find(item => item.key_ === 'vm.memory.size[total]');
                 
                 // 计算内存使用率，优先使用直接的使用率值
-                let memoryUsage = '未知';
+                let memoryUsage = '-';
                 if (memoryUtilItem?.lastvalue) {
                     memoryUsage = parseFloat(memoryUtilItem.lastvalue).toFixed(2);
                 }
                 
-                const cpuCores = cpuCoresItem?.lastvalue || '未知';
-                const hostname = hostnameItem?.lastvalue || '未知';
+                const cpuCores = cpuCoresItem?.lastvalue || '-';
+                const hostname = hostnameItem?.lastvalue || '-';
 
                 // 获取活动的告警数量
                 const activeProblems = (host.triggers || []).filter(trigger => 
                     trigger.value === '1'  // 1 表示问题状态
                 ).length;
 
+                // 添加运行时间监控项获取
+                const uptimeItem = items.find(item => item.name.includes('System uptime')) ||
+                                 items.find(item => item.key_ === 'system.uptime') ||
+                                 items.find(item => item.key_.startsWith('system.net.uptime'));
+
                 return {
                     hostid: host.hostid,
                     name: host.name || host.host,
                     hostname: hostname,
-                    ip: host.interfaces?.[0]?.ip || '未知',
-                    os: osItem?.lastvalue || '未知',  // 直接使用 System description 的值
-                    cpuCores: cpuCores,
-                    memoryTotal: memoryTotalItem ? this.formatMemorySize(memoryTotalItem.lastvalue) : '未知',
-                    cpu: cpuItem?.lastvalue ? parseFloat(cpuItem.lastvalue).toFixed(2) : '未知',
+                    ip: host.interfaces?.[0]?.ip || '-',
+                    os: osItem?.lastvalue || '-',  // 直接使用 System description 的值
+                    cpuCores: cpuCores !== '-' ? `${cpuCores}` : '-',
+                    memoryTotal: memoryTotalItem ? this.formatMemorySize(memoryTotalItem.lastvalue) : '-',
+                    cpu: cpuItem?.lastvalue ? parseFloat(cpuItem.lastvalue).toFixed(2) : '-',
                     memory: memoryUsage,
-                    alerts: activeProblems || 0
+                    alerts: activeProblems || 0,
+                    uptime: uptimeItem ? this.calculateDuration(Math.floor(Date.now() / 1000) - parseInt(uptimeItem.lastvalue)) : '-'
                 };
             }));
         } catch (error) {
@@ -431,7 +437,7 @@ class ZabbixAPI {
                 os: getOsType(osItem?.lastvalue),
                 cpuCores: cpuNumItem ? cpuNumItem.lastvalue : '-',
                 memoryTotal: memTotalItem ? formatMemorySize(memTotalItem.lastvalue) : '-',
-                cpu: cpuItem?.lastvalue ? parseFloat(cpuItem.lastvalue).toFixed(2) : '未知',
+                cpu: cpuItem?.lastvalue ? parseFloat(cpuItem.lastvalue).toFixed(2) : '-',
                 memory: formatPercentage(memoryItem?.lastvalue),
                 alerts: alertCounts[host.hostid] || 0
             };
@@ -519,7 +525,7 @@ class ZabbixAPI {
 
             const uptimeItem = itemsResponse.find(item => item.name.includes('System uptime')) ||
                               itemsResponse.find(item => item.key_ === 'system.uptime') ||
-                              itemsResponse.find(item => item.key_ === 'system.net.uptime');
+                              itemsResponse.find(item => item.key_.startsWith('system.net.uptime'));
 
             const memoryTotalItem = itemsResponse.find(item => item.name.includes('Total memory')) ||
                                    itemsResponse.find(item => item.key_ === 'vm.memory.size[total]');
@@ -665,7 +671,7 @@ class ZabbixAPI {
 
     // 添加内存大小格式化方法
     formatMemorySize(bytes) {
-        if (!bytes) return '未知';
+        if (!bytes) return '-';
         
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -745,9 +751,9 @@ class ZabbixAPI {
         const minutes = Math.floor((duration % 3600) / 60);
         
         let result = '';
-        if (days > 0) result += `${days}天`;
-        if (hours > 0) result += `${hours}小时`;
-        if (minutes > 0) result += `${minutes}分钟`;
-        return result || '刚刚';
+        if (days > 0) result += `${days}${i18n.t('time.days')} `;
+        if (hours > 0) result += `${hours}${i18n.t('time.hours')} `;
+        if (minutes > 0) result += `${minutes}${i18n.t('time.minutes')}`;
+        return result.trim() || i18n.t('time.lessThanOneMinute');
     }
 } 

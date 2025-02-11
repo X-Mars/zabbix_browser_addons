@@ -75,12 +75,14 @@ class Header {
     updateLastRefreshTime() {
         if (this.lastRefreshTimeElement) {
             const now = new Date();
-            this.lastRefreshTimeElement.textContent = `最后刷新时间: ${now.toLocaleTimeString('zh-CN', {
+            const timeStr = now.toLocaleTimeString('zh-CN', {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
                 hour12: false
-            })}`;
+            });
+            const template = i18n.t('settings.messages.lastRefresh');
+            this.lastRefreshTimeElement.textContent = template.replace('{time}', timeStr);
         }
     }
 }
@@ -693,6 +695,8 @@ class ZabbixDashboard {
     }
 
     initI18n() {
+        // 更新页面标题
+        document.title = i18n.t('pageTitle.dashboard');
         // 初始化所有带有 data-i18n 属性的元素
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
@@ -707,9 +711,20 @@ class ZabbixHosts {
         this.header = new Header();
         this.hosts = [];                // 存储所有主机数据
         this.refreshManager = new RefreshManager(() => this.refreshHostsList());
+        this.initI18n();  // 初始化国际化
         this.init();
         this.initModals();  // 初始化主机详情和图表放大模态框
         this.initAlertDetailModal();  // 初始化告警详情模态框
+    }
+
+    // 初始化国际化
+    initI18n() {
+        // 更新页面标题
+        document.title = i18n.t('pageTitle.hostList');
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            element.textContent = i18n.t(key);
+        });
     }
 
     // 添加初始化模态框方法
@@ -778,12 +793,14 @@ class ZabbixHosts {
             const lastRefreshTimeElement = document.getElementById('lastRefreshTime');
             if (lastRefreshTimeElement) {
                 const now = new Date();
-                lastRefreshTimeElement.textContent = `最后刷新时间: ${now.toLocaleTimeString('zh-CN', {
+                const timeStr = now.toLocaleTimeString(i18n.currentLang === 'zh' ? 'zh-CN' : 'en-US', {
                     hour: '2-digit',
                     minute: '2-digit',
                     second: '2-digit',
                     hour12: false
-                })}`;
+                });
+                const template = i18n.t('settings.messages.lastRefresh');
+                lastRefreshTimeElement.textContent = template.replace('{time}', timeStr);
             }
         } catch (error) {
             console.error('Failed to load hosts:', error);
@@ -838,6 +855,7 @@ class ZabbixHosts {
                         <td style="min-width: 150px">${cpuUsage}</td>
                         <td style="min-width: 150px">${memoryUsage}</td>
                         <td>${alerts}</td>
+                        <td>${host.uptime}</td>
                     </tr>
                 `;
             }).join('');

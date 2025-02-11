@@ -1,6 +1,11 @@
 const translations = {
     zh: {
         // 标题和按钮
+        'pageTitle': {
+            'settings': '设置',
+            'dashboard': '仪表盘',
+            'hostList': '主机列表'
+        },
         'hostCount': '主机数量',
         'alertCount': '当前告警',
         'alertTrend': '告警趋势',
@@ -97,7 +102,7 @@ const translations = {
             'hours': '小时',
             'minutes': '分钟',
             'seconds': '秒',
-            'lessThanOneMinute': '小于1分钟',
+            'lessThanOneMinute': '刚刚',
             'runningTime': '运行时间'
         },
 
@@ -136,11 +141,12 @@ const translations = {
         // 设置对话框
         'settings': {
             'title': '设置',
-            'apiUrl': 'API URL:',
-            'apiToken': 'API Token:',
+            'apiUrl': 'ZABBIX API URL:',
+            'apiToken': 'ZABBIX API TOKEN:',
             'refreshInterval': '刷新间隔:',
             'intervals': {
                 '5s': '5秒',
+                '30s': '30秒',
                 '1m': '1分钟',
                 '5m': '5分钟',
                 '10m': '10分钟',
@@ -156,13 +162,25 @@ const translations = {
                 'connectionFailed': '连接失败',
                 'apiUrlAutoComplete': '已自动补充 api_jsonrpc.php 路径',
                 'savingSettings': '正在保存设置...',
+                'lastRefresh': '最后刷新时间: {time}',
                 'settingsSaved': '设置已保存',
-                'settingsSaveFailed': '保存设置失败'
+                'settingsSaveFailed': '保存设置失败',
+                'loadFailed': '加载设置对话框失败'
             }
+        },
+
+        'nav': {
+            'dashboard': '仪表盘',
+            'hostList': '主机列表'
         }
     },
     en: {
         // Titles and buttons
+        'pageTitle': {
+            'settings': 'Settings',
+            'dashboard': 'Dashboard',
+            'hostList': 'Host List'
+        },
         'hostCount': 'Host Count',
         'alertCount': 'Alerting',
         'alertTrend': 'Alert Trend',
@@ -255,11 +273,11 @@ const translations = {
 
         // Time related
         'time': {
-            'days': 'days',
-            'hours': 'hours',
-            'minutes': 'minutes',
-            'seconds': 'seconds',
-            'lessThanOneMinute': 'less than 1 minute',
+            'days': ' days',
+            'hours': ' hrs',
+            'minutes': ' mins',
+            'seconds': ' secs',
+            'lessThanOneMinute': 'Just now',
             'runningTime': 'Running Time'
         },
 
@@ -298,11 +316,12 @@ const translations = {
         // Settings dialog
         'settings': {
             'title': 'Settings',
-            'apiUrl': 'API URL:',
-            'apiToken': 'API Token:',
+            'apiUrl': 'ZABBIX API URL:',
+            'apiToken': 'ZABBIX API TOKEN:',
             'refreshInterval': 'Refresh Interval:',
             'intervals': {
                 '5s': '5 seconds',
+                '30s': '30 seconds',
                 '1m': '1 minute',
                 '5m': '5 minutes',
                 '10m': '10 minutes',
@@ -318,9 +337,16 @@ const translations = {
                 'connectionFailed': 'Connection failed',
                 'apiUrlAutoComplete': 'Automatically added api_jsonrpc.php path',
                 'savingSettings': 'Saving settings...',
+                'lastRefresh': 'Last Refresh: {time}',
                 'settingsSaved': 'Settings saved',
-                'settingsSaveFailed': 'Failed to save settings'
+                'settingsSaveFailed': 'Failed to save settings',
+                'loadFailed': 'Failed to load settings dialog'
             }
+        },
+
+        'nav': {
+            'dashboard': 'Dashboard',
+            'hostList': 'Host List'
         }
     }
 };
