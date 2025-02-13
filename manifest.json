@@ -6,8 +6,7 @@
   "author": "火星小刘",
   "homepage_url": "https://github.com/X-Mars/zabbix_browser_addons",
   "permissions": [
-    "storage",
-    "tabs"
+    "storage"
   ],
   "host_permissions": [
     "*://*/*"
