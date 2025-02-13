@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Zabbix Dashboard",
-  "version": "1.0",
+  "version": "2.1.5",
   "description": "Zabbix dashboard",
   "author": "火星小刘",
   "homepage_url": "https://github.com/X-Mars/zabbix_browser_addons",
