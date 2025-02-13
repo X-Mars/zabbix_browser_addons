@@ -523,8 +523,8 @@ class ZabbixDashboard {
         modal.style.display = 'flex';
 
         // 根据图表类型设置标题
-        const titleText = chartType === 'cpu' ? 'CPU利用率' : '内存利用率';
-        document.getElementById('zoomChartTitle').textContent = `性能监控 - ${titleText}`;
+        const titleText = chartType === 'cpu' ? i18n.t('chartTitle.cpu') : i18n.t('chartTitle.memory');
+        document.getElementById('zoomChartTitle').textContent = `${i18n.t('performanceMonitor')} - ${titleText}`;
 
         const chart = echarts.init(document.getElementById('zoomChart'));
         chart.clear();
@@ -560,21 +560,12 @@ class ZabbixDashboard {
 
             // 初始化图表选项
             const option = {
-                title: {
-                    text: titleText,
-                    left: 'center',
-                    top: 10,
-                    textStyle: {
-                        fontSize: 16,
-                        fontWeight: 'bold'
-                    }
-                },
                 tooltip: {
                     trigger: 'axis',
                     formatter: function(params) {
                         const value = params[0].value;
                         const time = params[0].name;
-                        return `${time}<br/>${titleText}: ${value}%`;
+                        return `${time}<br/>${titleText}: ${value}${i18n.t('units.percentage')}`;
                     }
                 },
                 grid: {
@@ -635,9 +626,7 @@ class ZabbixDashboard {
 
                     const historyData = historyResponse.map(record => ({
                         time: this.formatHistoryTime(record.clock),
-                        value: this.currentChartType === 'cpu' && !this.isWindows ?
-                            (100 - parseFloat(record.value)).toFixed(2) :
-                            parseFloat(record.value).toFixed(2)
+                        value: parseFloat(record.value).toFixed(2)
                     }));
 
                     chart.setOption({
@@ -1090,8 +1079,8 @@ class ZabbixHosts {
         modal.style.display = 'flex';
 
         // 根据图表类型设置标题
-        const titleText = chartType === 'cpu' ? 'CPU利用率' : '内存利用率';
-        document.getElementById('zoomChartTitle').textContent = `性能监控 - ${titleText}`;
+        const titleText = chartType === 'cpu' ? i18n.t('chartTitle.cpu') : i18n.t('chartTitle.memory');
+        document.getElementById('zoomChartTitle').textContent = `${i18n.t('performanceMonitor')} - ${titleText}`;
 
         const chart = echarts.init(document.getElementById('zoomChart'));
         chart.clear();
@@ -1120,28 +1109,17 @@ class ZabbixHosts {
             // 处理数据
             const historyData = historyResponse.map(record => ({
                 time: this.formatHistoryTime(record.clock),
-                value: this.currentChartType === 'cpu' && !this.isWindows ?
-                    (100 - parseFloat(record.value)).toFixed(2) :
-                    parseFloat(record.value).toFixed(2)
+                value: parseFloat(record.value).toFixed(2)
             }));
 
             // 初始化图表选项
             const option = {
-                title: {
-                    text: titleText,
-                    left: 'center',
-                    top: 10,
-                    textStyle: {
-                        fontSize: 16,
-                        fontWeight: 'bold'
-                    }
-                },
                 tooltip: {
                     trigger: 'axis',
                     formatter: function(params) {
                         const value = params[0].value;
                         const time = params[0].name;
-                        return `${time}<br/>${titleText}: ${value}%`;
+                        return `${time}<br/>${titleText}: ${value}${i18n.t('units.percentage')}`;
                     }
                 },
                 grid: {
@@ -1202,9 +1180,7 @@ class ZabbixHosts {
 
                     const historyData = historyResponse.map(record => ({
                         time: this.formatHistoryTime(record.clock),
-                        value: this.currentChartType === 'cpu' && !this.isWindows ?
-                            (100 - parseFloat(record.value)).toFixed(2) :
-                            parseFloat(record.value).toFixed(2)
+                        value: parseFloat(record.value).toFixed(2)
                     }));
 
                     chart.setOption({

@@ -109,8 +109,7 @@ const translations = {
         // 图表标题
         'chartTitle': {
             'cpu': 'CPU使用率',
-            'memory': '内存使用率',
-            'usage': '使用率'
+            'memory': '内存使用率'
         },
         'timeRange': {
             '1h': '(1小时)',
@@ -172,6 +171,11 @@ const translations = {
         'nav': {
             'dashboard': '仪表盘',
             'hostList': '主机列表'
+        },
+
+        'performanceMonitor': '性能监控',
+        'units': {
+            'percentage': '%'
         }
     },
     en: {
@@ -284,8 +288,7 @@ const translations = {
         // Chart titles
         'chartTitle': {
             'cpu': 'CPU Usage',
-            'memory': 'Memory Usage',
-            'usage': 'Usage'
+            'memory': 'Memory Usage'
         },
         'timeRange': {
             '1h': '(1 Hour)',
@@ -347,6 +350,11 @@ const translations = {
         'nav': {
             'dashboard': 'Dashboard',
             'hostList': 'Host List'
+        },
+
+        'performanceMonitor': 'Performance Monitor',
+        'units': {
+            'percentage': '%'
         }
     }
 };
