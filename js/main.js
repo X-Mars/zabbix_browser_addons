@@ -75,12 +75,14 @@ class Header {
     updateLastRefreshTime() {
         if (this.lastRefreshTimeElement) {
             const now = new Date();
-            this.lastRefreshTimeElement.textContent = `最后刷新时间: ${now.toLocaleTimeString('zh-CN', {
+            const timeStr = now.toLocaleTimeString('zh-CN', {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
                 hour12: false
-            })}`;
+            });
+            const template = i18n.t('settings.messages.lastRefresh');
+            this.lastRefreshTimeElement.textContent = template.replace('{time}', timeStr);
         }
     }
 }
@@ -358,6 +360,26 @@ class ZabbixDashboard {
             // 初始化性能图表
             this.initPerformanceCharts(hostDetails);
 
+            // 根据监控项是否存在来控制放大按钮
+            const cpuZoomBtn = document.querySelector('.zoom-btn[data-chart="cpu"]');
+            const memoryZoomBtn = document.querySelector('.zoom-btn[data-chart="memory"]');
+            
+            if (cpuZoomBtn) {
+                if (!hostDetails.cpuItemId) {
+                    cpuZoomBtn.style.display = 'none';  // 或者使用 disabled
+                } else {
+                    cpuZoomBtn.style.display = 'block';
+                }
+            }
+            
+            if (memoryZoomBtn) {
+                if (!hostDetails.memoryItemId) {
+                    memoryZoomBtn.style.display = 'none';  // 或者使用 disabled
+                } else {
+                    memoryZoomBtn.style.display = 'block';
+                }
+            }
+
         } catch (error) {
             console.error('Failed to load host details:', error);
         }
@@ -443,34 +465,6 @@ class ZabbixDashboard {
         this.initZoomChartModal();
     }
 
-    // 修改主机列表渲染函数，添加点击事件
-    renderHostsList(hosts) {
-        const hostsListElement = document.getElementById('hostsList');
-        hostsListElement.innerHTML = hosts.map(host => `
-            <tr class="${parseInt(host.alerts) > 0 ? 'has-alerts' : 'no-alerts'}">
-                <td><a href="#" class="host-name" data-host-id="${parseInt(host.hostid)}" style="color: var(--primary-color); text-decoration: none;">${host.name}</a></td>
-                <td>${host.hostname}</td>
-                <td>${host.ip}</td>
-                <td>${host.os}</td>
-                <td>${host.cpuCores}</td>
-                <td>${host.memoryTotal}</td>
-                <td style="min-width: 150px">${getProgressBarHTML(host.cpu)}</td>
-                <td style="min-width: 150px">${getProgressBarHTML(host.memory)}</td>
-                <td>${host.alerts}</td>
-            </tr>
-        `).join('');
-
-        // 添加主机名称点击事件
-        document.querySelectorAll('.host-name').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const hostId = parseInt(e.target.dataset.hostId);
-                // console.log('Clicked Host ID:', hostId); // 添加调试日志
-                this.showHostDetail(hostId);
-            });
-        });
-    }
-
     // 初始化主机详情对话框
     initHostDetailModal() {
         document.getElementById('closeHostDetailModal').addEventListener('click', () => {
@@ -529,8 +523,8 @@ class ZabbixDashboard {
         modal.style.display = 'flex';
 
         // 根据图表类型设置标题
-        const titleText = chartType === 'cpu' ? 'CPU利用率' : '内存利用率';
-        document.getElementById('zoomChartTitle').textContent = `性能监控 - ${titleText}`;
+        const titleText = chartType === 'cpu' ? i18n.t('chartTitle.cpu') : i18n.t('chartTitle.memory');
+        document.getElementById('zoomChartTitle').textContent = `${i18n.t('performanceMonitor')} - ${titleText}`;
 
         const chart = echarts.init(document.getElementById('zoomChart'));
         chart.clear();
@@ -566,21 +560,12 @@ class ZabbixDashboard {
 
             // 初始化图表选项
             const option = {
-                title: {
-                    text: titleText,
-                    left: 'center',
-                    top: 10,
-                    textStyle: {
-                        fontSize: 16,
-                        fontWeight: 'bold'
-                    }
-                },
                 tooltip: {
                     trigger: 'axis',
                     formatter: function(params) {
                         const value = params[0].value;
                         const time = params[0].name;
-                        return `${time}<br/>${titleText}: ${value}%`;
+                        return `${time}<br/>${titleText}: ${value}${i18n.t('units.percentage')}`;
                     }
                 },
                 grid: {
@@ -641,9 +626,7 @@ class ZabbixDashboard {
 
                     const historyData = historyResponse.map(record => ({
                         time: this.formatHistoryTime(record.clock),
-                        value: this.currentChartType === 'cpu' && !this.isWindows ?
-                            (100 - parseFloat(record.value)).toFixed(2) :
-                            parseFloat(record.value).toFixed(2)
+                        value: parseFloat(record.value).toFixed(2)
                     }));
 
                     chart.setOption({
@@ -701,6 +684,8 @@ class ZabbixDashboard {
     }
 
     initI18n() {
+        // 更新页面标题
+        document.title = i18n.t('pageTitle.dashboard');
         // 初始化所有带有 data-i18n 属性的元素
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
@@ -715,9 +700,20 @@ class ZabbixHosts {
         this.header = new Header();
         this.hosts = [];                // 存储所有主机数据
         this.refreshManager = new RefreshManager(() => this.refreshHostsList());
+        this.initI18n();  // 初始化国际化
         this.init();
         this.initModals();  // 初始化主机详情和图表放大模态框
         this.initAlertDetailModal();  // 初始化告警详情模态框
+    }
+
+    // 初始化国际化
+    initI18n() {
+        // 更新页面标题
+        document.title = i18n.t('pageTitle.hostList');
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            element.textContent = i18n.t(key);
+        });
     }
 
     // 添加初始化模态框方法
@@ -786,12 +782,14 @@ class ZabbixHosts {
             const lastRefreshTimeElement = document.getElementById('lastRefreshTime');
             if (lastRefreshTimeElement) {
                 const now = new Date();
-                lastRefreshTimeElement.textContent = `最后刷新时间: ${now.toLocaleTimeString('zh-CN', {
+                const timeStr = now.toLocaleTimeString(i18n.currentLang === 'zh' ? 'zh-CN' : 'en-US', {
                     hour: '2-digit',
                     minute: '2-digit',
                     second: '2-digit',
                     hour12: false
-                })}`;
+                });
+                const template = i18n.t('settings.messages.lastRefresh');
+                lastRefreshTimeElement.textContent = template.replace('{time}', timeStr);
             }
         } catch (error) {
             console.error('Failed to load hosts:', error);
@@ -840,12 +838,13 @@ class ZabbixHosts {
                         </td>
                         <td>${host.hostname}</td>
                         <td>${host.ip || '未知'}</td>
-                        <td>${host.os || '未知'}</td>
+                        <td class="system-info"><span>${host.os || '未知'}</span></td>
                         <td>${host.cpuCores || '未知'}</td>
                         <td>${host.memoryTotal || '未知'}</td>
-                        <td>${cpuUsage}</td>
-                        <td>${memoryUsage}</td>
+                        <td style="min-width: 150px">${cpuUsage}</td>
+                        <td style="min-width: 150px">${memoryUsage}</td>
                         <td>${alerts}</td>
+                        <td>${host.uptime}</td>
                     </tr>
                 `;
             }).join('');
@@ -923,6 +922,26 @@ class ZabbixHosts {
 
             // 初始化性能图表
             this.initPerformanceCharts(hostDetails);
+
+            // 根据监控项是否存在来控制放大按钮
+            const cpuZoomBtn = document.querySelector('.zoom-btn[data-chart="cpu"]');
+            const memoryZoomBtn = document.querySelector('.zoom-btn[data-chart="memory"]');
+            
+            if (cpuZoomBtn) {
+                if (!hostDetails.cpuItemId) {
+                    cpuZoomBtn.style.display = 'none';  // 或者使用 disabled
+                } else {
+                    cpuZoomBtn.style.display = 'block';
+                }
+            }
+            
+            if (memoryZoomBtn) {
+                if (!hostDetails.memoryItemId) {
+                    memoryZoomBtn.style.display = 'none';  // 或者使用 disabled
+                } else {
+                    memoryZoomBtn.style.display = 'block';
+                }
+            }
 
         } catch (error) {
             console.error('Failed to load host details:', error);
@@ -1060,8 +1079,8 @@ class ZabbixHosts {
         modal.style.display = 'flex';
 
         // 根据图表类型设置标题
-        const titleText = chartType === 'cpu' ? 'CPU利用率' : '内存利用率';
-        document.getElementById('zoomChartTitle').textContent = `性能监控 - ${titleText}`;
+        const titleText = chartType === 'cpu' ? i18n.t('chartTitle.cpu') : i18n.t('chartTitle.memory');
+        document.getElementById('zoomChartTitle').textContent = `${i18n.t('performanceMonitor')} - ${titleText}`;
 
         const chart = echarts.init(document.getElementById('zoomChart'));
         chart.clear();
@@ -1090,28 +1109,17 @@ class ZabbixHosts {
             // 处理数据
             const historyData = historyResponse.map(record => ({
                 time: this.formatHistoryTime(record.clock),
-                value: this.currentChartType === 'cpu' && !this.isWindows ?
-                    (100 - parseFloat(record.value)).toFixed(2) :
-                    parseFloat(record.value).toFixed(2)
+                value: parseFloat(record.value).toFixed(2)
             }));
 
             // 初始化图表选项
             const option = {
-                title: {
-                    text: titleText,
-                    left: 'center',
-                    top: 10,
-                    textStyle: {
-                        fontSize: 16,
-                        fontWeight: 'bold'
-                    }
-                },
                 tooltip: {
                     trigger: 'axis',
                     formatter: function(params) {
                         const value = params[0].value;
                         const time = params[0].name;
-                        return `${time}<br/>${titleText}: ${value}%`;
+                        return `${time}<br/>${titleText}: ${value}${i18n.t('units.percentage')}`;
                     }
                 },
                 grid: {
@@ -1172,9 +1180,7 @@ class ZabbixHosts {
 
                     const historyData = historyResponse.map(record => ({
                         time: this.formatHistoryTime(record.clock),
-                        value: this.currentChartType === 'cpu' && !this.isWindows ?
-                            (100 - parseFloat(record.value)).toFixed(2) :
-                            parseFloat(record.value).toFixed(2)
+                        value: parseFloat(record.value).toFixed(2)
                     }));
 
                     chart.setOption({
@@ -1315,7 +1321,7 @@ function getProgressBarHTML(value) {
     }
 
     // 当百分比小于15%时，将文字显示在进度条外部右侧
-    const textPosition = percentage < 15 
+    const textPosition = percentage < 25 
         ? `position: absolute; left: 100%; margin-left: 8px; color: #333;` 
         : `color: ${textColor}`;
 

@@ -34,6 +34,11 @@ class Settings {
             container.innerHTML = '';
             container.appendChild(modal);
             
+            // 初始化 i18n
+            this.container = modal;
+            this.initI18n();
+            document.title = i18n.t('pageTitle.settings');
+            
             // 添加关闭事件
             const closeBtn = modal.querySelector('#closeModal');
             const overlay = modal.querySelector('.modal-overlay');
@@ -54,7 +59,7 @@ class Settings {
         } catch (error) {
             console.error('Failed to load settings dialog:', error);
             // 显示错误提示
-            this.showTip('加载设置对话框失败', 'error');
+            this.showTip(i18n.t('settings.messages.loadFailed'), 'error');
         }
     }
 
@@ -117,8 +122,10 @@ class Settings {
             });
 
             this.hideDialog();
+            this.showTip(i18n.t('settings.messages.settingsSaved'), 'success');
         } catch (error) {
             console.error('Failed to save settings:', error);
+            this.showTip(i18n.t('settings.messages.settingsSaveFailed'), 'error');
         }
     }
 
@@ -126,7 +133,7 @@ class Settings {
         const testBtn = this.testBtn;
         if (!testBtn) return;
 
-        const originalText = i18n.t('settings.buttons.test'); // 使用国际化的原始文本
+        const originalText = i18n.t('settings.buttons.test');
         testBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${i18n.t('settings.messages.testing')}`;
         testBtn.disabled = true;
 
@@ -170,12 +177,28 @@ class Settings {
 
     // 添加国际化初始化方法
     initI18n() {
-        // 初始化所有带有 data-i18n 属性的元素
         if (this.container) {
+            // 更新所有带有 data-i18n 属性的静态文本
             this.container.querySelectorAll('[data-i18n]').forEach(element => {
                 const key = element.getAttribute('data-i18n');
                 element.textContent = i18n.t(key);
             });
+
+            // 更新刷新间隔选项
+            const select = this.container.querySelector('#refreshInterval');
+            if (select) {
+                const intervals = {
+                    '5000': i18n.t('settings.intervals.5s'),
+                    '30000': i18n.t('settings.intervals.30s'),
+                    '60000': i18n.t('settings.intervals.1m'),
+                    '300000': i18n.t('settings.intervals.5m'),
+                    '600000': i18n.t('settings.intervals.10m'),
+                    '1800000': i18n.t('settings.intervals.30m')
+                };
+                Array.from(select.options).forEach(option => {
+                    option.textContent = intervals[option.value] || option.textContent;
+                });
+            }
         }
     }
 
@@ -193,7 +216,7 @@ class Settings {
                 url = url.replace(/\/+$/, '');
                 url = `${url}/api_jsonrpc.php`;
                 apiUrl.value = url;
-                this.showTip('API URL 已自动补全', 'success');
+                this.showTip(i18n.t('settings.messages.apiUrlAutoComplete'), 'success');
             }
         });
 
@@ -201,7 +224,7 @@ class Settings {
         testBtn?.addEventListener('click', async () => {
             const originalText = testBtn.textContent;
             testBtn.disabled = true;
-            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
+            testBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${i18n.t('settings.messages.testing')}`;
 
             try {
                 const api = new ZabbixAPI(apiUrl.value.trim(), apiToken.value.trim());
@@ -209,7 +232,7 @@ class Settings {
                 
                 testBtn.style.backgroundColor = '#67C23A';
                 testBtn.style.color = 'white';
-                testBtn.innerHTML = '<i class="fas fa-check"></i> 连接成功';
+                testBtn.innerHTML = `<i class="fas fa-check"></i> ${i18n.t('settings.messages.connectionSuccess')}`;
                 
                 setTimeout(() => {
                     testBtn.style.backgroundColor = '';
@@ -220,7 +243,7 @@ class Settings {
             } catch (error) {
                 testBtn.style.backgroundColor = '#F56C6C';
                 testBtn.style.color = 'white';
-                testBtn.innerHTML = '<i class="fas fa-times"></i> 连接失败';
+                testBtn.innerHTML = `<i class="fas fa-times"></i> ${i18n.t('settings.messages.connectionFailed')}`;
                 
                 setTimeout(() => {
                     testBtn.style.backgroundColor = '';
@@ -252,7 +275,7 @@ class Settings {
                     });
                 });
 
-                this.showTip('设置已保存', 'success');
+                this.showTip(i18n.t('settings.messages.settingsSaved'), 'success');
                 
                 // 关闭设置对话框
                 const container = document.getElementById('settingsContainer');
@@ -266,7 +289,7 @@ class Settings {
                 }, 1000);
             } catch (error) {
                 console.error('Failed to save settings:', error);
-                this.showTip('保存设置失败', 'error');
+                this.showTip(i18n.t('settings.messages.settingsSaveFailed'), 'error');
             }
         });
     }

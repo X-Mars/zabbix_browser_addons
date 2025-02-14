@@ -64,28 +64,31 @@ body {
 }
 
 .icon-btn {
-    background: none;
-    border: none;
-    padding: 0.5rem;
-    font-size: 1.25rem;
-    color: var(--gray-600);
-    cursor: pointer;
-    border-radius: 8px;
-    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-}
-
-.icon {
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    border-radius: 50%;
+    color: #666;
     transition: all 0.2s;
+    background: none;
+    border: none;
+    cursor: pointer;
 }
 
 .icon-btn:hover {
-    color: var(--gray-800);
-    background: var(--gray-100);
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #333;
+}
+
+/* SVG 图标样式 */
+.icon {
+    width: 24px !important;
+    height: 24px !important;
+    fill: currentColor;
+    flex-shrink: 0;  /* 防止图标被压缩 */
 }
 
 /* 主要内容区样式 */
@@ -1268,6 +1271,9 @@ body {
 .alert-table th {
     background-color: #f8f9fa;
     font-weight: 600;
+    position: sticky;  /* 表头固定 */
+    top: 0;           /* 固定在顶部 */
+    z-index: 1;       /* 确保表头在内容之上 */
 }
 
 /* 告警级别样式 */
@@ -1284,4 +1290,47 @@ body {
 .severity-warning { background-color: #FFC859; }
 .severity-average { background-color: #FFA059; }
 .severity-high { background-color: #E97659; }
-.severity-disaster { background-color: #E45959; } 
+.severity-disaster { background-color: #E45959; }
+
+/* 系统详情单元格样式 */
+.hosts-table td.system-info {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: relative;
+}
+
+/* 鼠标悬浮时显示完整内容 */
+.hosts-table td.system-info:hover {
+    overflow: visible;
+    z-index: 1;
+}
+
+.hosts-table td.system-info:hover span {
+    background: white;
+    position: absolute;
+    left: 100%;  /* 改为从元素右侧开始 */
+    margin-left: 10px;  /* 与单元格保持一定距离 */
+    white-space: normal;
+    border: 1px solid #eee;
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    min-width: 800px;
+    max-width: 800px;
+    line-height: 1.5;
+    top: 0;  /* 与单元格顶部对齐 */
+}
+
+/* 告警详情对话框的内容区域添加滚动 */
+#alertDetailModal .modal-body {
+    max-height: 70vh;  /* 最大高度为视窗高度的70% */
+    overflow-y: auto;  /* 垂直方向可滚动 */
+}
+
+/* 确保表头背景色完整显示 */
+.alert-table thead {
+    background-color: #f8f9fa;
+} 
