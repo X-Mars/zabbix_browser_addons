@@ -4,7 +4,9 @@ const translations = {
         'pageTitle': {
             'settings': '设置',
             'dashboard': '仪表盘',
-            'hostList': '主机列表'
+            'hostList': '主机列表',
+            'screen1': '大屏展示1',
+            'screen2': '大屏展示2'
         },
         'hostCount': '主机数量',
         'alertCount': '当前告警',
@@ -170,7 +172,10 @@ const translations = {
 
         'nav': {
             'dashboard': '仪表盘',
-            'hostList': '主机列表'
+            'hostList': '主机列表',
+            'bigScreen': '大屏展示',
+            'screen1': '大屏展示1',
+            'screen2': '大屏展示2'
         },
 
         'performanceMonitor': '性能监控',
@@ -183,7 +188,9 @@ const translations = {
         'pageTitle': {
             'settings': 'Settings',
             'dashboard': 'Dashboard',
-            'hostList': 'Host List'
+            'hostList': 'Host List',
+            'screen1': 'Screen Display 1',
+            'screen2': 'Screen Display 2'
         },
         'hostCount': 'Host Count',
         'alertCount': 'Alerting',
@@ -349,7 +356,10 @@ const translations = {
 
         'nav': {
             'dashboard': 'Dashboard',
-            'hostList': 'Host List'
+            'hostList': 'Host List',
+            'bigScreen': 'Big Screen',
+            'screen1': 'Screen Display 1',
+            'screen2': 'Screen Display 2'
         },
 
         'performanceMonitor': 'Performance Monitor',

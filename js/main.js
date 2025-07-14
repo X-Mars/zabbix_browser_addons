@@ -1291,7 +1291,16 @@ class ZabbixHosts {
 }
 
 // 确保在 DOM 加载完成后再初始化
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async function() {
+    // 加载头部
+    const headerContainer = document.getElementById('header-container');
+    const headerResponse = await fetch('header.html');
+    const headerHtml = await headerResponse.text();
+    headerContainer.innerHTML = headerHtml;
+    
+    // 在header加载完成后初始化导航
+    initializeNavigation();
+    
     // 确保 settingsManager 已经初始化
     if (!window.settingsManager) {
         window.settingsManager = new Settings();

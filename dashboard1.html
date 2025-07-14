@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Zabbix 告警监控大屏</title>
+    <link href="css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .dashboard-screen {
+            background-color: #001529;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .screen-title {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #00a8ff;
+            position: relative;
+            padding: 10px 0;
+        }
+        .screen-title::before,
+        .screen-title::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 30%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #00a8ff, transparent);
+        }
+        .screen-title::before {
+            left: 5%;
+        }
+        .screen-title::after {
+            right: 5%;
+        }
+        .grid-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .grid-section {
+            width: 32%;
+            position: relative;
+        }
+        .chart-card {
+            background: rgba(0, 21, 41, 0.8);
+            border: 1px solid #1a365d;
+            border-radius: 4px;
+            padding: 15px;
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 1px solid #1a365d;
+            border-radius: 6px;
+            z-index: -1;
+        }
+        .chart-title {
+            color: #00a8ff;
+            font-size: 16px;
+            margin-bottom: 15px;
+            position: relative;
+            padding-left: 15px;
+        }
+        .chart-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 16px;
+            background: #00a8ff;
+        }
+        .data-card {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 21, 41, 0.8);
+            border: 1px solid #1a365d;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            width: 30%;
+        }
+        .data-value {
+            font-size: 36px;
+            color: #00a8ff;
+            margin: 10px 0;
+        }
+        .data-label {
+            color: #8b9898;
+            font-size: 14px;
+        }
+        .data-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 15px;
+        }
+        .pending-alerts-table {
+            width: 100%;
+            color: #fff;
+            border-collapse: collapse;
+        }
+        .pending-alerts-table th,
+        .pending-alerts-table td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .pending-alerts-table th {
+            background: rgba(0,0,0,0.2);
+            color: #00a8ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- 顶部栏将通过 JavaScript 加载 -->
+        <div id="header-container"></div>
+
+        <div class="dashboard-screen">
+            <h1 class="screen-title">Zabbix 告警监控大屏</h1>
+            
+            <div class="grid-container">
+                <!-- 左侧部分 -->
+                <div class="grid-section">
+                    <div class="chart-card">
+                        <h3 class="chart-title">告警严重性分类</h3>
+                        <div id="alertSeverityChart" style="height: 300px;"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">主机组告警数</h3>
+                        <div id="hostGroupAlertChart" style="height: 300px;"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">告警趋势</h3>
+                        <div id="alertTrendChart" style="height: 300px;"></div>
+                    </div>
+                </div>
+
+                <!-- 中间部分 -->
+                <div class="grid-section">
+                    <div class="data-grid">
+                        <div class="data-card">
+                            <div class="data-label">主机数量</div>
+                            <div id="totalHosts" class="data-value">--</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-label">监控失效主机</div>
+                            <div id="unavailableHosts" class="data-value">--</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-label">未归类主机</div>
+                            <div id="unclassifiedHosts" class="data-value">--</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-label">主机组数量</div>
+                            <div id="hostGroups" class="data-value">--</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-label">监控服务器</div>
+                            <div id="monitorServers" class="data-value">--</div>
+                        </div>
+                        <div class="data-card">
+                            <div class="data-label">已处理告警数</div>
+                            <div id="resolvedAlerts" class="data-value">--</div>
+                        </div>
+                    </div>
+                    <div class="chart-card" style="flex-grow: 1;">
+                        <h3 class="chart-title">待处理告警</h3>
+                        <div id="pendingAlertTable" style="height: calc(100% - 40px);">
+                            <table class="pending-alerts-table">
+                                <thead>
+                                    <tr>
+                                        <th>时间字段</th>
+                                        <th>IP</th>
+                                        <th>主机</th>
+                                        <th>问题</th>
+                                        <th>严重性</th>
+                                        <th>待处理时效</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pendingAlertsBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧部分 -->
+                <div class="grid-section">
+                    <div class="chart-card">
+                        <h3 class="chart-title">主机状态统计</h3>
+                        <div id="monitorStatusChart" style="height: 300px;"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">待处理问题主机</h3>
+                        <div id="problemHostsChart" style="height: 300px;"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">告警问题严重性及问题数量</h3>
+                        <div id="alertDistributionChart" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置对话框容器 -->
+    <div id="settingsContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/header.js"></script>
+    <script src="js/dashboard1.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/i18n.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 
