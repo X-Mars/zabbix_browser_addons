@@ -85,7 +85,6 @@
         /* 全屏按钮样式 */
         .fullscreen-btn {
             position: fixed;
-            top: 24px;
             right: 24px;
             width: 48px;
             height: 48px;
@@ -123,6 +122,54 @@
                 0 2px 8px rgba(0, 0, 0, 0.3),
                 0 1px 4px rgba(0, 168, 255, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 左上角刷新时间显示 */
+        .dashboard-refresh-time {
+            position: fixed;
+            left: 24px;
+            color: #ffffff;
+            font-size: 14px;
+            background: linear-gradient(145deg, rgba(15, 25, 38, 0.95), rgba(8, 16, 28, 0.95));
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 168, 255, 0.3);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.3),
+                0 1px 4px rgba(0, 168, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 180px;
+        }
+        
+        .dashboard-refresh-time:hover {
+            border-color: rgba(0, 168, 255, 0.5);
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 2px 8px rgba(0, 168, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        .dashboard-refresh-time i {
+            color: #00a8ff;
+            font-size: 12px;
+        }
+        
+        .dashboard-refresh-time .refresh-label {
+            color: #a0a0a0;
+            font-size: 12px;
+        }
+        
+        .dashboard-refresh-time .refresh-value {
+            color: #00a8ff;
+            font-weight: 500;
+            font-size: 13px;
         }
         
         /* 全屏模式下的调整 */
@@ -759,6 +806,13 @@
             <button id="fullscreenBtn" class="fullscreen-btn" title="全屏显示">
                 <i class="fas fa-expand"></i>
             </button>
+            
+            <!-- 左上角刷新时间显示 -->
+            <div id="dashboardRefreshTime" class="dashboard-refresh-time">
+                <i class="fas fa-clock"></i>
+                <span class="refresh-label">最后刷新:</span>
+                <span class="refresh-value">--</span>
+            </div>
             
             <h1 class="screen-title">Zabbix 告警监控大屏</h1>
             

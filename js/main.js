@@ -1301,6 +1301,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 在header加载完成后初始化导航
     initializeNavigation();
     
+    // 创建全局header实例
+    window.headerInstance = new Header();
+    
     // 确保 settingsManager 已经初始化
     if (!window.settingsManager) {
         window.settingsManager = new Settings();

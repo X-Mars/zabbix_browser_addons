@@ -25,8 +25,10 @@ class DashboardScreen {
     async initialize() {
         await this.fetchData();
         this.initializeCharts();
-        this.startAutoRefresh();
+        await this.startAutoRefresh();
         this.initWindowResize();
+        // 初始化时显示首次加载时间
+        this.updateLastRefreshTime();
     }
 
     initWindowResize() {
@@ -41,6 +43,7 @@ class DashboardScreen {
     }
 
     async fetchData() {
+        console.log(`[${new Date().toLocaleTimeString()}] Fetching dashboard data...`);
         try {
             // 获取设置并创建 API 实例
             const settings = await this.getSettings();
@@ -64,6 +67,8 @@ class DashboardScreen {
             this.data.problemsStats = problemsStats;
 
             this.updateDataCards();
+            // 更新最后刷新时间
+            this.updateLastRefreshTime();
         } catch (error) {
             console.error('Failed to fetch dashboard data:', error);
             // 如果新API失败，回退到原来的方式
@@ -79,6 +84,8 @@ class DashboardScreen {
                     this.data.alerts = alertsData;
                     this.data.hostGroups = [];
                     this.updateDataCards();
+                    // 更新最后刷新时间
+                    this.updateLastRefreshTime();
                 }
             } catch (fallbackError) {
                 console.error('Fallback API also failed:', fallbackError);
@@ -734,10 +741,59 @@ class DashboardScreen {
         return counts;
     }
 
-    startAutoRefresh() {
-        this.refreshInterval = setInterval(() => {
-            this.fetchData();
-        }, 60000); // 每分钟刷新一次
+    updateLastRefreshTime() {
+        // 等待一小段时间确保header已经加载
+        setTimeout(() => {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            // 更新header中的刷新时间
+            if (window.headerInstance && typeof window.headerInstance.updateLastRefreshTime === 'function') {
+                window.headerInstance.updateLastRefreshTime();
+            } else {
+                // 如果全局header实例不存在，直接更新DOM元素
+                const lastRefreshElement = document.getElementById('lastRefreshTime');
+                if (lastRefreshElement) {
+                    lastRefreshElement.textContent = `最后刷新: ${timeString}`;
+                }
+            }
+            
+            // 更新左上角的刷新时间显示
+            const dashboardRefreshTimeElement = document.getElementById('dashboardRefreshTime');
+            if (dashboardRefreshTimeElement) {
+                const refreshValueElement = dashboardRefreshTimeElement.querySelector('.refresh-value');
+                if (refreshValueElement) {
+                    refreshValueElement.textContent = timeString;
+                }
+            }
+        }, 100);
+    }
+
+    async startAutoRefresh() {
+        try {
+            const settings = await this.getSettings();
+            // 刷新间隔以毫秒为单位保存，默认为30秒
+            const refreshIntervalMs = parseInt(settings.refreshInterval, 10) || 30000;
+            
+            console.log(`Setting auto refresh interval to ${refreshIntervalMs/1000} seconds`);
+            
+            this.refreshInterval = setInterval(() => {
+                console.log('Auto refreshing dashboard data...');
+                this.fetchData();
+            }, refreshIntervalMs);
+        } catch (error) {
+            console.error('Failed to start auto refresh:', error);
+            // 如果获取设置失败，使用默认30秒间隔
+            this.refreshInterval = setInterval(() => {
+                console.log('Auto refreshing dashboard data (fallback)...');
+                this.fetchData();
+            }, 30000);
+        }
     }
 
     destroy() {
@@ -751,10 +807,29 @@ class DashboardScreen {
 }
 
 // 页面加载完成后初始化大屏
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Initializing dashboard...');
+    
+    // 等待header加载完成
+    let attempts = 0;
+    const maxAttempts = 50; // 最多等待5秒
+    
+    while (!window.headerInstance && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
     const dashboard = new DashboardScreen();
-    dashboard.initialize();
+    await dashboard.initialize();
+    console.log('Dashboard initialized successfully');
     
     // 将dashboard实例存储到全局，以便全屏管理器访问
     window.dashboardInstance = dashboard;
+    
+    // 页面卸载时清理资源
+    window.addEventListener('beforeunload', () => {
+        if (window.dashboardInstance) {
+            window.dashboardInstance.destroy();
+        }
+    });
 }); 
