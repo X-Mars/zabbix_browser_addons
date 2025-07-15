@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Zabbix 告警监控大屏</title>
+    <title data-i18n="pageTitle.screen1">告警监控大屏</title>
     <link href="css/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
     <script src="js/echarts.min.js"></script>
@@ -810,11 +810,11 @@
             <!-- 左上角刷新时间显示 -->
             <div id="dashboardRefreshTime" class="dashboard-refresh-time">
                 <i class="fas fa-clock"></i>
-                <span class="refresh-label">最后刷新:</span>
+                <span class="refresh-label" data-i18n="dashboard2.lastRefresh">最后刷新:</span>
                 <span class="refresh-value">--</span>
             </div>
             
-            <h1 class="screen-title">Zabbix 告警监控大屏</h1>
+            <h1 class="screen-title" data-i18n="dashboard1.title">告警监控大屏</h1>
             
             <!-- 顶部数据卡片区域 -->
             <div class="top-data-section">
@@ -823,7 +823,7 @@
                         <i class="fas fa-server"></i>
                     </div>
                     <div class="data-content">
-                        <div class="data-label">主机数量</div>
+                        <div class="data-label" data-i18n="dashboard1.hostCount">主机数量</div>
                         <div id="totalHosts" class="data-value">--</div>
                     </div>
                 </div>
@@ -832,7 +832,7 @@
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
                     <div class="data-content">
-                        <div class="data-label">告警主机</div>
+                        <div class="data-label" data-i18n="dashboard1.alertingHosts">告警主机</div>
                         <div id="unavailableHosts" class="data-value">--</div>
                     </div>
                 </div>
@@ -841,7 +841,7 @@
                         <i class="fas fa-layer-group"></i>
                     </div>
                     <div class="data-content">
-                        <div class="data-label">主机组数量</div>
+                        <div class="data-label" data-i18n="dashboard1.hostGroups">主机组数量</div>
                         <div id="hostGroups" class="data-value">--</div>
                     </div>
                 </div>
@@ -850,7 +850,7 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="data-content">
-                        <div class="data-label">已处理告警数</div>
+                        <div class="data-label" data-i18n="dashboard1.processedAlerts">已处理告警数</div>
                         <div id="resolvedAlerts" class="data-value">--</div>
                     </div>
                 </div>
@@ -862,21 +862,21 @@
                     <div class="chart-card severity-card">
                         <h3 class="chart-title">
                             <i class="fas fa-chart-pie"></i>
-                            告警严重性分类
+                            <span data-i18n="dashboard1.severityChart">告警严重性分类</span>
                         </h3>
                         <div id="alertSeverityChart" style="height: calc(100% - 60px);"></div>
                     </div>
                     <div class="chart-card trend-card">
                         <h3 class="chart-title">
                             <i class="fas fa-chart-line"></i>
-                            过去7天告警趋势对比
+                            <span data-i18n="dashboard1.alertTrend7Days">过去7天告警趋势对比</span>
                         </h3>
                         <div id="weeklyAlertTrendChart" style="height: calc(100% - 60px);"></div>
                     </div>
                     <div class="chart-card status-card-2">
                         <h3 class="chart-title">
                             <i class="fas fa-heartbeat"></i>
-                            监控状态概览
+                            <span data-i18n="dashboard1.monitoringOverview">监控状态概览</span>
                         </h3>
                         <div id="monitorStatusChart" style="height: calc(100% - 60px);"></div>
                     </div>
@@ -889,19 +889,19 @@
                         <div class="chart-card table-card">
                             <h3 class="chart-title">
                                 <i class="fas fa-list-alt"></i>
-                                待处理告警
+                                <span data-i18n="dashboard1.pendingAlerts">待处理告警</span>
                                 <span id="alertCount" class="alert-count">0</span>
                             </h3>
                             <div id="pendingAlertTable" class="alert-table-container">
                                 <table class="pending-alerts-table">
                                     <thead>
                                         <tr>
-                                            <th><i class="fas fa-clock"></i> 时间</th>
-                                            <th><i class="fas fa-network-wired"></i> IP地址</th>
-                                            <th><i class="fas fa-server"></i> 主机名</th>
-                                            <th><i class="fas fa-exclamation-circle"></i> 问题</th>
-                                            <th><i class="fas fa-tag"></i> 严重性</th>
-                                            <th><i class="fas fa-hourglass-half"></i> 持续时间</th>
+                                            <th><i class="fas fa-clock"></i> <span data-i18n="time">时间</span></th>
+                                            <th><i class="fas fa-network-wired"></i> <span data-i18n="ipAddress">IP地址</span></th>
+                                            <th><i class="fas fa-server"></i> <span data-i18n="dashboard1.tableHeaders.hostname">主机名</span></th>
+                                            <th><i class="fas fa-exclamation-circle"></i> <span data-i18n="dashboard1.tableHeaders.alert">问题</span></th>
+                                            <th><i class="fas fa-tag"></i> <span data-i18n="dashboard1.tableHeaders.severity">严重性</span></th>
+                                            <th><i class="fas fa-hourglass-half"></i> <span data-i18n="dashboard1.tableHeaders.duration">持续时间</span></th>
                                         </tr>
                                     </thead>
                                     <tbody id="pendingAlertsBody">
@@ -916,7 +916,7 @@
                         <div class="chart-card distribution-card">
                             <h3 class="chart-title">
                                 <i class="fas fa-chart-bar"></i>
-                                主机告警分布
+                                <span data-i18n="dashboard1.hostAlertDistribution">主机告警分布</span>
                             </h3>
                             <div id="alertDistributionChart" style="height: calc(100% - 60px);"></div>
                         </div>

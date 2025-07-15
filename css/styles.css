@@ -669,6 +669,7 @@ body {
 /* 可排序的表头样式 */
 .sortable {
     cursor: pointer;
+    -webkit-user-select: none;
     user-select: none;
     position: relative;
     padding-right: 2.5rem !important;
@@ -1405,3 +1406,434 @@ body {
 .dropdown:hover .fa-chevron-down {
     transform: rotate(180deg);
 } 
+
+/* 大规模主机展示样式 */
+.large-scale-stats {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(25, 25, 45, 0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 140, 0, 0.2);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 140, 0, 0.1);
+}
+
+.stat-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+}
+
+.stat-icon.status-ok { background: #00ff7f; color: #000; }
+.stat-icon.status-warning { background: #ffa500; color: #000; }
+.stat-icon.status-critical { background: #ff4444; color: #fff; }
+.stat-icon.status-unknown { background: #666; color: #fff; }
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #a0a0a0;
+    margin-top: 2px;
+}
+
+/* 平均资源使用率 */
+.avg-resources {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(25, 25, 45, 0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 140, 0, 0.2);
+}
+
+.avg-title {
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.avg-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.avg-metric {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.avg-label {
+    color: #a0a0a0;
+    font-size: 12px;
+    width: 40px;
+    text-align: right;
+}
+
+.avg-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.avg-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.avg-value {
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+    width: 45px;
+    text-align: right;
+}
+
+/* TOP问题主机 */
+.top-issues-section {
+    margin-bottom: 20px;
+}
+
+.section-title {
+    color: #fff;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title i {
+    color: #ffa500;
+}
+
+.top-issues-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.issue-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(25, 25, 45, 0.5);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 140, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.issue-item:hover {
+    background: rgba(25, 25, 45, 0.7);
+    border-color: rgba(255, 140, 0, 0.3);
+}
+
+.issue-rank {
+    color: #ffa500;
+    font-weight: bold;
+    font-size: 12px;
+    width: 25px;
+    text-align: center;
+}
+
+.issue-host {
+    flex: 1;
+    min-width: 0;
+}
+
+.issue-name {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.issue-ip {
+    color: #a0a0a0;
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+.issue-metrics {
+    display: flex;
+    gap: 8px;
+}
+
+.issue-cpu, .issue-memory {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.issue-cpu {
+    background: rgba(255, 140, 0, 0.2);
+    color: #ff8c00;
+}
+
+.issue-memory {
+    background: rgba(0, 255, 127, 0.2);
+    color: #00ff7f;
+}
+
+.issue-severity {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+    text-align: center;
+    min-width: 40px;
+}
+
+.severity-normal {
+    background: rgba(0, 255, 127, 0.2);
+    color: #00ff7f;
+}
+
+.severity-warning {
+    background: rgba(255, 165, 0, 0.2);
+    color: #ffa500;
+}
+
+.severity-critical {
+    background: rgba(255, 68, 68, 0.2);
+    color: #ff4444;
+}
+
+/* 虚拟滚动提示 */
+.virtual-scroll-hint {
+    margin-top: 15px;
+    padding: 12px;
+    background: rgba(25, 25, 45, 0.5);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 140, 0, 0.2);
+}
+
+.hint-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #a0a0a0;
+    font-size: 12px;
+}
+
+.hint-content i {
+    color: #ffa500;
+}
+
+.view-all-btn {
+    background: rgba(255, 140, 0, 0.2);
+    color: #ff8c00;
+    border: 1px solid rgba(255, 140, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-all-btn:hover {
+    background: rgba(255, 140, 0, 0.3);
+    border-color: rgba(255, 140, 0, 0.5);
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .issue-item {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .issue-metrics {
+        order: 3;
+        flex-basis: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .avg-metric {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+    }
+    
+    .avg-label {
+        text-align: left;
+        width: auto;
+    }
+}
+
+/* 标题右侧排序控件样式 */
+.sort-controls-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.sort-controls-header .sort-field-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sort-controls-header .sort-field-select {
+    background: rgba(25, 25, 45, 0.9);
+    border: 1px solid rgba(255, 140, 0, 0.3);
+    border-radius: 4px;
+    color: #fff;
+    padding: 4px 8px;
+    font-size: 11px;
+    outline: none;
+    transition: all 0.3s ease;
+    min-width: 80px;
+    max-width: 120px;
+}
+
+.sort-controls-header .sort-field-select:hover {
+    border-color: rgba(255, 140, 0, 0.5);
+    background: rgba(25, 25, 45, 1);
+}
+
+.sort-controls-header .sort-field-select:focus {
+    border-color: #ff8c00;
+    box-shadow: 0 0 0 2px rgba(255, 140, 0, 0.2);
+}
+
+.sort-controls-header .sort-field-select option {
+    background: #1a1a2e;
+    color: #fff;
+}
+
+.sort-controls-header .sort-order-group {
+    display: flex;
+    gap: 4px;
+}
+
+.sort-controls-header .sort-order-btn {
+    background: rgba(25, 25, 45, 0.9);
+    border: 1px solid rgba(255, 140, 0, 0.3);
+    border-radius: 3px;
+    color: #a0a0a0;
+    padding: 4px 6px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+}
+
+.sort-controls-header .sort-order-btn:hover {
+    border-color: rgba(255, 140, 0, 0.5);
+    color: #fff;
+    background: rgba(25, 25, 45, 1);
+}
+
+.sort-controls-header .sort-order-btn.active {
+    background: rgba(255, 140, 0, 0.2);
+    border-color: #ff8c00;
+    color: #ff8c00;
+}
+
+.sort-controls-header .sort-order-btn i {
+    font-size: 10px;
+}
+
+/* 确保overview-header能够容纳排序控件 */
+.overview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: nowrap;
+}
+
+.overview-header .overview-title {
+    flex: 0 0 auto;
+}
+
+.overview-header .overview-count {
+    flex: 0 0 auto;
+    margin-right: 0;
+}
+
+/* 响应式：中等屏幕下调整排序控件 */
+@media (max-width: 1024px) {
+    .sort-controls-header .sort-field-select {
+        min-width: 70px;
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+    
+    .sort-controls-header .sort-order-btn {
+        min-width: 20px;
+        height: 20px;
+        padding: 2px 4px;
+    }
+    
+    .sort-controls-header {
+        gap: 6px;
+    }
+}
+
+/* 响应式：小屏幕下隐藏标题右侧排序控件 */
+@media (max-width: 768px) {
+    .sort-controls-header {
+        display: none;
+    }
+    
+    .overview-header {
+        flex-wrap: wrap;
+    }
+}

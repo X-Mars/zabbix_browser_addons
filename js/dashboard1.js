@@ -23,12 +23,33 @@ class DashboardScreen {
     }
 
     async initialize() {
+        // 应用国际化
+        this.applyI18n();
+        
         await this.fetchData();
         this.initializeCharts();
         await this.startAutoRefresh();
         this.initWindowResize();
         // 初始化时显示首次加载时间
         this.updateLastRefreshTime();
+    }
+
+    // 应用国际化
+    applyI18n() {
+        document.title = i18n.t('pageTitle.screen1');
+        
+        // 查找所有带有 data-i18n 属性的元素并应用翻译
+        const elementsToTranslate = document.querySelectorAll('[data-i18n]');
+        elementsToTranslate.forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            if (key) {
+                if (element.tagName === 'INPUT' && element.type === 'submit') {
+                    element.value = i18n.t(key);
+                } else {
+                    element.textContent = i18n.t(key);
+                }
+            }
+        });
     }
 
     initWindowResize() {
@@ -48,7 +69,7 @@ class DashboardScreen {
             // 获取设置并创建 API 实例
             const settings = await this.getSettings();
             if (!settings.apiUrl || !settings.apiToken) {
-                console.error('API配置不完整');
+                console.error(i18n.t('errors.incompleteApiConfig'));
                 return;
             }
             
@@ -145,11 +166,11 @@ class DashboardScreen {
                         textStyle: { color: '#fff' },
                         formatter: function(name) {
                             const data = [
-                                { name: '灾难', value: severityCounts.disaster },
-                                { name: '严重', value: severityCounts.high },
-                                { name: '一般', value: severityCounts.average },
-                                { name: '警告', value: severityCounts.warning },
-                                { name: '信息', value: severityCounts.information }
+                                { name: i18n.t('severity.disaster'), value: severityCounts.disaster },
+                                { name: i18n.t('severity.high'), value: severityCounts.high },
+                                { name: i18n.t('severity.average'), value: severityCounts.average },
+                                { name: i18n.t('severity.warning'), value: severityCounts.warning },
+                                { name: i18n.t('severity.information'), value: severityCounts.information }
                             ];
                             const item = data.find(d => d.name === name);
                             return name + ': ' + (item ? item.value : 0);
@@ -157,11 +178,11 @@ class DashboardScreen {
                     },
                     series: [{
                         data: [
-                            { value: severityCounts.disaster, name: '灾难', itemStyle: { color: '#ff4d4f' } },
-                            { value: severityCounts.high, name: '严重', itemStyle: { color: '#ff7a45' } },
-                            { value: severityCounts.average, name: '一般', itemStyle: { color: '#ffa940' } },
-                            { value: severityCounts.warning, name: '警告', itemStyle: { color: '#ffc53d' } },
-                            { value: severityCounts.information, name: '信息', itemStyle: { color: '#73d13d' } }
+                            { value: severityCounts.disaster, name: i18n.t('severity.disaster'), itemStyle: { color: '#ff4d4f' } },
+                            { value: severityCounts.high, name: i18n.t('severity.high'), itemStyle: { color: '#ff7a45' } },
+                            { value: severityCounts.average, name: i18n.t('severity.average'), itemStyle: { color: '#ffa940' } },
+                            { value: severityCounts.warning, name: i18n.t('severity.warning'), itemStyle: { color: '#ffc53d' } },
+                            { value: severityCounts.information, name: i18n.t('severity.information'), itemStyle: { color: '#73d13d' } }
                         ]
                     }]
                 });
@@ -214,7 +235,7 @@ class DashboardScreen {
             // 总告警数量 = 活动告警 + 已恢复告警
             const totalAlertsInSlot = activeAlertsInSlot + resolvedAlertsInSlot;
             
-            timeSlots.push(slotTime.toLocaleDateString('zh-CN', { 
+            timeSlots.push(slotTime.toLocaleDateString(i18n.currentLang === 'zh' ? 'zh-CN' : 'en-US', { 
                 month: '2-digit', 
                 day: '2-digit' 
             }));
@@ -229,15 +250,15 @@ class DashboardScreen {
             },
             series: [
                 {
-                    name: '总告警',
+                    name: i18n.t('dashboard1.chartSeries.totalAlerts'),
                     data: totalAlertCounts
                 },
                 {
-                    name: '活动告警',
+                    name: i18n.t('dashboard1.chartSeries.activeAlerts'),
                     data: activeAlertCounts
                 },
                 {
-                    name: '已恢复告警',
+                    name: i18n.t('dashboard1.chartSeries.resolvedAlerts'),
                     data: resolvedAlertCounts
                 }
             ]
@@ -252,9 +273,9 @@ class DashboardScreen {
         this.charts.monitorStatus.setOption({
             series: [{
                 data: [
-                    { value: normalHosts, name: '正常', itemStyle: { color: '#52c41a' } },
-                    { value: problemHosts, name: '告警', itemStyle: { color: '#ff4d4f' } },
-                    { value: disabledHosts, name: '已禁用', itemStyle: { color: '#8c8c8c' } }
+                    { value: normalHosts, name: i18n.t('dashboard1.monitorStatus.normal'), itemStyle: { color: '#52c41a' } },
+                    { value: problemHosts, name: i18n.t('dashboard1.monitorStatus.problem'), itemStyle: { color: '#ff4d4f' } },
+                    { value: disabledHosts, name: i18n.t('dashboard1.monitorStatus.disabled'), itemStyle: { color: '#8c8c8c' } }
                 ].filter(item => item.value > 0)
             }]
         });
@@ -271,7 +292,7 @@ class DashboardScreen {
             .slice(0, 10);
 
         if (distributionData.length === 0) {
-            distributionData.push({ name: '暂无告警主机', value: 0 });
+            distributionData.push({ name: i18n.t('dashboard1.noData.noAlertingHosts'), value: 0 });
         }
 
         this.charts.alertDistribution.setOption({
@@ -337,11 +358,11 @@ class DashboardScreen {
                 textStyle: { color: '#fff' },
                 formatter: function(name) {
                     const data = [
-                        { name: '灾难', value: severityCounts.disaster },
-                        { name: '严重', value: severityCounts.high },
-                        { name: '一般', value: severityCounts.average },
-                        { name: '警告', value: severityCounts.warning },
-                        { name: '信息', value: severityCounts.information }
+                        { name: i18n.t('dashboard1.severity.disaster'), value: severityCounts.disaster },
+                        { name: i18n.t('dashboard1.severity.high'), value: severityCounts.high },
+                        { name: i18n.t('dashboard1.severity.average'), value: severityCounts.average },
+                        { name: i18n.t('dashboard1.severity.warning'), value: severityCounts.warning },
+                        { name: i18n.t('dashboard1.severity.information'), value: severityCounts.information }
                     ];
                     const item = data.find(d => d.name === name);
                     return name + ': ' + (item ? item.value : 0);
@@ -351,11 +372,11 @@ class DashboardScreen {
                 type: 'pie',
                 radius: ['50%', '70%'],
                 data: [
-                    { value: severityCounts.disaster, name: '灾难', itemStyle: { color: '#ff4d4f' } },
-                    { value: severityCounts.high, name: '严重', itemStyle: { color: '#ff7a45' } },
-                    { value: severityCounts.average, name: '一般', itemStyle: { color: '#ffa940' } },
-                    { value: severityCounts.warning, name: '警告', itemStyle: { color: '#ffc53d' } },
-                    { value: severityCounts.information, name: '信息', itemStyle: { color: '#73d13d' } }
+                    { value: severityCounts.disaster, name: i18n.t('dashboard1.severity.disaster'), itemStyle: { color: '#ff4d4f' } },
+                    { value: severityCounts.high, name: i18n.t('dashboard1.severity.high'), itemStyle: { color: '#ff7a45' } },
+                    { value: severityCounts.average, name: i18n.t('dashboard1.severity.average'), itemStyle: { color: '#ffa940' } },
+                    { value: severityCounts.warning, name: i18n.t('dashboard1.severity.warning'), itemStyle: { color: '#ffc53d' } },
+                    { value: severityCounts.information, name: i18n.t('dashboard1.severity.information'), itemStyle: { color: '#73d13d' } }
                 ],
                 label: {
                     show: true,
@@ -415,7 +436,7 @@ class DashboardScreen {
             // 总告警数量 = 活动告警 + 已恢复告警
             const totalAlertsInSlot = activeAlertsInSlot + resolvedAlertsInSlot;
             
-            timeSlots.push(slotTime.toLocaleDateString('zh-CN', { 
+            timeSlots.push(slotTime.toLocaleDateString(i18n.currentLang === 'zh' ? 'zh-CN' : 'en-US', { 
                 month: '2-digit', 
                 day: '2-digit' 
             }));
@@ -442,7 +463,7 @@ class DashboardScreen {
                 }
             },
             legend: {
-                data: ['总告警', '活动告警', '已恢复告警'],
+                data: [i18n.t('dashboard1.chartSeries.totalAlerts'), i18n.t('dashboard1.chartSeries.activeAlerts'), i18n.t('dashboard1.chartSeries.resolvedAlerts')],
                 textStyle: { color: '#fff' },
                 top: '8%'
             },
@@ -462,7 +483,7 @@ class DashboardScreen {
             },
             series: [
                 {
-                    name: '总告警',
+                    name: i18n.t('dashboard1.chartSeries.totalAlerts'),
                     data: totalAlertCounts,
                     type: 'line',
                     smooth: true,
@@ -475,7 +496,7 @@ class DashboardScreen {
                     symbolSize: 6
                 },
                 {
-                    name: '活动告警',
+                    name: i18n.t('dashboard1.chartSeries.activeAlerts'),
                     data: activeAlertCounts,
                     type: 'line',
                     smooth: true,
@@ -488,7 +509,7 @@ class DashboardScreen {
                     symbolSize: 6
                 },
                 {
-                    name: '已恢复告警',
+                    name: i18n.t('dashboard1.chartSeries.resolvedAlerts'),
                     data: resolvedAlertCounts,
                     type: 'line',
                     smooth: true,
@@ -523,7 +544,10 @@ class DashboardScreen {
             tooltip: {
                 trigger: 'item',
                 formatter: function(params) {
-                    return `${params.name}: ${params.value}台主机 (${params.percent}%)`;
+                    return i18n.t('dashboard1.tooltip.hostCount')
+                        .replace('{name}', params.name)
+                        .replace('{value}', params.value)
+                        .replace('{percent}', params.percent);
                 }
             },
             legend: {
@@ -536,13 +560,13 @@ class DashboardScreen {
                 radius: ['40%', '70%'],
                 center: ['50%', '45%'],
                 data: [
-                    { value: normalHosts, name: '正常', itemStyle: { color: '#52c41a' } },
-                    { value: problemHosts, name: '告警', itemStyle: { color: '#ff4d4f' } },
-                    { value: disabledHosts, name: '已禁用', itemStyle: { color: '#8c8c8c' } }
+                    { value: normalHosts, name: i18n.t('dashboard1.monitorStatus.normal'), itemStyle: { color: '#52c41a' } },
+                    { value: problemHosts, name: i18n.t('dashboard1.monitorStatus.problem'), itemStyle: { color: '#ff4d4f' } },
+                    { value: disabledHosts, name: i18n.t('dashboard1.monitorStatus.disabled'), itemStyle: { color: '#8c8c8c' } }
                 ].filter(item => item.value > 0), // 只显示有数据的项
                 label: {
                     color: '#fff',
-                    formatter: '{b}: {c}台'
+                    formatter: '{b}: {c}' + i18n.t('dashboard1.units.hosts')
                 }
             }]
         });
@@ -571,7 +595,7 @@ class DashboardScreen {
                 <tr>
                     <td colspan="6" style="text-align: center; padding: 40px; color: #8b9898; font-size: 14px;">
                         <i class="fas fa-check-circle" style="font-size: 24px; margin-bottom: 8px; display: block; color: #52c41a;"></i>
-                        暂无待处理告警
+                        ${i18n.t('dashboard1.noData.noPendingAlerts')}
                     </td>
                 </tr>
             `;
@@ -585,35 +609,35 @@ class DashboardScreen {
             
             let timeText = '';
             if (timeDiff < 60) {
-                timeText = `${timeDiff}分钟前`;
+                timeText = i18n.t('dashboard1.timeFormat.minutesAgo').replace('{minutes}', timeDiff);
             } else if (timeDiff < 1440) {
-                timeText = `${Math.floor(timeDiff / 60)}小时前`;
+                timeText = i18n.t('dashboard1.timeFormat.hoursAgo').replace('{hours}', Math.floor(timeDiff / 60));
             } else {
-                timeText = `${Math.floor(timeDiff / 1440)}天前`;
+                timeText = i18n.t('dashboard1.timeFormat.daysAgo').replace('{days}', Math.floor(timeDiff / 1440));
             }
             
             // 获取严重性文本和颜色
             const getSeverityInfo = (severity) => {
                 switch(severity) {
-                    case '5': return { text: '灾难', color: '#ff4d4f', icon: 'fas fa-skull' };
-                    case '4': return { text: '严重', color: '#ff7a45', icon: 'fas fa-exclamation-triangle' };
-                    case '3': return { text: '一般', color: '#ffa940', icon: 'fas fa-exclamation-circle' };
-                    case '2': return { text: '警告', color: '#ffc53d', icon: 'fas fa-exclamation' };
-                    case '1': return { text: '信息', color: '#73d13d', icon: 'fas fa-info-circle' };
-                    default: return { text: '未知', color: '#8c8c8c', icon: 'fas fa-question-circle' };
+                    case '5': return { text: i18n.t('dashboard1.severity.disaster'), color: '#ff4d4f', icon: 'fas fa-skull' };
+                    case '4': return { text: i18n.t('dashboard1.severity.high'), color: '#ff7a45', icon: 'fas fa-exclamation-triangle' };
+                    case '3': return { text: i18n.t('dashboard1.severity.average'), color: '#ffa940', icon: 'fas fa-exclamation-circle' };
+                    case '2': return { text: i18n.t('dashboard1.severity.warning'), color: '#ffc53d', icon: 'fas fa-exclamation' };
+                    case '1': return { text: i18n.t('dashboard1.severity.information'), color: '#73d13d', icon: 'fas fa-info-circle' };
+                    default: return { text: i18n.t('dashboard1.severity.unknown'), color: '#8c8c8c', icon: 'fas fa-question-circle' };
                 }
             };
             
             const severityInfo = getSeverityInfo(alert.severity);
             
             // 使用新的数据结构获取主机信息
-            const hostName = alert.hostName || '未知主机';
+            const hostName = alert.hostName || i18n.t('dashboard1.unknownData.unknownHost');
             const hostIp = alert.hostIp || '--';
-            const problemName = alert.name || '未知问题';
+            const problemName = alert.name || i18n.t('dashboard1.unknownData.unknownProblem');
             
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td style="color: #a0aec0; font-size: 12px;">${alertTime.toLocaleString('zh-CN', {
+                <td style="color: #a0aec0; font-size: 12px;">${alertTime.toLocaleString(i18n.currentLang === 'zh' ? 'zh-CN' : 'en-US', {
                     month: '2-digit',
                     day: '2-digit',
                     hour: '2-digit',
@@ -671,7 +695,7 @@ class DashboardScreen {
 
         // 如果没有问题主机，显示一个提示
         if (distributionData.length === 0) {
-            distributionData.push({ name: '暂无告警主机', value: 0 });
+            distributionData.push({ name: i18n.t('dashboard1.noData.noAlertingHosts'), value: 0 });
         }
 
         this.charts.alertDistribution.setOption({
@@ -745,7 +769,7 @@ class DashboardScreen {
         // 等待一小段时间确保header已经加载
         setTimeout(() => {
             const now = new Date();
-            const timeString = now.toLocaleTimeString('zh-CN', {
+            const timeString = now.toLocaleTimeString(i18n.currentLang === 'zh' ? 'zh-CN' : 'en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit',
@@ -759,7 +783,7 @@ class DashboardScreen {
                 // 如果全局header实例不存在，直接更新DOM元素
                 const lastRefreshElement = document.getElementById('lastRefreshTime');
                 if (lastRefreshElement) {
-                    lastRefreshElement.textContent = `最后刷新: ${timeString}`;
+                    lastRefreshElement.textContent = i18n.t('dashboard1.lastRefresh').replace('{time}', timeString);
                 }
             }
             

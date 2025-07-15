@@ -80,7 +80,10 @@ class ZabbixAPI {
                         'System name',                // 主机名称
                         'System description',         // 系统详情
                         'System uptime',              // 运行时间
-                        'Total memory'                // 内存总量
+                        'Total memory',               // 内存总量
+                        'Free disk space',            // 磁盘空间
+                        'Used disk space',            // 已用磁盘空间
+                        'Disk space utilization'     // 磁盘使用率
                     ],
                     key_: [
                         'system.cpu.util[,idle]',     // CPU使用率
@@ -97,7 +100,14 @@ class ZabbixAPI {
                         'system.uptime',              // 运行时间
                         'system.net.uptime',          // 运行时间
                         'system.descr[sysDescr.0]',    // 系统详情
-                        'vm.memory.size[total]'       // 内存总量
+                        'vm.memory.size[total]',      // 内存总量
+                        'vfs.fs.size[/,pused]',       // Linux磁盘使用率
+                        'vfs.fs.size[C:,pused]',      // Windows磁盘使用率
+                        'vfs.fs.size[/,used]',        // Linux已用磁盘
+                        'vfs.fs.size[C:,used]',       // Windows已用磁盘
+                        'vfs.fs.size[/,free]',        // Linux可用磁盘
+                        'vfs.fs.size[C:,free]',       // Windows可用磁盘
+                        'system.disk.utilization'     // 系统磁盘使用率
                     ]
                 },
                 searchByAny: true,                    // 匹配任意关键字
@@ -1010,6 +1020,96 @@ class ZabbixAPI {
         } catch (error) {
             console.error('Failed to get problems statistics:', error);
             throw error;
+        }
+    }
+
+    // 获取主机的监控项
+    async getItems(hostId, searchKey = '') {
+        try {
+            const params = {
+                output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue', 'units'],
+                hostids: hostId,
+                monitored: true,  // 只获取监控中的项目
+                status: 0         // 只获取启用的项目
+            };
+
+            // 如果提供了搜索关键字，添加搜索条件
+            if (searchKey) {
+                params.search = {
+                    key_: searchKey
+                };
+            }
+
+            const items = await this.request('item.get', params);
+            return items || [];
+        } catch (error) {
+            console.error(`Failed to get items for host ${hostId}:`, error);
+            return [];
+        }
+    }
+
+    // 获取监控项的历史数据
+    async getHistory(itemId, valueType = 0, timeFrom = null, timeTill = null, limit = 100) {
+        try {
+            const params = {
+                output: 'extend',
+                itemids: itemId,
+                history: valueType,  // 0=float, 1=character, 2=log, 3=numeric(unsigned), 4=text
+                sortfield: 'clock',
+                sortorder: 'DESC',
+                limit: limit
+            };
+
+            // 添加时间范围
+            if (timeFrom) {
+                params.time_from = timeFrom;
+            }
+            if (timeTill) {
+                params.time_till = timeTill;
+            }
+
+            const history = await this.request('history.get', params);
+            return history || [];
+        } catch (error) {
+            console.error(`Failed to get history for item ${itemId}:`, error);
+            return [];
+        }
+    }
+
+    // 获取主机的最新值
+    async getLatestValues(hostId, itemKeys = []) {
+        try {
+            const params = {
+                output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue', 'units'],
+                hostids: hostId,
+                monitored: true,
+                status: 0
+            };
+
+            // 如果指定了监控项key，添加过滤条件
+            if (itemKeys.length > 0) {
+                params.filter = {
+                    key_: itemKeys
+                };
+            }
+
+            const items = await this.request('item.get', params);
+            
+            // 转换为更易用的格式
+            const values = {};
+            items.forEach(item => {
+                values[item.key_] = {
+                    value: item.lastvalue,
+                    units: item.units,
+                    name: item.name,
+                    itemid: item.itemid
+                };
+            });
+
+            return values;
+        } catch (error) {
+            console.error(`Failed to get latest values for host ${hostId}:`, error);
+            return {};
         }
     }
 } 

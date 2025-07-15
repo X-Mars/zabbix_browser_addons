@@ -367,3 +367,199 @@ function showApiUrlTip(message) {
 
 // 创建一个全局的 Settings 实例
 window.settingsManager = new Settings();
+
+// 全局函数：初始化设置表单（用于模态框）
+window.initializeSettingsForm = async function() {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+
+    // 加载已保存的设置
+    try {
+        const result = await new Promise((resolve) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], resolve);
+        });
+
+        const apiUrl = modal.querySelector('#apiUrl');
+        const apiToken = modal.querySelector('#apiToken');
+        const refreshInterval = modal.querySelector('#refreshInterval');
+
+        // 设置表单值
+        if (apiUrl && result.apiUrl) {
+            apiUrl.value = result.apiUrl;
+        }
+        if (apiToken && result.apiToken) {
+            apiToken.value = atob(result.apiToken);
+        }
+        if (refreshInterval && result.refreshInterval) {
+            refreshInterval.value = result.refreshInterval;
+        }
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+    }
+
+    // 初始化表单事件
+    const testBtn = modal.querySelector('#testConnection');
+    const saveBtn = modal.querySelector('#saveSettings');
+    const apiUrl = modal.querySelector('#apiUrl');
+    const apiToken = modal.querySelector('#apiToken');
+    const refreshInterval = modal.querySelector('#refreshInterval');
+
+    // API URL 输入框失焦事件
+    if (apiUrl) {
+        // 移除已有的事件监听器
+        apiUrl.removeEventListener('blur', handleApiUrlBlur);
+        apiUrl.addEventListener('blur', handleApiUrlBlur);
+    }
+
+    // 测试连接按钮点击事件
+    if (testBtn) {
+        testBtn.removeEventListener('click', handleTestConnection);
+        testBtn.addEventListener('click', handleTestConnection);
+    }
+
+    // 保存设置按钮点击事件
+    if (saveBtn) {
+        saveBtn.removeEventListener('click', handleSaveSettings);
+        saveBtn.addEventListener('click', handleSaveSettings);
+    }
+
+    // 事件处理函数
+    function handleApiUrlBlur() {
+        let url = apiUrl.value.trim();
+        if (url && !url.endsWith('api_jsonrpc.php')) {
+            url = url.replace(/\/+$/, '');
+            url = `${url}/api_jsonrpc.php`;
+            apiUrl.value = url;
+            showSettingsTip('API URL 已自动补全', 'success');
+        }
+    }
+
+    async function handleTestConnection() {
+        const originalText = testBtn.textContent;
+        testBtn.disabled = true;
+        testBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> 测试中...`;
+
+        try {
+            const api = new ZabbixAPI(apiUrl.value.trim(), apiToken.value.trim());
+            await api.testConnection();
+            
+            testBtn.style.backgroundColor = '#67C23A';
+            testBtn.style.color = 'white';
+            testBtn.innerHTML = `<i class="fas fa-check"></i> 连接成功`;
+            
+            setTimeout(() => {
+                testBtn.style.backgroundColor = '';
+                testBtn.style.color = '';
+                testBtn.innerHTML = originalText;
+                testBtn.disabled = false;
+            }, 2000);
+        } catch (error) {
+            testBtn.style.backgroundColor = '#F56C6C';
+            testBtn.style.color = 'white';
+            testBtn.innerHTML = `<i class="fas fa-times"></i> 连接失败`;
+            
+            setTimeout(() => {
+                testBtn.style.backgroundColor = '';
+                testBtn.style.color = '';
+                testBtn.innerHTML = originalText;
+                testBtn.disabled = false;
+            }, 2000);
+            
+            console.error('Connection test failed:', error);
+        }
+    }
+
+    async function handleSaveSettings() {
+        try {
+            const settings = {
+                apiUrl: apiUrl.value.trim(),
+                apiToken: btoa(apiToken.value.trim()),
+                refreshInterval: refreshInterval.value
+            };
+
+            await new Promise((resolve, reject) => {
+                chrome.storage.sync.set(settings, () => {
+                    if (chrome.runtime.lastError) {
+                        reject(chrome.runtime.lastError);
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+
+            showSettingsTip('设置已保存', 'success');
+            
+            // 1秒后关闭模态框
+            setTimeout(() => {
+                closeSettingsModal();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+            showSettingsTip('保存失败: ' + error.message, 'error');
+        }
+    }
+
+    // 显示提示信息
+    function showSettingsTip(message, type = 'info') {
+        // 移除已存在的提示
+        const existingTip = modal.querySelector('.settings-tip');
+        if (existingTip) {
+            existingTip.remove();
+        }
+
+        const tip = document.createElement('div');
+        tip.className = `settings-tip settings-tip-${type}`;
+        tip.textContent = message;
+        tip.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 10001;
+            animation: settingsTipSlideIn 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        `;
+
+        // 根据类型设置样式
+        if (type === 'success') {
+            tip.style.background = '#67C23A';
+            tip.style.color = 'white';
+        } else if (type === 'error') {
+            tip.style.background = '#F56C6C';
+            tip.style.color = 'white';
+        } else {
+            tip.style.background = '#409EFF';
+            tip.style.color = 'white';
+        }
+
+        // 添加动画样式
+        if (!document.getElementById('settingsTipStyles')) {
+            const tipStyles = document.createElement('style');
+            tipStyles.id = 'settingsTipStyles';
+            tipStyles.textContent = `
+                @keyframes settingsTipSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateX(100%);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+            `;
+            document.head.appendChild(tipStyles);
+        }
+
+        document.body.appendChild(tip);
+
+        // 3秒后自动移除
+        setTimeout(() => {
+            tip.remove();
+        }, 3000);
+    }
+};
