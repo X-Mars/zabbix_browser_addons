@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>测试 Dashboard1</title>
+    <style>
+        body { padding: 20px; font-family: Arial, sans-serif; }
+        .log { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 4px; }
+        .error { background: #ffe6e6; color: #cc0000; }
+        .success { background: #e6ffe6; color: #006600; }
+    </style>
+</head>
+<body>
+    <h1>Dashboard1 测试页面</h1>
+    <div id="log-container"></div>
+    
+    <!-- 必需的HTML元素 -->
+    <div style="display: none;">
+        <div id="totalHosts">0</div>
+        <div id="unavailableHosts">0</div>
+        <div id="unclassifiedHosts">0</div>
+        <div id="hostGroups">0</div>
+        <div id="monitorServers">0</div>
+        <div id="resolvedAlerts">0</div>
+        <div id="alertSeverityChart"></div>
+        <div id="hostGroupAlertChart"></div>
+        <div id="alertTrendChart"></div>
+        <div id="monitorStatusChart"></div>
+        <div id="problemHostsChart"></div>
+        <div id="alertDistributionChart"></div>
+    </div>
+
+    <script>
+        // 模拟 Chrome extension API
+        if (typeof chrome === 'undefined') {
+            window.chrome = {
+                storage: {
+                    sync: {
+                        get: function(keys, callback) {
+                            // 模拟返回一些测试数据
+                            setTimeout(() => {
+                                callback({
+                                    apiUrl: 'http://example.com/api_jsonrpc.php',
+                                    apiToken: btoa('test-token'),
+                                    refreshInterval: '300000'
+                                });
+                            }, 100);
+                        }
+                    }
+                },
+                runtime: {
+                    lastError: null
+                }
+            };
+        }
+
+        // 模拟 echarts
+        if (typeof echarts === 'undefined') {
+            window.echarts = {
+                init: function(element) {
+                    log('成功', `ECharts 图表初始化: ${element.id}`);
+                    return {
+                        setOption: function(option) {
+                            log('信息', `设置图表选项: ${element.id}`);
+                        },
+                        dispose: function() {
+                            log('信息', `销毁图表: ${element.id}`);
+                        }
+                    };
+                }
+            };
+        }
+
+        function log(type, message) {
+            const container = document.getElementById('log-container');
+            const div = document.createElement('div');
+            div.className = `log ${type === '错误' ? 'error' : type === '成功' ? 'success' : ''}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${type}: ${message}`;
+            container.appendChild(div);
+            console.log(`${type}: ${message}`);
+        }
+
+        // 捕获全局错误
+        window.addEventListener('error', function(e) {
+            log('错误', `${e.message} (${e.filename}:${e.lineno})`);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            log('错误', `Promise 拒绝: ${e.reason}`);
+        });
+
+        log('信息', '开始加载测试页面...');
+    </script>
+
+    <!-- 加载实际的脚本文件 -->
+    <script src="js/api.js"></script>
+    <script>
+        // 模拟 ZabbixAPI 的网络请求
+        const originalRequest = ZabbixAPI.prototype.request;
+        ZabbixAPI.prototype.request = async function(method, params) {
+            log('信息', `API 调用: ${method}`);
+            // 返回模拟数据
+            if (method === 'host.get') {
+                return [{
+                    hostid: '1',
+                    name: 'Test Host',
+                    hostname: 'test.example.com',
+                    ip: '192.168.1.1',
+                    os: 'Linux',
+                    alerts: 0
+                }];
+            }
+            if (method === 'problem.get') {
+                return [{
+                    eventid: '1',
+                    r_eventid: '0',
+                    severity: '3'
+                }];
+            }
+            return [];
+        };
+        
+        log('成功', 'API 模拟设置完成');
+    </script>
+    <script src="js/dashboard1.js"></script>
+    <script>
+        log('成功', '所有脚本加载完成，等待 DOM 加载...');
+    </script>
+</body>
+</html>

@@ -8,120 +8,744 @@
     <script src="js/echarts.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+        }
+        
         .dashboard-screen {
-            background-color: #001529;
+            background: linear-gradient(135deg, #0c1218 0%, #1a2332 50%, #0f1419 100%);
             color: #fff;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px 24px 50px 24px;
             position: relative;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: auto;
         }
+        
+        .dashboard-screen::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(0, 168, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 168, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(0, 168, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
         .screen-title {
             text-align: center;
-            font-size: 24px;
-            margin-bottom: 30px;
-            color: #00a8ff;
+            font-size: 32px;
+            font-weight: 700;
+            height: 5vh;
+            margin-bottom: 20px;
+            color: #ffffff;
             position: relative;
-            padding: 10px 0;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0, 168, 255, 0.3);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        
         .screen-title::before,
         .screen-title::after {
             content: '';
             position: absolute;
             top: 50%;
-            width: 30%;
+            width: 35%;
             height: 2px;
-            background: linear-gradient(to right, transparent, #00a8ff, transparent);
+            background: linear-gradient(90deg, transparent 0%, #00a8ff 50%, transparent 100%);
+            transform: translateY(-50%);
+            opacity: 0.8;
         }
+        
         .screen-title::before {
             left: 5%;
         }
+        
         .screen-title::after {
             right: 5%;
         }
+        
+        /* 全屏按钮样式 */
+        .fullscreen-btn {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(145deg, rgba(15, 25, 38, 0.95), rgba(8, 16, 28, 0.95));
+            border: 1px solid rgba(0, 168, 255, 0.3);
+            border-radius: 12px;
+            color: #00a8ff;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.3),
+                0 1px 4px rgba(0, 168, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fullscreen-btn:hover {
+            background: linear-gradient(145deg, rgba(0, 168, 255, 0.2), rgba(0, 120, 231, 0.2));
+            border-color: rgba(0, 168, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 2px 8px rgba(0, 168, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        .fullscreen-btn:active {
+            transform: translateY(0);
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.3),
+                0 1px 4px rgba(0, 168, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 全屏模式下的调整 */
+        .dashboard-screen:fullscreen,
+        .dashboard-screen:-webkit-full-screen,
+        .dashboard-screen:-moz-full-screen {
+            padding: 16px 16px 20px 16px;
+        }
+        
+        .dashboard-screen:fullscreen .top-charts-section,
+        .dashboard-screen:-webkit-full-screen .top-charts-section,
+        .dashboard-screen:-moz-full-screen .top-charts-section {
+            height: 35vh;
+        }
+        
+        .dashboard-screen:fullscreen .bottom-content-section,
+        .dashboard-screen:-webkit-full-screen .bottom-content-section,
+        .dashboard-screen:-moz-full-screen .bottom-content-section {
+            height: 35vh;
+            min-height: 400px;
+        }
+        
+        .dashboard-screen:fullscreen .top-data-section,
+        .dashboard-screen:-webkit-full-screen .top-data-section,
+        .dashboard-screen:-moz-full-screen .top-data-section {
+            height: 15vh;
+        }
+        
+        .dashboard-screen:fullscreen .main-grid-container,
+        .dashboard-screen:-webkit-full-screen .main-grid-container,
+        .dashboard-screen:-moz-full-screen .main-grid-container {
+            margin-bottom: 10px;
+        }
+        
+        .dashboard-screen:fullscreen .fullscreen-btn,
+        .dashboard-screen:-webkit-full-screen .fullscreen-btn,
+        .dashboard-screen:-moz-full-screen .fullscreen-btn {
+            top: 16px;
+            right: 16px;
+        }
+        
+        /* 模拟全屏模式样式 */
+        .dashboard-screen.simulated-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9999 !important;
+            padding: 16px 16px 20px 16px;
+        }
+        
+        .dashboard-screen.simulated-fullscreen .top-charts-section {
+            height: 35vh;
+        }
+        
+        .dashboard-screen.simulated-fullscreen .bottom-content-section {
+            height: 35vh;
+            min-height: 400px;
+        }
+        
+        .dashboard-screen.simulated-fullscreen .top-data-section {
+            height: 15vh;
+        }
+        
+        .dashboard-screen.simulated-fullscreen .main-grid-container {
+            margin-bottom: 10px;
+        }
+        
+        .dashboard-screen.simulated-fullscreen .fullscreen-btn {
+            top: 16px;
+            right: 16px;
+        }
+        
+        /* 顶部数据卡片区域 */
+        .top-data-section {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 20px;
+        }
+        
+        .data-card {
+            background: linear-gradient(145deg, rgba(15, 25, 38, 0.95), rgba(8, 16, 28, 0.95));
+            border: 1px solid rgba(0, 168, 255, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 2px 8px rgba(0, 168, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .data-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 168, 255, 0.05) 0%, transparent 50%);
+            border-radius: 16px;
+            pointer-events: none;
+        }
+        
+        .data-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0, 168, 255, 0.4);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                0 4px 16px rgba(0, 168, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        .data-card.alert-card {
+            border-color: rgba(255, 77, 79, 0.3);
+        }
+        
+        .data-card.alert-card::before {
+            background: linear-gradient(135deg, rgba(255, 77, 79, 0.08) 0%, transparent 50%);
+        }
+        
+        .data-card.alert-card:hover {
+            border-color: rgba(255, 77, 79, 0.5);
+        }
+        
+        .data-card.success-card {
+            border-color: rgba(82, 196, 26, 0.3);
+        }
+        
+        .data-card.success-card::before {
+            background: linear-gradient(135deg, rgba(82, 196, 26, 0.08) 0%, transparent 50%);
+        }
+        
+        .data-card.success-card:hover {
+            border-color: rgba(82, 196, 26, 0.5);
+        }
+        
+        .data-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, rgba(0, 168, 255, 0.2), rgba(0, 120, 231, 0.2));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #00a8ff;
+            flex-shrink: 0;
+        }
+        
+        .alert-card .data-icon {
+            background: linear-gradient(135deg, rgba(255, 77, 79, 0.2), rgba(255, 56, 56, 0.2));
+            color: #ff4d4f;
+        }
+        
+        .success-card .data-icon {
+            background: linear-gradient(135deg, rgba(82, 196, 26, 0.2), rgba(115, 209, 61, 0.2));
+            color: #52c41a;
+        }
+        
+        .data-content {
+            flex: 1;
+        }
+        
+        .data-label {
+            font-size: 14px;
+            color: #8b9dc3;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .data-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1;
+        }
+        
+        /* 主要网格布局 */
+        .main-grid-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            position: relative;
+            z-index: 1;
+            margin-bottom: 30px;
+        }
+        
+        /* 上排图表区域 */
+        .top-charts-section {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 24px;
+            height: 35vh;
+        }
+        
+        .top-charts-section .chart-card {
+            height: 100%;
+            margin-bottom: 0;
+        }
+        
+        /* 下排内容区域 */
+        .bottom-content-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            flex: 1;
+            height: 35vh;
+            min-height: 350px;
+        }
+        
+        .table-section {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .distribution-section {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chart-card.table-card {
+            flex: 1;
+            height: 100%;
+        }
+        
+        .chart-card.distribution-card {
+            flex: 1;
+            height: 100%;
+        }
+        
+        /* 移除旧的布局样式 */
+        .left-section,
+        .right-section,
+        .center-section {
+            display: none;
+        }
+        
+        /* 原有的grid-container样式更新 */
         .grid-container {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
+            gap: 24px;
+            position: relative;
+            z-index: 1;
         }
+        
         .grid-section {
-            width: 32%;
+            flex: 1;
             position: relative;
         }
+        
         .chart-card {
-            background: rgba(0, 21, 41, 0.8);
-            border: 1px solid #1a365d;
-            border-radius: 4px;
-            padding: 15px;
+            background: linear-gradient(145deg, rgba(15, 25, 38, 0.95), rgba(8, 16, 28, 0.95));
+            border: 1px solid rgba(0, 168, 255, 0.2);
+            border-radius: 16px;
+            padding: 24px;
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 2px 8px rgba(0, 168, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
         }
+        
+        .chart-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(0, 168, 255, 0.4);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                0 4px 16px rgba(0, 168, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
         .chart-card::before {
             content: '';
             position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            border: 1px solid #1a365d;
-            border-radius: 6px;
-            z-index: -1;
-        }
-        .chart-title {
-            color: #00a8ff;
-            font-size: 16px;
-            margin-bottom: 15px;
-            position: relative;
-            padding-left: 15px;
-        }
-        .chart-title::before {
-            content: '';
-            position: absolute;
+            top: 0;
             left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 4px;
-            height: 16px;
-            background: #00a8ff;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0, 168, 255, 0.05) 0%, transparent 50%);
+            border-radius: 16px;
+            pointer-events: none;
         }
-        .data-card {
-            text-align: center;
-            padding: 20px;
-            background: rgba(0, 21, 41, 0.8);
-            border: 1px solid #1a365d;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            width: 30%;
+        
+        .chart-title {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(0, 168, 255, 0.2);
+            letter-spacing: 0.5px;
         }
-        .data-value {
-            font-size: 36px;
+        
+        .chart-title i {
             color: #00a8ff;
-            margin: 10px 0;
-        }
-        .data-label {
-            color: #8b9898;
             font-size: 14px;
         }
+        
+        .alert-count {
+            background: linear-gradient(135deg, #ff4d4f, #ff7875);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: auto;
+            box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3);
+        }
+        
+        .chart-title::before {
+            display: none;
+        }
+        
+        /* 表格容器样式 */
+        .alert-table-container {
+            height: calc(100% - 60px);
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 168, 255, 0.1);
+            min-height: 300px;
+        }
+        
+        /* 不同类型卡片的特色边框 */
+        .severity-card {
+            border-left: 4px solid #ff4d4f;
+        }
+        
+        .trend-card {
+            border-left: 4px solid #00a8ff;
+        }
+        
+        .status-card-2 {
+            border-left: 4px solid #52c41a;
+        }
+        
+        .distribution-card {
+            border-left: 4px solid #ffa940;
+        }
+        
+        .table-card {
+            border-left: 4px solid #722ed1;
+            flex: 1;
+            height: 100%;
+        }
+        
+        .data-card {
+            text-align: center;
+            padding: 24px 20px;
+            background: linear-gradient(145deg, rgba(15, 25, 38, 0.95), rgba(8, 16, 28, 0.95));
+            border: 1px solid rgba(0, 168, 255, 0.2);
+            border-radius: 16px;
+            width: 60%;
+            position: relative;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 6px 24px rgba(0, 0, 0, 0.2),
+                0 2px 8px rgba(0, 168, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            overflow: hidden;
+            height: 100%;
+        }
+        
+        .data-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00a8ff, #0078e7, #00a8ff);
+            border-radius: 16px 16px 0 0;
+        }
+        
+        .data-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            border-color: rgba(0, 168, 255, 0.4);
+            box-shadow: 
+                0 12px 32px rgba(0, 0, 0, 0.3),
+                0 4px 16px rgba(0, 168, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        .data-value {
+            font-size: 42px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00a8ff, #ffffff, #0078e7);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 12px 0;
+            text-shadow: 0 2px 4px rgba(0, 168, 255, 0.3);
+            letter-spacing: -1px;
+        }
+        
+        .data-label {
+            color: #a0aec0;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
         .data-grid {
             display: flex;
             flex-wrap: wrap;
             justify-content: space-between;
-            gap: 15px;
+            gap: 16px;
+            margin-bottom: 24px;
         }
+        
         .pending-alerts-table {
             width: 100%;
             color: #fff;
             border-collapse: collapse;
+            border-radius: 12px;
+            overflow: hidden;
+            background: rgba(15, 25, 38, 0.5);
         }
-        .pending-alerts-table th,
-        .pending-alerts-table td {
-            padding: 8px 12px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
+        
         .pending-alerts-table th {
-            background: rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, rgba(0, 168, 255, 0.2), rgba(0, 120, 231, 0.2));
+            color: #ffffff;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+            padding: 16px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 168, 255, 0.3);
+            white-space: nowrap;
+        }
+        
+        .pending-alerts-table th i {
+            margin-right: 6px;
             color: #00a8ff;
+            font-size: 11px;
+        }
+        
+        .pending-alerts-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 13px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .pending-alerts-table tr:hover td {
+            background: rgba(0, 168, 255, 0.05);
+        }
+        
+        /* 添加动画效果 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .chart-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        .chart-card:nth-child(1) { animation-delay: 0.1s; }
+        .chart-card:nth-child(2) { animation-delay: 0.2s; }
+        .chart-card:nth-child(3) { animation-delay: 0.3s; }
+        
+        .data-card {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+        
+        .data-card:nth-child(1) { animation-delay: 0.1s; }
+        .data-card:nth-child(2) { animation-delay: 0.2s; }
+        .data-card:nth-child(3) { animation-delay: 0.3s; }
+        .data-card:nth-child(4) { animation-delay: 0.4s; }
+        
+        /* 响应式设计 */
+        @media (max-width: 1400px) {
+            .top-charts-section {
+                grid-template-columns: 1fr 1.8fr 1fr;
+            }
+        }
+        
+        @media (max-width: 1200px) {
+            .top-data-section {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+            
+            .top-charts-section {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(3, 233px);
+                height: auto;
+                gap: 20px;
+            }
+            
+            .bottom-content-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .alert-table-container {
+                height: 350px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .top-charts-section {
+                grid-template-rows: repeat(3, 213px);
+            }
+            
+            .main-grid-container {
+                height: auto;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-screen {
+                padding: 16px;
+            }
+            
+            .screen-title {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+            
+            .top-data-section {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            
+            .data-card {
+                padding: 16px;
+                gap: 12px;
+            }
+            
+            .data-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            
+            .data-value {
+                font-size: 24px;
+            }
+            
+            .chart-card {
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+            
+            .main-grid-container {
+                gap: 16px;
+            }
+            
+            .top-charts-section {
+                gap: 16px;
+                grid-template-rows: repeat(3, 187px);
+            }
+            
+            .bottom-content-section {
+                gap: 16px;
+            }
+            
+            .alert-table-container {
+                height: 300px;
+            }
+            
+            .pending-alerts-table th,
+            .pending-alerts-table td {
+                padding: 8px 6px;
+                font-size: 11px;
+            }
+            
+            #alertSeverityChart,
+            #weeklyAlertTrendChart,
+            #monitorStatusChart {
+                height: 167px !important;
+            }
+        }
+        
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #00a8ff, #0078e7);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #0078e7, #005bb5);
         }
     </style>
 </head>
@@ -131,87 +755,117 @@
         <div id="header-container"></div>
 
         <div class="dashboard-screen">
+            <!-- 全屏按钮 -->
+            <button id="fullscreenBtn" class="fullscreen-btn" title="全屏显示">
+                <i class="fas fa-expand"></i>
+            </button>
+            
             <h1 class="screen-title">Zabbix 告警监控大屏</h1>
             
-            <div class="grid-container">
-                <!-- 左侧部分 -->
-                <div class="grid-section">
-                    <div class="chart-card">
-                        <h3 class="chart-title">告警严重性分类</h3>
-                        <div id="alertSeverityChart" style="height: 300px;"></div>
+            <!-- 顶部数据卡片区域 -->
+            <div class="top-data-section">
+                <div class="data-card">
+                    <div class="data-icon">
+                        <i class="fas fa-server"></i>
                     </div>
-                    <div class="chart-card">
-                        <h3 class="chart-title">主机组告警数</h3>
-                        <div id="hostGroupAlertChart" style="height: 300px;"></div>
+                    <div class="data-content">
+                        <div class="data-label">主机数量</div>
+                        <div id="totalHosts" class="data-value">--</div>
                     </div>
-                    <div class="chart-card">
-                        <h3 class="chart-title">告警趋势</h3>
-                        <div id="alertTrendChart" style="height: 300px;"></div>
+                </div>
+                <div class="data-card alert-card">
+                    <div class="data-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="data-content">
+                        <div class="data-label">告警主机</div>
+                        <div id="unavailableHosts" class="data-value">--</div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <div class="data-icon">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div class="data-content">
+                        <div class="data-label">主机组数量</div>
+                        <div id="hostGroups" class="data-value">--</div>
+                    </div>
+                </div>
+                <div class="data-card success-card">
+                    <div class="data-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="data-content">
+                        <div class="data-label">已处理告警数</div>
+                        <div id="resolvedAlerts" class="data-value">--</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="main-grid-container">
+                <!-- 上排图表区域 -->
+                <div class="top-charts-section">
+                    <div class="chart-card severity-card">
+                        <h3 class="chart-title">
+                            <i class="fas fa-chart-pie"></i>
+                            告警严重性分类
+                        </h3>
+                        <div id="alertSeverityChart" style="height: calc(100% - 60px);"></div>
+                    </div>
+                    <div class="chart-card trend-card">
+                        <h3 class="chart-title">
+                            <i class="fas fa-chart-line"></i>
+                            过去7天告警趋势对比
+                        </h3>
+                        <div id="weeklyAlertTrendChart" style="height: calc(100% - 60px);"></div>
+                    </div>
+                    <div class="chart-card status-card-2">
+                        <h3 class="chart-title">
+                            <i class="fas fa-heartbeat"></i>
+                            监控状态概览
+                        </h3>
+                        <div id="monitorStatusChart" style="height: calc(100% - 60px);"></div>
                     </div>
                 </div>
 
-                <!-- 中间部分 -->
-                <div class="grid-section">
-                    <div class="data-grid">
-                        <div class="data-card">
-                            <div class="data-label">主机数量</div>
-                            <div id="totalHosts" class="data-value">--</div>
-                        </div>
-                        <div class="data-card">
-                            <div class="data-label">监控失效主机</div>
-                            <div id="unavailableHosts" class="data-value">--</div>
-                        </div>
-                        <div class="data-card">
-                            <div class="data-label">未归类主机</div>
-                            <div id="unclassifiedHosts" class="data-value">--</div>
-                        </div>
-                        <div class="data-card">
-                            <div class="data-label">主机组数量</div>
-                            <div id="hostGroups" class="data-value">--</div>
-                        </div>
-                        <div class="data-card">
-                            <div class="data-label">监控服务器</div>
-                            <div id="monitorServers" class="data-value">--</div>
-                        </div>
-                        <div class="data-card">
-                            <div class="data-label">已处理告警数</div>
-                            <div id="resolvedAlerts" class="data-value">--</div>
-                        </div>
-                    </div>
-                    <div class="chart-card" style="flex-grow: 1;">
-                        <h3 class="chart-title">待处理告警</h3>
-                        <div id="pendingAlertTable" style="height: calc(100% - 40px);">
-                            <table class="pending-alerts-table">
-                                <thead>
-                                    <tr>
-                                        <th>时间字段</th>
-                                        <th>IP</th>
-                                        <th>主机</th>
-                                        <th>问题</th>
-                                        <th>严重性</th>
-                                        <th>待处理时效</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="pendingAlertsBody">
-                                </tbody>
-                            </table>
+                <!-- 下排内容区域 -->
+                <div class="bottom-content-section">
+                    <!-- 告警表格区域 -->
+                    <div class="table-section">
+                        <div class="chart-card table-card">
+                            <h3 class="chart-title">
+                                <i class="fas fa-list-alt"></i>
+                                待处理告警
+                                <span id="alertCount" class="alert-count">0</span>
+                            </h3>
+                            <div id="pendingAlertTable" class="alert-table-container">
+                                <table class="pending-alerts-table">
+                                    <thead>
+                                        <tr>
+                                            <th><i class="fas fa-clock"></i> 时间</th>
+                                            <th><i class="fas fa-network-wired"></i> IP地址</th>
+                                            <th><i class="fas fa-server"></i> 主机名</th>
+                                            <th><i class="fas fa-exclamation-circle"></i> 问题</th>
+                                            <th><i class="fas fa-tag"></i> 严重性</th>
+                                            <th><i class="fas fa-hourglass-half"></i> 持续时间</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pendingAlertsBody">
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- 右侧部分 -->
-                <div class="grid-section">
-                    <div class="chart-card">
-                        <h3 class="chart-title">主机状态统计</h3>
-                        <div id="monitorStatusChart" style="height: 300px;"></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3 class="chart-title">待处理问题主机</h3>
-                        <div id="problemHostsChart" style="height: 300px;"></div>
-                    </div>
-                    <div class="chart-card">
-                        <h3 class="chart-title">告警问题严重性及问题数量</h3>
-                        <div id="alertDistributionChart" style="height: 300px;"></div>
+                    <!-- 告警分布图表 -->
+                    <div class="distribution-section">
+                        <div class="chart-card distribution-card">
+                            <h3 class="chart-title">
+                                <i class="fas fa-chart-bar"></i>
+                                主机告警分布
+                            </h3>
+                            <div id="alertDistributionChart" style="height: calc(100% - 60px);"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -222,6 +876,7 @@
     <div id="settingsContainer"></div>
 
     <script src="js/api.js"></script>
+    <script src="js/fullscreen.js"></script>
     <script src="js/header.js"></script>
     <script src="js/dashboard1.js"></script>
     <script src="js/settings.js"></script>

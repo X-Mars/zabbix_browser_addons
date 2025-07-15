@@ -756,4 +756,260 @@ class ZabbixAPI {
         if (minutes > 0) result += `${minutes}${i18n.t('time.minutes')}`;
         return result.trim() || i18n.t('time.lessThanOneMinute');
     }
+
+    getAvailabilityText(available) {
+        switch (available) {
+            case '0': return '未知';
+            case '1': return '可用';
+            case '2': return '不可用';
+            default: return '未知';
+        }
+    }
+
+    async getHostGroups() {
+        try {
+            const hostGroups = await this.request('hostgroup.get', {
+                output: ['groupid', 'name'],
+                real_hosts: true,  // 只获取包含真实主机的组
+                selectHosts: ['hostid', 'name', 'status'],  // 选择主机信息
+            });
+            return hostGroups;
+        } catch (error) {
+            console.error('Failed to get host groups:', error);
+            throw error;
+        }
+    }
+
+    async getHostsWithStatus() {
+        try {
+            const hosts = await this.request('host.get', {
+                output: ['hostid', 'host', 'name', 'status', 'available'],
+                selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
+                selectGroups: ['groupid', 'name'],
+                selectTriggers: ['triggerid', 'description', 'priority', 'value'],
+                // 不过滤状态，获取所有主机
+            });
+
+            // 获取每个主机的活动问题
+            const hostProblemsMap = {};
+            for (const host of hosts) {
+                try {
+                    const problems = await this.request('problem.get', {
+                        output: ['eventid', 'severity'],
+                        hostids: [host.hostid],
+                        recent: true,
+                        suppressed: false
+                    });
+                    hostProblemsMap[host.hostid] = problems.length;
+                } catch (error) {
+                    console.warn(`Failed to get problems for host ${host.hostid}:`, error);
+                    hostProblemsMap[host.hostid] = 0;
+                }
+            }
+
+            return hosts.map(host => {
+                // 分析接口可用性
+                const interfaces = host.interfaces || [];
+                const agentInterface = interfaces.find(iface => iface.type === '1'); // Zabbix agent
+                const snmpInterface = interfaces.find(iface => iface.type === '2');  // SNMP
+                const ipmiInterface = interfaces.find(iface => iface.type === '3');  // IPMI
+                const jmxInterface = interfaces.find(iface => iface.type === '4');   // JMX
+                
+                // 判断主要接口的可用性
+                // available: 0=未知, 1=可用, 2=不可用
+                let isAvailable = true;
+                let unavailableInterfaces = [];
+                let unknownInterfaces = [];
+                
+                if (agentInterface) {
+                    if (agentInterface.available === '2') {
+                        isAvailable = false;
+                        unavailableInterfaces.push('Zabbix agent');
+                    } else if (agentInterface.available === '0') {
+                        unknownInterfaces.push('Zabbix agent');
+                    }
+                }
+                
+                if (snmpInterface) {
+                    if (snmpInterface.available === '2') {
+                        isAvailable = false;
+                        unavailableInterfaces.push('SNMP');
+                    } else if (snmpInterface.available === '0') {
+                        unknownInterfaces.push('SNMP');
+                    }
+                }
+                
+                if (ipmiInterface) {
+                    if (ipmiInterface.available === '2') {
+                        isAvailable = false;
+                        unavailableInterfaces.push('IPMI');
+                    } else if (ipmiInterface.available === '0') {
+                        unknownInterfaces.push('IPMI');
+                    }
+                }
+                
+                if (jmxInterface) {
+                    if (jmxInterface.available === '2') {
+                        isAvailable = false;
+                        unavailableInterfaces.push('JMX');
+                    } else if (jmxInterface.available === '0') {
+                        unknownInterfaces.push('JMX');
+                    }
+                }
+                
+                // 如果没有主要接口，但主机是启用状态，也认为有问题
+                if (interfaces.length === 0 && host.status === '0') {
+                    isAvailable = false;
+                    unavailableInterfaces.push('无接口');
+                }
+
+                // 只有当接口状态为"不可用"(2)时才认为是监控失效
+                // "未知"(0)状态不算作监控失效
+
+                return {
+                    ...host,
+                    problemCount: hostProblemsMap[host.hostid] || 0,
+                    isEnabled: host.status === '0',  // 0=启用, 1=禁用
+                    isAvailable: isAvailable,        // 只有当接口状态为不可用(2)时才为false
+                    unavailableInterfaces: unavailableInterfaces,
+                    unknownInterfaces: unknownInterfaces,
+                    interfaces: interfaces,
+                    groups: host.groups || [],
+                    // 详细的接口状态
+                    interfaceStatus: {
+                        agent: agentInterface ? {
+                            available: agentInterface.available,
+                            availableText: this.getAvailabilityText(agentInterface.available),
+                            ip: agentInterface.ip,
+                            port: agentInterface.port
+                        } : null,
+                        snmp: snmpInterface ? {
+                            available: snmpInterface.available,
+                            availableText: this.getAvailabilityText(snmpInterface.available),
+                            ip: snmpInterface.ip,
+                            port: snmpInterface.port
+                        } : null,
+                        ipmi: ipmiInterface ? {
+                            available: ipmiInterface.available,
+                            availableText: this.getAvailabilityText(ipmiInterface.available),
+                            ip: ipmiInterface.ip,
+                            port: ipmiInterface.port
+                        } : null,
+                        jmx: jmxInterface ? {
+                            available: jmxInterface.available,
+                            availableText: this.getAvailabilityText(jmxInterface.available),
+                            ip: jmxInterface.ip,
+                            port: jmxInterface.port
+                        } : null
+                    }
+                };
+            });
+        } catch (error) {
+            console.error('Failed to get hosts with status:', error);
+            throw error;
+        }
+    }
+
+    async getProblemsStatistics() {
+        try {
+            // 第一步：获取活动问题的基础信息
+            const activeProblems = await this.request('problem.get', {
+                output: ['eventid', 'objectid', 'clock', 'r_eventid', 'severity', 'name'],
+                recent: true,
+                suppressed: false
+            });
+
+            if (activeProblems.length === 0) {
+                // 如果没有活动问题，直接返回
+                const resolvedEvents = await this.request('event.get', {
+                    output: ['eventid', 'clock', 'value'],
+                    source: 0,
+                    object: 0,
+                    value: 0,
+                    time_from: Math.floor(Date.now() / 1000) - 24 * 60 * 60,
+                    sortfield: 'clock',
+                    sortorder: 'DESC'
+                });
+
+                return {
+                    activeProblemsCount: 0,
+                    resolvedProblemsCount: resolvedEvents.length,
+                    totalProblemsToday: resolvedEvents.length,
+                    activeProblems: [],
+                    resolvedProblems: resolvedEvents
+                };
+            }
+
+            // 第二步：批量获取触发器信息
+            const triggerIds = activeProblems.map(problem => problem.objectid);
+            const triggers = await this.request('trigger.get', {
+                output: ['triggerid', 'description', 'expression'],
+                triggerids: triggerIds,
+                selectHosts: ['hostid', 'name', 'host']
+            });
+
+            // 第三步：获取所有相关主机的接口信息
+            const hostIds = [...new Set(triggers.flatMap(trigger => 
+                trigger.hosts ? trigger.hosts.map(host => host.hostid) : []
+            ))];
+
+            let hostInterfaces = [];
+            if (hostIds.length > 0) {
+                hostInterfaces = await this.request('hostinterface.get', {
+                    output: ['hostid', 'ip', 'dns', 'main'],
+                    hostids: hostIds,
+                    filter: { main: 1 }
+                });
+            }
+
+            // 第四步：创建查找映射以提高性能
+            const triggerMap = new Map(triggers.map(trigger => [trigger.triggerid, trigger]));
+            const interfaceMap = new Map(hostInterfaces.map(iface => [iface.hostid, iface]));
+
+            // 第五步：组合数据
+            const enrichedActiveProblems = activeProblems.map(problem => {
+                const trigger = triggerMap.get(problem.objectid);
+                const host = trigger && trigger.hosts && trigger.hosts[0];
+                const hostInterface = host ? interfaceMap.get(host.hostid) : null;
+
+                return {
+                    ...problem,
+                    hostName: host ? (host.name || host.host) : '未知主机',
+                    hostIp: hostInterface ? (hostInterface.ip || hostInterface.dns) : '--',
+                    name: problem.name || (trigger ? trigger.description : '未知问题')
+                };
+            });
+
+            // 第六步：获取最近24小时已解决的事件
+            const resolvedEvents = await this.request('event.get', {
+                output: ['eventid', 'clock', 'value'],
+                source: 0,  // 触发器事件
+                object: 0,  // 触发器对象
+                value: 0,   // 恢复状态（0=OK, 1=PROBLEM）
+                time_from: Math.floor(Date.now() / 1000) - 24 * 60 * 60, // 最近24小时
+                sortfield: 'clock',
+                sortorder: 'DESC'
+            });
+
+            const resolvedProblemsCount = resolvedEvents.length;
+
+            console.log('Problems statistics debug:', {
+                activeProblemsCount: enrichedActiveProblems.length,
+                resolvedEventsCount: resolvedEvents.length,
+                sampleActiveProblems: enrichedActiveProblems.slice(0, 3), // 显示前3个活动问题
+                resolvedEvents: resolvedEvents.slice(0, 3)  // 显示前3个恢复事件
+            });
+
+            return {
+                activeProblemsCount: enrichedActiveProblems.length,
+                resolvedProblemsCount: resolvedProblemsCount,
+                totalProblemsToday: enrichedActiveProblems.length + resolvedProblemsCount,
+                activeProblems: enrichedActiveProblems,
+                resolvedProblems: resolvedEvents
+            };
+        } catch (error) {
+            console.error('Failed to get problems statistics:', error);
+            throw error;
+        }
+    }
 } 
