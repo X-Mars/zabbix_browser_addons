@@ -1,3 +1,23 @@
+// 安全翻译工具函数
+function safeTranslate(key, zhFallback = '', enFallback = '') {
+    try {
+        if (typeof i18n !== 'undefined' && i18n.t) {
+            const translation = i18n.t(key);
+            if (translation && translation !== key) {
+                return translation;
+            }
+        }
+        
+        // 如果翻译失败，根据当前语言返回合适的fallback
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        return currentLang === 'en' ? (enFallback || zhFallback) : zhFallback;
+    } catch (e) {
+        console.warn(`Translation failed for key: ${key}`, e);
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        return currentLang === 'en' ? (enFallback || zhFallback) : zhFallback;
+    }
+}
+
 class Header {
     constructor() {
         this.init();
@@ -232,7 +252,30 @@ class ZabbixDashboard {
     }
 
     getSeverityName(severity) {
-        return i18n.t(`severity.${this.getSeverityKey(severity)}`);
+        const fallbackTexts = {
+            zh: {
+                'notClassified': '未分类',
+                'info': '信息',
+                'warning': '警告',
+                'average': '一般',
+                'high': '高',
+                'disaster': '灾难'
+            },
+            en: {
+                'notClassified': 'Not classified',
+                'info': 'Information',
+                'warning': 'Warning',
+                'average': 'Average',
+                'high': 'High',
+                'disaster': 'Disaster'
+            }
+        };
+        
+        const severityKey = this.getSeverityKey(severity);
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        const fallback = fallbackTexts[currentLang]?.[severityKey] || fallbackTexts.zh[severityKey] || '未知';
+        
+        return safeTranslate(`severity.${severityKey}`, fallback, fallbackTexts.en[severityKey] || 'Unknown');
     }
 
     getSeverityKey(severity) {
@@ -290,7 +333,22 @@ class ZabbixDashboard {
 
     getStatusName(status) {
         const statusKey = status === '0' ? 'resolved' : 'problem';
-        return i18n.t(`statusTag.${statusKey}`);
+        const fallbackTexts = {
+            zh: {
+                'resolved': '已恢复',
+                'problem': '告警中'
+            },
+            en: {
+                'resolved': 'Resolved',
+                'problem': 'Problem'
+            }
+        };
+        
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        const zhFallback = fallbackTexts.zh[statusKey];
+        const enFallback = fallbackTexts.en[statusKey];
+        
+        return safeTranslate(`statusTag.${statusKey}`, zhFallback, enFallback);
     }
 
     formatDuration(seconds) {
@@ -301,11 +359,11 @@ class ZabbixDashboard {
         const minutes = Math.floor((seconds % 3600) / 60);
         
         const parts = [];
-        if (days > 0) parts.push(`${days} ${i18n.t('time.days')}`);
-        if (hours > 0) parts.push(`${hours} ${i18n.t('time.hours')}`);
-        if (minutes > 0) parts.push(`${minutes} ${i18n.t('time.minutes')}`);
+        if (days > 0) parts.push(`${days}${safeTranslate('time.days', '天', ' days')}`);
+        if (hours > 0) parts.push(`${hours}${safeTranslate('time.hours', '小时', ' hrs')}`);
+        if (minutes > 0) parts.push(`${minutes}${safeTranslate('time.minutes', '分钟', ' mins')}`);
         
-        return parts.length > 0 ? parts.join(' ') : i18n.t('time.lessThanOneMinute');
+        return parts.length > 0 ? parts.join(' ') : safeTranslate('time.lessThanOneMinute', '刚刚', 'Just now');
     }
 
     async showHostDetail(hostId) {
@@ -547,7 +605,8 @@ class ZabbixDashboard {
                 output: 'extend',
                 history: 0,
                 sortfield: 'clock',
-                sortorder: 'ASC'
+                sortorder: 'ASC',
+                limit: 2000  // 增加数据点限制以获取更多历史数据
             });
 
             // 处理数据
@@ -621,7 +680,8 @@ class ZabbixDashboard {
                         output: 'extend',
                         history: 0,
                         sortfield: 'clock',
-                        sortorder: 'ASC'
+                        sortorder: 'ASC',
+                        limit: 2000  // 增加数据点限制
                     });
 
                     const historyData = historyResponse.map(record => ({
@@ -712,7 +772,8 @@ class ZabbixHosts {
         document.title = i18n.t('pageTitle.hostList');
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
-            element.textContent = i18n.t(key);
+            const translation = i18n.t(key);
+            element.textContent = translation;
         });
     }
 
@@ -957,11 +1018,11 @@ class ZabbixHosts {
         const minutes = Math.floor((seconds % (60 * 60)) / 60);
         
         let result = '';
-        if (days > 0) result += `${days}天 `;
-        if (hours > 0) result += `${hours}小时 `;
-        if (minutes > 0) result += `${minutes}分钟`;
+        if (days > 0) result += `${days}${safeTranslate('time.days', '天', ' days')} `;
+        if (hours > 0) result += `${hours}${safeTranslate('time.hours', '小时', ' hrs')} `;
+        if (minutes > 0) result += `${minutes}${safeTranslate('time.minutes', '分钟', ' mins')}`;
         
-        return result.trim() || '小于1分钟';
+        return result.trim() || safeTranslate('time.lessThanOneMinute', '刚刚', 'Just now');
     }
 
     // 初始化性能图表
@@ -1103,7 +1164,8 @@ class ZabbixHosts {
                 output: 'extend',
                 history: 0,
                 sortfield: 'clock',
-                sortorder: 'ASC'
+                sortorder: 'ASC',
+                limit: 2000  // 增加数据点限制
             });
 
             // 处理数据
@@ -1175,7 +1237,8 @@ class ZabbixHosts {
                         output: 'extend',
                         history: 0,
                         sortfield: 'clock',
-                        sortorder: 'ASC'
+                        sortorder: 'ASC',
+                        limit: 2000  // 增加数据点限制
                     });
 
                     const historyData = historyResponse.map(record => ({
@@ -1292,6 +1355,16 @@ class ZabbixHosts {
 
 // 确保在 DOM 加载完成后再初始化
 document.addEventListener('DOMContentLoaded', async function() {
+    // 先初始化国际化
+    if (typeof i18n !== 'undefined' && i18n.t) {
+        document.querySelectorAll('[data-i18n]').forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            const translation = i18n.t(key);
+            element.textContent = translation;
+            console.log(`国际化翻译: ${key} -> ${translation}`); // 调试日志
+        });
+    }
+    
     // 加载头部
     const headerContainer = document.getElementById('header-container');
     const headerResponse = await fetch('header.html');

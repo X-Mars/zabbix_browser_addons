@@ -61,6 +61,9 @@ async function loadHeader() {
         initializeNavigation();
         initializeDropdown();
         initializeSettings();
+        
+        // 初始化国际化
+        initializeI18n();
 
     } catch (error) {
         console.error('加载导航栏失败:', error);
@@ -113,6 +116,17 @@ function initializeDropdown() {
             }
         });
     }
+}
+
+// 初始化国际化
+function initializeI18n() {
+    // 应用所有 data-i18n 属性的翻译
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (window.i18n && window.i18n.t) {
+            element.textContent = window.i18n.t(key);
+        }
+    });
 }
 
 function initializeSettings() {

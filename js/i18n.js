@@ -18,6 +18,15 @@ const translations = {
         'saveSettings': '保存设置',
         'close': '关闭',
 
+        // 导航菜单
+        'nav': {
+            'dashboard': '仪表盘',
+            'hostList': '主机列表',
+            'bigScreen': '大屏展示',
+            'screen1': '告警监控大屏',
+            'screen2': '资源监控大屏'
+        },
+
         // 时间范围按钮
         '1h': '1小时',
         '24h': '24小时',
@@ -97,6 +106,25 @@ const translations = {
         'cpuUsage': 'CPU使用率',
         'memoryUsage': '内存使用率',
         'alerts': '当前告警',
+
+        // 设置相关
+        'settings': {
+            'title': '设置',
+            'apiUrl': 'ZABBIX API URL:',
+            'apiToken': 'ZABBIX API TOKEN:',
+            'refreshInterval': '刷新间隔',
+            'buttons': {
+                'test': '测试连接',
+                'save': '保存设置'
+            },
+            'messages': {
+                'lastRefresh': '最后刷新时间: {time}',
+                'connectionSuccess': '连接测试成功',
+                'connectionFailed': '连接测试失败: {error}',
+                'settingsSaved': '设置已保存',
+                'savingSettings': '正在保存设置...'
+            }
+        },
 
         // 时间相关
         'time': {
@@ -359,6 +387,15 @@ const translations = {
         'saveSettings': 'Save Settings',
         'close': 'Close',
 
+        // Navigation menu
+        'nav': {
+            'dashboard': 'Dashboard',
+            'hostList': 'Host List',
+            'bigScreen': 'Big Screen',
+            'screen1': 'Alert Monitoring Screen',
+            'screen2': 'Resource Monitoring Screen'
+        },
+
         // Time range buttons
         '1h': '1 Hour',
         '24h': '24 Hours',
@@ -438,6 +475,25 @@ const translations = {
         'cpuUsage': 'CPU Usage',
         'memoryUsage': 'Memory Usage',
         'alerts': 'Alerting',
+
+        // Settings related
+        'settings': {
+            'title': 'Settings',
+            'apiUrl': 'ZABBIX API URL:',
+            'apiToken': 'ZABBIX API TOKEN:',
+            'refreshInterval': 'Refresh Interval',
+            'buttons': {
+                'test': 'Test Connection',
+                'save': 'Save Settings'
+            },
+            'messages': {
+                'lastRefresh': 'Last Refresh: {time}',
+                'connectionSuccess': 'Connection test successful',
+                'connectionFailed': 'Connection test failed: {error}',
+                'settingsSaved': 'Settings saved',
+                'savingSettings': 'Saving settings...'
+            }
+        },
 
         // Time related
         'time': {
@@ -582,7 +638,8 @@ const translations = {
             },
             'tooltipFormats': {
                 'hostCountWithPercentage': '{b}: {c} hosts ({d}%)',
-                'hostCountOnly': '{b}\n{c} hosts'
+                'hostCountOnly': '{b}\n{c} hosts',
+                'alertDetails': '{value} alerts'
             },
             'units': {
                 'hosts': ' hosts',

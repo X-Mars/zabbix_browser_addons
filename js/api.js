@@ -1,3 +1,23 @@
+// 安全翻译工具函数
+function safeTranslate(key, zhFallback = '', enFallback = '') {
+    try {
+        if (typeof i18n !== 'undefined' && i18n.t) {
+            const translation = i18n.t(key);
+            if (translation && translation !== key) {
+                return translation;
+            }
+        }
+        
+        // 如果翻译失败，根据当前语言返回合适的fallback
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        return currentLang === 'en' ? (enFallback || zhFallback) : zhFallback;
+    } catch (e) {
+        console.warn(`Translation failed for key: ${key}`, e);
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        return currentLang === 'en' ? (enFallback || zhFallback) : zhFallback;
+    }
+}
+
 class ZabbixAPI {
     constructor(url, token) {
         this.url = url;
@@ -86,9 +106,6 @@ class ZabbixAPI {
                         'Disk space utilization'     // 磁盘使用率
                     ],
                     key_: [
-                        'system.cpu.util[,idle]',     // CPU使用率
-                        'system.cpu.util[,system]',   // CPU使用率
-                        'system.cpu.util',            // CPU使用率
                         'vm.memory.utilization',      // 内存使用率
                         'vm.memory.util',             // 内存使用率
                         'system.cpu.num',             // CPU核心数
@@ -141,18 +158,8 @@ class ZabbixAPI {
             return await Promise.all(hostsResponse.map(async host => {
                 const items = hostItemsMap[host.hostid] || [];
                 
-                // 通过名称或key获取监控项
-                const cpuItem = items.find(item => item.name.includes('CPU utilization')) ||
-                              items.find(item => item.key_ === 'system.cpu.util[,system]') ||
-                              items.find(item => item.key_ === 'system.cpu.util') ||
-                              items.find(item => item.key_.startsWith('system.cpu.util[')) ||
-                              items.find(item => {
-                                  if (item.key_ === 'system.cpu.util[,idle]') {
-                                      item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
-                                      return true;
-                                  }
-                                  return false;
-                              });
+                // 通过名称获取CPU监控项
+                const cpuItem = items.find(item => item.name.includes('CPU utilization'));
                 const memoryUtilItem = items.find(item => item.name.includes('Memory utilization')) ||
                                      items.find(item => item.key_ === 'vm.memory.utilization') ||
                                      items.find(item => item.key_.startsWith('vm.memory.util[')) ||
@@ -271,17 +278,31 @@ class ZabbixAPI {
     async getAlertSeverity() {
         const problems = await this.getAlerts();
         
+        // 获取当前语言
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        
+        // 多语言严重性名称映射
         const severityNames = {
-            '0': '未分类',
-            '1': '信息',
-            '2': '警告',
-            '3': '一般严重',
-            '4': '严重',
-            '5': '灾难'
+            zh: {
+                '0': '未分类',
+                '1': '信息',
+                '2': '警告',
+                '3': '一般严重',
+                '4': '严重',
+                '5': '灾难'
+            },
+            en: {
+                '0': 'Not classified',
+                '1': 'Information',
+                '2': 'Warning',
+                '3': 'Average',
+                '4': 'High',
+                '5': 'Disaster'
+            }
         };
 
         // 初始化所有严重级别的计数为0
-        const severityCounts = Object.keys(severityNames).reduce((acc, severity) => {
+        const severityCounts = Object.keys(severityNames[currentLang]).reduce((acc, severity) => {
             acc[severity] = 0;
             return acc;
         }, {});
@@ -294,7 +315,7 @@ class ZabbixAPI {
         // 转换为图表数据格式
         return Object.entries(severityCounts)
             .map(([severity, count]) => ({
-                name: severityNames[severity],
+                name: severityNames[currentLang][severity],
                 value: count
             }))
             .filter(item => item.value > 0);
@@ -352,9 +373,11 @@ class ZabbixAPI {
         const items = await this.request('item.get', {
             output: ['hostid', 'name', 'lastvalue', 'key_'],
             hostids: hosts.map(host => host.hostid),
+            search: {
+                name: ['CPU utilization', 'Memory utilization']
+            },
             filter: {
                 key_: [
-                    'system.cpu.util',
                     'vm.memory.utilization',  // Linux 内存使用率
                     'vm.memory.util',         // Windows 内存使用率
                     'system.cpu.num',         // Linux CPU 核心数
@@ -391,7 +414,7 @@ class ZabbixAPI {
         return hosts.map(host => {
             const cpuItem = items.find(item => 
                 item.hostid === host.hostid && 
-                item.key_ === 'system.cpu.util'
+                item.name.includes('CPU utilization')
             );
 
             const osItem = items.find(item =>
@@ -476,9 +499,6 @@ class ZabbixAPI {
                             'Total memory'                // 内存总量
                         ],
                         key_: [
-                            'system.cpu.util[,idle]',     // CPU使用率
-                            'system.cpu.util[,system]',   // CPU使用率
-                            'system.cpu.util',            // CPU使用率
                             'vm.memory.utilization',      // 内存使用率
                             'vm.memory.util',             // 内存使用率
                             'system.cpu.num',             // CPU核心数
@@ -502,18 +522,8 @@ class ZabbixAPI {
             }
 
             const host = hostResponse[0];
-            // 通过名称或key获取监控项
-            const cpuItem = itemsResponse.find(item => item.name.includes('CPU utilization')) ||
-                          itemsResponse.find(item => item.key_ === 'system.cpu.util[,system]') ||
-                          itemsResponse.find(item => item.key_ === 'system.cpu.util') ||
-                          itemsResponse.find(item => item.key_.startsWith('system.cpu.util[')) ||
-                          itemsResponse.find(item => {
-                              if (item.key_ === 'system.cpu.util[,idle]') {
-                                  item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
-                                  return true;
-                              }
-                              return false;
-                          });
+            // 通过名称获取CPU监控项
+            const cpuItem = itemsResponse.find(item => item.name.includes('CPU utilization'));
 
             const memoryItem = itemsResponse.find(item => item.name.includes('Memory utilization')) ||
                             itemsResponse.find(item => item.key_ === 'vm.memory.utilization') ||
@@ -622,17 +632,14 @@ class ZabbixAPI {
     processItems(items, isWindows) {
         const result = {};
         items.forEach(item => {
+            // 直接通过名称匹配CPU utilization
+            if (item.name && item.name.includes('CPU utilization')) {
+                result.cpuUsage = parseFloat(item.lastvalue).toFixed(2);
+                return;
+            }
+            
+            // 处理其他监控项
             switch (item.key_) {
-                case 'system.cpu.util[,idle]':
-                    if (!isWindows) {
-                        result.cpuUsage = (100 - parseFloat(item.lastvalue)).toFixed(2);
-                    }
-                    break;
-                case 'system.cpu.util':  // Windows CPU 使用率
-                    if (isWindows) {
-                        result.cpuUsage = parseFloat(item.lastvalue).toFixed(2);
-                    }
-                    break;
                 case 'vm.memory.util':
                     result.memoryUsage = parseFloat(item.lastvalue).toFixed(2);
                     break;
@@ -761,10 +768,10 @@ class ZabbixAPI {
         const minutes = Math.floor((duration % 3600) / 60);
         
         let result = '';
-        if (days > 0) result += `${days}${i18n.t('time.days')} `;
-        if (hours > 0) result += `${hours}${i18n.t('time.hours')} `;
-        if (minutes > 0) result += `${minutes}${i18n.t('time.minutes')}`;
-        return result.trim() || i18n.t('time.lessThanOneMinute');
+        if (days > 0) result += `${days}${safeTranslate('time.days', '天', ' days')} `;
+        if (hours > 0) result += `${hours}${safeTranslate('time.hours', '小时', ' hrs')} `;
+        if (minutes > 0) result += `${minutes}${safeTranslate('time.minutes', '分钟', ' mins')}`;
+        return result.trim() || safeTranslate('time.lessThanOneMinute', '刚刚', 'Just now');
     }
 
     getAvailabilityText(available) {
@@ -1035,9 +1042,17 @@ class ZabbixAPI {
 
             // 如果提供了搜索关键字，添加搜索条件
             if (searchKey) {
-                params.search = {
-                    key_: searchKey
-                };
+                // 如果搜索的是监控项名称（如"CPU utilization"），使用name搜索
+                if (searchKey.includes(' ')) {
+                    params.search = {
+                        name: searchKey
+                    };
+                } else {
+                    // 否则使用key搜索
+                    params.search = {
+                        key_: searchKey
+                    };
+                }
             }
 
             const items = await this.request('item.get', params);
@@ -1051,12 +1066,14 @@ class ZabbixAPI {
     // 获取监控项的历史数据
     async getHistory(itemId, valueType = 0, timeFrom = null, timeTill = null, limit = 100) {
         try {
+            console.log(`API获取历史数据 - ItemID: ${itemId}, 类型: ${valueType}, 时间范围: ${timeFrom ? new Date(timeFrom * 1000).toLocaleString() : '不限'} - ${timeTill ? new Date(timeTill * 1000).toLocaleString() : '不限'}, 限制: ${limit}`);
+            
             const params = {
                 output: 'extend',
                 itemids: itemId,
                 history: valueType,  // 0=float, 1=character, 2=log, 3=numeric(unsigned), 4=text
                 sortfield: 'clock',
-                sortorder: 'DESC',
+                sortorder: 'ASC',  // 改为升序，确保获取时间范围内的所有数据
                 limit: limit
             };
 
@@ -1068,7 +1085,31 @@ class ZabbixAPI {
                 params.time_till = timeTill;
             }
 
+            console.log(`API请求参数:`, params);
             const history = await this.request('history.get', params);
+            console.log(`API返回历史数据条数: ${history ? history.length : 0}`);
+            
+            if (history && history.length > 0) {
+                console.log(`首条数据:`, {
+                    clock: history[0].clock,
+                    time: new Date(parseInt(history[0].clock) * 1000).toLocaleString(),
+                    value: history[0].value
+                });
+                console.log(`末条数据:`, {
+                    clock: history[history.length-1].clock,
+                    time: new Date(parseInt(history[history.length-1].clock) * 1000).toLocaleString(),
+                    value: history[history.length-1].value
+                });
+                
+                // 检查数据分布 - 统计每小时的数据点数量
+                const hourlyStats = {};
+                history.forEach(item => {
+                    const hour = new Date(parseInt(item.clock) * 1000).getHours();
+                    hourlyStats[hour] = (hourlyStats[hour] || 0) + 1;
+                });
+                console.log(`每小时数据点分布:`, hourlyStats);
+            }
+            
             return history || [];
         } catch (error) {
             console.error(`Failed to get history for item ${itemId}:`, error);
