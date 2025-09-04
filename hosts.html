@@ -9,43 +9,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="js/i18n.js"></script>
     <script src="js/settings.js"></script>
-    <script src="js/api.js"></script>
     <script src="js/main.js"></script>
 </head>
 <body>
-    <!-- 顶部栏 -->
-    <header class="header">
-        <div class="header-content flex">
-            <div class="flex items-center">
-                <img src="assets/zabbix.png" class="logo" alt="logo">
-                <h1>Zabbix Dashboard</h1>
-            </div>
-            <nav class="navbar">
-                <ul>
-                    <li><a href="index.html"><i class="fas fa-tachometer-alt"></i> <span data-i18n="nav.dashboard"></span></a></li>
-                    <li><a href="hosts.html" class="active"><i class="fas fa-server"></i> <span data-i18n="nav.hostList"></span></a></li>
-                </ul>
-            </nav>
-            <div class="header-actions">
-                <div class="last-refresh">
-                    <span id="lastRefreshTime" data-i18n="settings.messages.lastRefresh"></span>
-                </div>
-                <a href="https://qm.qq.com/cgi-bin/qm/qr?k=a_y5qjuIfBYZHkhGg4JTZqGjTk3KUI5T&jump_from=webapi&authKey=qJpb8UQWFJcxKBdT/zq9kGBqiMxOm9k3TkfYeAtaVtHAbKbIfxMiGBolmP+aWa5b" target="_blank" class="icon-btn">
-                  <img width="32px" src="/assets/qq.png" class="icon" />
-                </a>
-                <a href="https://github.com/X-Mars" target="_blank" class="icon-btn">
-                    <svg viewBox="0 0 24 24" width="24" height="24" class="icon">
-                        <path fill="currentColor" d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                    </svg>
-                </a>
-                <button id="settingsBtn" class="icon-btn">
-                    <svg viewBox="0 0 24 24" width="24" height="24" class="icon">
-                      <path fill="currentColor" d="M24 13.616v-3.232l-2.869-1.02c-.198-.687-.472-1.342-.811-1.955l1.308-2.751-2.285-2.285-2.751 1.307c-.613-.339-1.268-.613-1.955-.811l-1.02-2.869h-3.232l-1.021 2.869c-.687.198-1.342.472-1.955.811l-2.751-1.308-2.285 2.285 1.308 2.752c-.339.613-.614 1.268-.811 1.955l-2.869 1.02v3.232l2.869 1.02c.198.687.472 1.342.811 1.955l-1.308 2.751 2.285 2.286 2.751-1.308c.613.339 1.268.613 1.955.811l1.021 2.869h3.232l1.02-2.869c.687-.198 1.342-.472 1.955-.811l2.751 1.308 2.285-2.286-1.308-2.751c.339-.613.614-1.268.811-1.955l2.869-1.02zm-12 2.384c-2.209 0-4-1.791-4-4s1.791-4 4-4 4 1.791 4 4-1.791 4-4 4z"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </header>
+    <!-- 顶部栏将通过 JavaScript 加载 -->
+    <div id="header-container"></div>
 
     <!-- 设置对话框容器 -->
     <div id="settingsContainer"></div>
@@ -64,7 +32,7 @@
                     <th data-i18n="cpuUsage" style="min-width: 200px;">CPU使用率</th>
                     <th data-i18n="memoryUsage" style="min-width: 200px;">内存使用率</th>
                     <th data-i18n="alerts">告警中</th>
-                    <th data-i18n="time.runningTime" style="width: 150px;">运行时间</th>
+                    <th data-i18n="runningTime" style="width: 150px;">运行时间</th>
                 </tr>
             </thead>
             <tbody id="hostsList">
@@ -112,7 +80,7 @@
                                     <span id="detailMemoryTotal">-</span>
                                 </div>
                                 <div class="info-item">
-                                    <label data-i18n="time.runningTime">运行时间</label>
+                                    <label data-i18n="runningTime">运行时间</label>
                                     <span id="detailUptime">-</span>
                                 </div>
                             </div>
@@ -201,5 +169,14 @@
             </div>
         </div>
     </div>
+
+    <!-- 主要内容区 -->
+    <div class="content">
+        <!-- ... 其他内容保持不变 ... -->
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/header.js"></script>
+    <script src="js/charts.js"></script>
 </body>
 </html> 

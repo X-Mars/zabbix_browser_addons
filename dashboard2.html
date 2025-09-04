@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title data-i18n="pageTitle.screen2">资源监控大屏</title>
+    <link href="css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .dashboard-screen-2 {
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 24px 24px 50px 24px;
+            position: relative;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        .dashboard-screen-2::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 25% 75%, rgba(255, 140, 0, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 25%, rgba(138, 43, 226, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 127, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .screen-title-2 {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 700;
+            height: 5vh;
+            margin-bottom: 20px;
+            color: #ffffff;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(255, 140, 0, 0.3);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .screen-title-2::before,
+        .screen-title-2::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 35%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #ff8c00 50%, transparent 100%);
+            transform: translateY(-50%);
+            opacity: 0.8;
+        }
+        
+        .screen-title-2::before {
+            left: 5%;
+        }
+        
+        .screen-title-2::after {
+            right: 5%;
+        }
+        
+        /* 全屏按钮样式 */
+        .fullscreen-btn-2 {
+            position: fixed;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(145deg, rgba(25, 25, 45, 0.95), rgba(15, 15, 35, 0.95));
+            border: 1px solid rgba(255, 140, 0, 0.3);
+            border-radius: 12px;
+            color: #ff8c00;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.3),
+                0 1px 4px rgba(255, 140, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fullscreen-btn-2:hover {
+            background: linear-gradient(145deg, rgba(255, 140, 0, 0.2), rgba(255, 100, 0, 0.2));
+            border-color: rgba(255, 140, 0, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 2px 8px rgba(255, 140, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        .fullscreen-btn-2:active {
+            transform: translateY(0);
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.3),
+                0 1px 4px rgba(255, 140, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        /* 左上角刷新时间显示 */
+        .dashboard-refresh-time-2 {
+            position: fixed;
+            left: 24px;
+            color: #ffffff;
+            font-size: 14px;
+            background: linear-gradient(145deg, rgba(25, 25, 45, 0.95), rgba(15, 15, 35, 0.95));
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 140, 0, 0.3);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.3),
+                0 1px 4px rgba(255, 140, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 180px;
+        }
+        
+        .dashboard-refresh-time-2:hover {
+            border-color: rgba(255, 140, 0, 0.5);
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 2px 8px rgba(255, 140, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        .dashboard-refresh-time-2 i {
+            color: #ff8c00;
+            font-size: 12px;
+        }
+        
+        .dashboard-refresh-time-2 .refresh-label {
+            color: #a0a0a0;
+            font-size: 12px;
+        }
+        
+        .dashboard-refresh-time-2 .refresh-value {
+            color: #ff8c00;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        /* 加载状态 */
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: #a0a0a0;
+        }
+        
+        .loading-spinner {
+            border: 3px solid rgba(255, 140, 0, 0.3);
+            border-top: 3px solid #ff8c00;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 主要布局 - 三栏设计 */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            height: calc(100vh - 120px);
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* 列布局 */
+        .dashboard-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* 统计概览卡片 */
+        .overview-card {
+            background: linear-gradient(145deg, rgba(25, 25, 45, 0.95), rgba(15, 15, 35, 0.95));
+            border: 1px solid rgba(255, 140, 0, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 2px 8px rgba(255, 140, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .overview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 140, 0, 0.05) 0%, transparent 50%);
+            border-radius: 16px;
+            pointer-events: none;
+        }
+        
+        .overview-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 140, 0, 0.4);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                0 4px 16px rgba(255, 140, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        .overview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 140, 0, 0.2);
+        }
+        
+        .overview-title {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .overview-title i {
+            color: #ff8c00;
+            font-size: 14px;
+        }
+        
+        .overview-count {
+            color: #ff8c00;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        /* 图表卡片样式 */
+        .chart-card-2 {
+            background: linear-gradient(145deg, rgba(25, 25, 45, 0.95), rgba(15, 15, 35, 0.95));
+            border: 1px solid rgba(255, 140, 0, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                0 2px 8px rgba(255, 140, 0, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            flex: 1;
+            min-height: 300px;
+        }
+        
+        .chart-card-2:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 140, 0, 0.4);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                0 4px 16px rgba(255, 140, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        
+        .chart-card-2::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 140, 0, 0.05) 0%, transparent 50%);
+            border-radius: 16px;
+            pointer-events: none;
+        }
+        
+        .chart-title-2 {
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 140, 0, 0.2);
+            letter-spacing: 0.5px;
+        }
+        
+        .chart-title-2 i {
+            color: #ff8c00;
+            font-size: 14px;
+        }
+        
+        /* 确保图表高度一致的特殊布局 */
+        .dashboard-column:first-child .overview-card {
+            flex: 0 0 auto;
+            height: calc(50% - 10px);
+        }
+        
+        .dashboard-column:first-child .chart-card-2 {
+            flex: 1;
+            height: calc(50% - 10px);
+        }
+        
+        .dashboard-column:not(:first-child) .chart-card-2 {
+            flex: 1;
+            height: calc(50% - 10px);
+        }
+        
+        /* 主机列表样式 */
+        .host-list {
+            max-height: 400px;
+            overflow: hidden; /* 隐藏溢出部分 */
+            margin-top: 10px;
+            position: relative;
+        }
+        
+        /* 添加渐变遮罩效果 */
+        .host-list::before,
+        .host-list::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 20px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .host-list::before {
+            top: 0;
+            background: linear-gradient(to bottom, 
+                rgba(25, 25, 45, 1) 0%, 
+                rgba(25, 25, 45, 0.8) 50%, 
+                transparent 100%);
+        }
+        
+        .host-list::after {
+            bottom: 0;
+            background: linear-gradient(to top, 
+                rgba(25, 25, 45, 1) 0%, 
+                rgba(25, 25, 45, 0.8) 50%, 
+                transparent 100%);
+        }
+        
+        /* 主机列表容器 - 用于滚动动画 */
+        .host-list-container {
+            animation: scrollUp 30s linear infinite;
+            transition: animation-play-state 0.3s ease;
+        }
+        
+        /* 鼠标悬停时暂停滚动 */
+        .host-list:hover .host-list-container {
+            animation-play-state: paused;
+        }
+        
+        /* 滚动动画 */
+        @keyframes scrollUp {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(-50%);
+            }
+        }
+        
+        /* 当主机数量少时禁用滚动 */
+        .host-list.no-scroll .host-list-container {
+            animation: none;
+        }
+        
+        /* 禁用滚动时隐藏渐变遮罩 */
+        .host-list.no-scroll::before,
+        .host-list.no-scroll::after {
+            display: none;
+        }
+        
+        .host-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            background: rgba(25, 25, 45, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 140, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .host-item:hover {
+            background: rgba(255, 140, 0, 0.05);
+            border-color: rgba(255, 140, 0, 0.3);
+        }
+        
+        .host-info {
+            flex: 1;
+        }
+        
+        .host-name {
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .host-ip {
+            color: #a0a0a0;
+            font-size: 12px;
+        }
+        
+        .resource-metrics {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .metric-item {
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .metric-value {
+            color: #ff8c00;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        
+        .metric-label {
+            color: #a0a0a0;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+        
+        /* 状态指示器 */
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-ok {
+            background: #00ff7f;
+            box-shadow: 0 0 8px rgba(0, 255, 127, 0.5);
+        }
+        
+        .status-warning {
+            background: #ffa500;
+            box-shadow: 0 0 8px rgba(255, 165, 0, 0.5);
+        }
+        
+        .status-critical {
+            background: #ff4444;
+            box-shadow: 0 0 8px rgba(255, 68, 68, 0.5);
+        }
+        
+        .status-unknown {
+            background: #888;
+            box-shadow: 0 0 8px rgba(136, 136, 136, 0.5);
+        }
+        
+        /* 动画效果 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .chart-card-2, .overview-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        .chart-card-2:nth-child(1) { animation-delay: 0.1s; }
+        .chart-card-2:nth-child(2) { animation-delay: 0.2s; }
+        .chart-card-2:nth-child(3) { animation-delay: 0.3s; }
+        
+        /* 响应式设计 */
+        @media (max-width: 1400px) {
+            .main-layout {
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-screen-2 {
+                padding: 16px;
+            }
+            
+            .screen-title-2 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+            
+            .main-layout {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+            
+            .chart-card-2 {
+                padding: 16px;
+                min-height: 250px;
+            }
+            
+            .resource-metrics {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+        
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #ff8c00, #ffa500);
+            border-radius: 4px;
+        }
+        
+        /* 错误状态 */
+        .error-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: #ff6b6b;
+            text-align: center;
+        }
+        
+        .error-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        
+        .error-detail {
+            font-size: 12px;
+            color: #a0a0a0;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- 顶部栏将通过 JavaScript 加载 -->
+        <div id="header-container"></div>
+
+        <div class="dashboard-screen-2">
+            <!-- 全屏按钮 -->
+            <button id="fullscreenBtn2" class="fullscreen-btn-2" title="全屏显示">
+                <i class="fas fa-expand"></i>
+            </button>
+            
+            <!-- 左上角刷新时间显示 -->
+            <div id="dashboardRefreshTime2" class="dashboard-refresh-time-2">
+                <i class="fas fa-clock"></i>
+                <span class="refresh-label" data-i18n="dashboard2.lastRefresh">最后刷新:</span>
+                <span class="refresh-value">--</span>
+            </div>
+            
+            <h1 class="screen-title-2" data-i18n="dashboard2.title">资源利用率监控大屏</h1>
+            
+            <!-- 主要布局 -->
+            <div class="main-layout">
+                <!-- 第一列：主机概览和CPU监控 -->
+                <div class="dashboard-column">
+                    <!-- 主机概览 -->
+                    <div class="overview-card">
+                        <div class="overview-header">
+                            <div class="overview-title">
+                                <i class="fas fa-server"></i>
+                                <span data-i18n="dashboard2.hostOverview">主机总览</span>
+                            </div>
+                            <div class="overview-count" id="totalHostsCount">--</div>
+                        </div>
+                        <div class="host-list" id="hostOverviewList">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <span data-i18n="dashboard2.loadingHostData">正在加载主机数据...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- CPU使用率趋势 -->
+                    <div class="chart-card-2">
+                        <h3 class="chart-title-2">
+                            <i class="fas fa-microchip"></i>
+                            <span data-i18n="dashboard2.cpuTrend">CPU使用率趋势</span>
+                        </h3>
+                        <div id="cpuUtilizationChart" style="height: calc(100% - 60px);">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                正在加载CPU数据...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第二列：内存和网络监控 -->
+                <div class="dashboard-column">
+                    <!-- 内存使用率分布 -->
+                    <div class="chart-card-2">
+                        <h3 class="chart-title-2">
+                            <i class="fas fa-memory"></i>
+                            <span data-i18n="dashboard2.memoryDistribution">内存使用率分布</span>
+                        </h3>
+                        <div id="memoryUtilizationChart" style="height: calc(100% - 60px);">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                正在加载内存数据...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- CPU使用率分布 -->
+                    <div class="chart-card-2">
+                        <h3 class="chart-title-2">
+                            <i class="fas fa-chart-pie"></i>
+                            <span data-i18n="dashboard2.cpuDistribution">CPU使用率分布</span>
+                        </h3>
+                        <div id="cpuDistributionChart" style="height: calc(100% - 60px);">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <span data-i18n="dashboard2.loadingCpuData">正在加载CPU分布数据...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第三列：告警趋势和系统资源 -->
+                <div class="dashboard-column">
+                    <!-- 过去7天告警趋势对比 -->
+                    <div class="chart-card-2">
+                        <h3 class="chart-title-2">
+                            <i class="fas fa-chart-line"></i>
+                            <span data-i18n="dashboard2.alertTrend7Days">过去7天告警趋势对比</span>
+                        </h3>
+                        <div id="alertTrendChart" style="height: calc(100% - 60px);">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <span data-i18n="dashboard2.loadingAlertData">正在加载告警趋势数据...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 内存使用率趋势 -->
+                    <div class="chart-card-2">
+                        <h3 class="chart-title-2">
+                            <i class="fas fa-chart-line"></i>
+                            <span data-i18n="dashboard2.memoryTrend">内存使用率趋势</span>
+                        </h3>
+                        <div id="memoryTrendChart" style="height: calc(100% - 60px);">
+                            <div class="loading-state">
+                                <div class="loading-spinner"></div>
+                                <span data-i18n="dashboard2.loadingMemoryData">正在加载内存趋势数据...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置对话框容器 -->
+    <div id="settingsContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/fullscreen.js"></script>
+    <script src="js/header.js"></script>
+    <script src="js/dashboard2.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/i18n.js"></script>
+</body>
+</html> 

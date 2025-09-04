@@ -1,3 +1,23 @@
+// 安全翻译工具函数
+function safeTranslate(key, zhFallback = '', enFallback = '') {
+    try {
+        if (typeof i18n !== 'undefined' && i18n.t) {
+            const translation = i18n.t(key);
+            if (translation && translation !== key) {
+                return translation;
+            }
+        }
+        
+        // 如果翻译失败，根据当前语言返回合适的fallback
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        return currentLang === 'en' ? (enFallback || zhFallback) : zhFallback;
+    } catch (e) {
+        console.warn(`Translation failed for key: ${key}`, e);
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        return currentLang === 'en' ? (enFallback || zhFallback) : zhFallback;
+    }
+}
+
 class ZabbixAPI {
     constructor(url, token) {
         this.url = url;
@@ -80,12 +100,12 @@ class ZabbixAPI {
                         'System name',                // 主机名称
                         'System description',         // 系统详情
                         'System uptime',              // 运行时间
-                        'Total memory'                // 内存总量
+                        'Total memory',               // 内存总量
+                        'Free disk space',            // 磁盘空间
+                        'Used disk space',            // 已用磁盘空间
+                        'Disk space utilization'     // 磁盘使用率
                     ],
                     key_: [
-                        'system.cpu.util[,idle]',     // CPU使用率
-                        'system.cpu.util[,system]',   // CPU使用率
-                        'system.cpu.util',            // CPU使用率
                         'vm.memory.utilization',      // 内存使用率
                         'vm.memory.util',             // 内存使用率
                         'system.cpu.num',             // CPU核心数
@@ -97,7 +117,14 @@ class ZabbixAPI {
                         'system.uptime',              // 运行时间
                         'system.net.uptime',          // 运行时间
                         'system.descr[sysDescr.0]',    // 系统详情
-                        'vm.memory.size[total]'       // 内存总量
+                        'vm.memory.size[total]',      // 内存总量
+                        'vfs.fs.size[/,pused]',       // Linux磁盘使用率
+                        'vfs.fs.size[C:,pused]',      // Windows磁盘使用率
+                        'vfs.fs.size[/,used]',        // Linux已用磁盘
+                        'vfs.fs.size[C:,used]',       // Windows已用磁盘
+                        'vfs.fs.size[/,free]',        // Linux可用磁盘
+                        'vfs.fs.size[C:,free]',       // Windows可用磁盘
+                        'system.disk.utilization'     // 系统磁盘使用率
                     ]
                 },
                 searchByAny: true,                    // 匹配任意关键字
@@ -131,18 +158,8 @@ class ZabbixAPI {
             return await Promise.all(hostsResponse.map(async host => {
                 const items = hostItemsMap[host.hostid] || [];
                 
-                // 通过名称或key获取监控项
-                const cpuItem = items.find(item => item.name.includes('CPU utilization')) ||
-                              items.find(item => item.key_ === 'system.cpu.util[,system]') ||
-                              items.find(item => item.key_ === 'system.cpu.util') ||
-                              items.find(item => item.key_.startsWith('system.cpu.util[')) ||
-                              items.find(item => {
-                                  if (item.key_ === 'system.cpu.util[,idle]') {
-                                      item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
-                                      return true;
-                                  }
-                                  return false;
-                              });
+                // 通过名称获取CPU监控项
+                const cpuItem = items.find(item => item.name.includes('CPU utilization'));
                 const memoryUtilItem = items.find(item => item.name.includes('Memory utilization')) ||
                                      items.find(item => item.key_ === 'vm.memory.utilization') ||
                                      items.find(item => item.key_.startsWith('vm.memory.util[')) ||
@@ -261,17 +278,31 @@ class ZabbixAPI {
     async getAlertSeverity() {
         const problems = await this.getAlerts();
         
+        // 获取当前语言
+        const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+        
+        // 多语言严重性名称映射
         const severityNames = {
-            '0': '未分类',
-            '1': '信息',
-            '2': '警告',
-            '3': '一般严重',
-            '4': '严重',
-            '5': '灾难'
+            zh: {
+                '0': '未分类',
+                '1': '信息',
+                '2': '警告',
+                '3': '一般严重',
+                '4': '严重',
+                '5': '灾难'
+            },
+            en: {
+                '0': 'Not classified',
+                '1': 'Information',
+                '2': 'Warning',
+                '3': 'Average',
+                '4': 'High',
+                '5': 'Disaster'
+            }
         };
 
         // 初始化所有严重级别的计数为0
-        const severityCounts = Object.keys(severityNames).reduce((acc, severity) => {
+        const severityCounts = Object.keys(severityNames[currentLang]).reduce((acc, severity) => {
             acc[severity] = 0;
             return acc;
         }, {});
@@ -284,7 +315,7 @@ class ZabbixAPI {
         // 转换为图表数据格式
         return Object.entries(severityCounts)
             .map(([severity, count]) => ({
-                name: severityNames[severity],
+                name: severityNames[currentLang][severity],
                 value: count
             }))
             .filter(item => item.value > 0);
@@ -342,9 +373,11 @@ class ZabbixAPI {
         const items = await this.request('item.get', {
             output: ['hostid', 'name', 'lastvalue', 'key_'],
             hostids: hosts.map(host => host.hostid),
+            search: {
+                name: ['CPU utilization', 'Memory utilization']
+            },
             filter: {
                 key_: [
-                    'system.cpu.util',
                     'vm.memory.utilization',  // Linux 内存使用率
                     'vm.memory.util',         // Windows 内存使用率
                     'system.cpu.num',         // Linux CPU 核心数
@@ -381,7 +414,7 @@ class ZabbixAPI {
         return hosts.map(host => {
             const cpuItem = items.find(item => 
                 item.hostid === host.hostid && 
-                item.key_ === 'system.cpu.util'
+                item.name.includes('CPU utilization')
             );
 
             const osItem = items.find(item =>
@@ -466,9 +499,6 @@ class ZabbixAPI {
                             'Total memory'                // 内存总量
                         ],
                         key_: [
-                            'system.cpu.util[,idle]',     // CPU使用率
-                            'system.cpu.util[,system]',   // CPU使用率
-                            'system.cpu.util',            // CPU使用率
                             'vm.memory.utilization',      // 内存使用率
                             'vm.memory.util',             // 内存使用率
                             'system.cpu.num',             // CPU核心数
@@ -492,18 +522,8 @@ class ZabbixAPI {
             }
 
             const host = hostResponse[0];
-            // 通过名称或key获取监控项
-            const cpuItem = itemsResponse.find(item => item.name.includes('CPU utilization')) ||
-                          itemsResponse.find(item => item.key_ === 'system.cpu.util[,system]') ||
-                          itemsResponse.find(item => item.key_ === 'system.cpu.util') ||
-                          itemsResponse.find(item => item.key_.startsWith('system.cpu.util[')) ||
-                          itemsResponse.find(item => {
-                              if (item.key_ === 'system.cpu.util[,idle]') {
-                                  item.lastvalue = (100 - parseFloat(item.lastvalue)).toString();
-                                  return true;
-                              }
-                              return false;
-                          });
+            // 通过名称获取CPU监控项
+            const cpuItem = itemsResponse.find(item => item.name.includes('CPU utilization'));
 
             const memoryItem = itemsResponse.find(item => item.name.includes('Memory utilization')) ||
                             itemsResponse.find(item => item.key_ === 'vm.memory.utilization') ||
@@ -612,17 +632,14 @@ class ZabbixAPI {
     processItems(items, isWindows) {
         const result = {};
         items.forEach(item => {
+            // 直接通过名称匹配CPU utilization
+            if (item.name && item.name.includes('CPU utilization')) {
+                result.cpuUsage = parseFloat(item.lastvalue).toFixed(2);
+                return;
+            }
+            
+            // 处理其他监控项
             switch (item.key_) {
-                case 'system.cpu.util[,idle]':
-                    if (!isWindows) {
-                        result.cpuUsage = (100 - parseFloat(item.lastvalue)).toFixed(2);
-                    }
-                    break;
-                case 'system.cpu.util':  // Windows CPU 使用率
-                    if (isWindows) {
-                        result.cpuUsage = parseFloat(item.lastvalue).toFixed(2);
-                    }
-                    break;
                 case 'vm.memory.util':
                     result.memoryUsage = parseFloat(item.lastvalue).toFixed(2);
                     break;
@@ -751,9 +768,389 @@ class ZabbixAPI {
         const minutes = Math.floor((duration % 3600) / 60);
         
         let result = '';
-        if (days > 0) result += `${days}${i18n.t('time.days')} `;
-        if (hours > 0) result += `${hours}${i18n.t('time.hours')} `;
-        if (minutes > 0) result += `${minutes}${i18n.t('time.minutes')}`;
-        return result.trim() || i18n.t('time.lessThanOneMinute');
+        if (days > 0) result += `${days}${safeTranslate('time.days', '天', ' days')} `;
+        if (hours > 0) result += `${hours}${safeTranslate('time.hours', '小时', ' hrs')} `;
+        if (minutes > 0) result += `${minutes}${safeTranslate('time.minutes', '分钟', ' mins')}`;
+        return result.trim() || safeTranslate('time.lessThanOneMinute', '刚刚', 'Just now');
+    }
+
+    getAvailabilityText(available) {
+        switch (available) {
+            case '0': return '未知';
+            case '1': return '可用';
+            case '2': return '不可用';
+            default: return '未知';
+        }
+    }
+
+    async getHostGroups() {
+        try {
+            const hostGroups = await this.request('hostgroup.get', {
+                output: ['groupid', 'name'],
+                real_hosts: true,  // 只获取包含真实主机的组
+                selectHosts: ['hostid', 'name', 'status'],  // 选择主机信息
+            });
+            return hostGroups;
+        } catch (error) {
+            console.error('Failed to get host groups:', error);
+            throw error;
+        }
+    }
+
+    async getHostsWithStatus() {
+        try {
+            const hosts = await this.request('host.get', {
+                output: ['hostid', 'host', 'name', 'status', 'available'],
+                selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
+                selectGroups: ['groupid', 'name'],
+                selectTriggers: ['triggerid', 'description', 'priority', 'value'],
+                // 不过滤状态，获取所有主机
+            });
+
+            // 获取每个主机的活动问题
+            const hostProblemsMap = {};
+            for (const host of hosts) {
+                try {
+                    const problems = await this.request('problem.get', {
+                        output: ['eventid', 'severity'],
+                        hostids: [host.hostid],
+                        recent: true,
+                        suppressed: false
+                    });
+                    hostProblemsMap[host.hostid] = problems.length;
+                } catch (error) {
+                    console.warn(`Failed to get problems for host ${host.hostid}:`, error);
+                    hostProblemsMap[host.hostid] = 0;
+                }
+            }
+
+            return hosts.map(host => {
+                // 分析接口可用性
+                const interfaces = host.interfaces || [];
+                const agentInterface = interfaces.find(iface => iface.type === '1'); // Zabbix agent
+                const snmpInterface = interfaces.find(iface => iface.type === '2');  // SNMP
+                const ipmiInterface = interfaces.find(iface => iface.type === '3');  // IPMI
+                const jmxInterface = interfaces.find(iface => iface.type === '4');   // JMX
+                
+                // 判断主要接口的可用性
+                // available: 0=未知, 1=可用, 2=不可用
+                let isAvailable = true;
+                let unavailableInterfaces = [];
+                let unknownInterfaces = [];
+                
+                if (agentInterface) {
+                    if (agentInterface.available === '2') {
+                        isAvailable = false;
+                        unavailableInterfaces.push('Zabbix agent');
+                    } else if (agentInterface.available === '0') {
+                        unknownInterfaces.push('Zabbix agent');
+                    }
+                }
+                
+                if (snmpInterface) {
+                    if (snmpInterface.available === '2') {
+                        isAvailable = false;
+                        unavailableInterfaces.push('SNMP');
+                    } else if (snmpInterface.available === '0') {
+                        unknownInterfaces.push('SNMP');
+                    }
+                }
+                
+                if (ipmiInterface) {
+                    if (ipmiInterface.available === '2') {
+                        isAvailable = false;
+                        unavailableInterfaces.push('IPMI');
+                    } else if (ipmiInterface.available === '0') {
+                        unknownInterfaces.push('IPMI');
+                    }
+                }
+                
+                if (jmxInterface) {
+                    if (jmxInterface.available === '2') {
+                        isAvailable = false;
+                        unavailableInterfaces.push('JMX');
+                    } else if (jmxInterface.available === '0') {
+                        unknownInterfaces.push('JMX');
+                    }
+                }
+                
+                // 如果没有主要接口，但主机是启用状态，也认为有问题
+                if (interfaces.length === 0 && host.status === '0') {
+                    isAvailable = false;
+                    unavailableInterfaces.push('无接口');
+                }
+
+                // 只有当接口状态为"不可用"(2)时才认为是监控失效
+                // "未知"(0)状态不算作监控失效
+
+                return {
+                    ...host,
+                    problemCount: hostProblemsMap[host.hostid] || 0,
+                    isEnabled: host.status === '0',  // 0=启用, 1=禁用
+                    isAvailable: isAvailable,        // 只有当接口状态为不可用(2)时才为false
+                    unavailableInterfaces: unavailableInterfaces,
+                    unknownInterfaces: unknownInterfaces,
+                    interfaces: interfaces,
+                    groups: host.groups || [],
+                    // 详细的接口状态
+                    interfaceStatus: {
+                        agent: agentInterface ? {
+                            available: agentInterface.available,
+                            availableText: this.getAvailabilityText(agentInterface.available),
+                            ip: agentInterface.ip,
+                            port: agentInterface.port
+                        } : null,
+                        snmp: snmpInterface ? {
+                            available: snmpInterface.available,
+                            availableText: this.getAvailabilityText(snmpInterface.available),
+                            ip: snmpInterface.ip,
+                            port: snmpInterface.port
+                        } : null,
+                        ipmi: ipmiInterface ? {
+                            available: ipmiInterface.available,
+                            availableText: this.getAvailabilityText(ipmiInterface.available),
+                            ip: ipmiInterface.ip,
+                            port: ipmiInterface.port
+                        } : null,
+                        jmx: jmxInterface ? {
+                            available: jmxInterface.available,
+                            availableText: this.getAvailabilityText(jmxInterface.available),
+                            ip: jmxInterface.ip,
+                            port: jmxInterface.port
+                        } : null
+                    }
+                };
+            });
+        } catch (error) {
+            console.error('Failed to get hosts with status:', error);
+            throw error;
+        }
+    }
+
+    async getProblemsStatistics() {
+        try {
+            // 第一步：获取活动问题的基础信息
+            const activeProblems = await this.request('problem.get', {
+                output: ['eventid', 'objectid', 'clock', 'r_eventid', 'severity', 'name'],
+                recent: true,
+                suppressed: false
+            });
+
+            if (activeProblems.length === 0) {
+                // 如果没有活动问题，直接返回
+                const resolvedEvents = await this.request('event.get', {
+                    output: ['eventid', 'clock', 'value'],
+                    source: 0,
+                    object: 0,
+                    value: 0,
+                    time_from: Math.floor(Date.now() / 1000) - 24 * 60 * 60,
+                    sortfield: 'clock',
+                    sortorder: 'DESC'
+                });
+
+                return {
+                    activeProblemsCount: 0,
+                    resolvedProblemsCount: resolvedEvents.length,
+                    totalProblemsToday: resolvedEvents.length,
+                    activeProblems: [],
+                    resolvedProblems: resolvedEvents
+                };
+            }
+
+            // 第二步：批量获取触发器信息
+            const triggerIds = activeProblems.map(problem => problem.objectid);
+            const triggers = await this.request('trigger.get', {
+                output: ['triggerid', 'description', 'expression'],
+                triggerids: triggerIds,
+                selectHosts: ['hostid', 'name', 'host']
+            });
+
+            // 第三步：获取所有相关主机的接口信息
+            const hostIds = [...new Set(triggers.flatMap(trigger => 
+                trigger.hosts ? trigger.hosts.map(host => host.hostid) : []
+            ))];
+
+            let hostInterfaces = [];
+            if (hostIds.length > 0) {
+                hostInterfaces = await this.request('hostinterface.get', {
+                    output: ['hostid', 'ip', 'dns', 'main'],
+                    hostids: hostIds,
+                    filter: { main: 1 }
+                });
+            }
+
+            // 第四步：创建查找映射以提高性能
+            const triggerMap = new Map(triggers.map(trigger => [trigger.triggerid, trigger]));
+            const interfaceMap = new Map(hostInterfaces.map(iface => [iface.hostid, iface]));
+
+            // 第五步：组合数据
+            const enrichedActiveProblems = activeProblems.map(problem => {
+                const trigger = triggerMap.get(problem.objectid);
+                const host = trigger && trigger.hosts && trigger.hosts[0];
+                const hostInterface = host ? interfaceMap.get(host.hostid) : null;
+
+                return {
+                    ...problem,
+                    hostName: host ? (host.name || host.host) : '未知主机',
+                    hostIp: hostInterface ? (hostInterface.ip || hostInterface.dns) : '--',
+                    name: problem.name || (trigger ? trigger.description : '未知问题')
+                };
+            });
+
+            // 第六步：获取最近24小时已解决的事件
+            const resolvedEvents = await this.request('event.get', {
+                output: ['eventid', 'clock', 'value'],
+                source: 0,  // 触发器事件
+                object: 0,  // 触发器对象
+                value: 0,   // 恢复状态（0=OK, 1=PROBLEM）
+                time_from: Math.floor(Date.now() / 1000) - 24 * 60 * 60, // 最近24小时
+                sortfield: 'clock',
+                sortorder: 'DESC'
+            });
+
+            const resolvedProblemsCount = resolvedEvents.length;
+
+            console.log('Problems statistics debug:', {
+                activeProblemsCount: enrichedActiveProblems.length,
+                resolvedEventsCount: resolvedEvents.length,
+                sampleActiveProblems: enrichedActiveProblems.slice(0, 3), // 显示前3个活动问题
+                resolvedEvents: resolvedEvents.slice(0, 3)  // 显示前3个恢复事件
+            });
+
+            return {
+                activeProblemsCount: enrichedActiveProblems.length,
+                resolvedProblemsCount: resolvedProblemsCount,
+                totalProblemsToday: enrichedActiveProblems.length + resolvedProblemsCount,
+                activeProblems: enrichedActiveProblems,
+                resolvedProblems: resolvedEvents
+            };
+        } catch (error) {
+            console.error('Failed to get problems statistics:', error);
+            throw error;
+        }
+    }
+
+    // 获取主机的监控项
+    async getItems(hostId, searchKey = '') {
+        try {
+            const params = {
+                output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue', 'units'],
+                hostids: hostId,
+                monitored: true,  // 只获取监控中的项目
+                status: 0         // 只获取启用的项目
+            };
+
+            // 如果提供了搜索关键字，添加搜索条件
+            if (searchKey) {
+                // 如果搜索的是监控项名称（如"CPU utilization"），使用name搜索
+                if (searchKey.includes(' ')) {
+                    params.search = {
+                        name: searchKey
+                    };
+                } else {
+                    // 否则使用key搜索
+                    params.search = {
+                        key_: searchKey
+                    };
+                }
+            }
+
+            const items = await this.request('item.get', params);
+            return items || [];
+        } catch (error) {
+            console.error(`Failed to get items for host ${hostId}:`, error);
+            return [];
+        }
+    }
+
+    // 获取监控项的历史数据
+    async getHistory(itemId, valueType = 0, timeFrom = null, timeTill = null, limit = 100) {
+        try {
+            console.log(`API获取历史数据 - ItemID: ${itemId}, 类型: ${valueType}, 时间范围: ${timeFrom ? new Date(timeFrom * 1000).toLocaleString() : '不限'} - ${timeTill ? new Date(timeTill * 1000).toLocaleString() : '不限'}, 限制: ${limit}`);
+            
+            const params = {
+                output: 'extend',
+                itemids: itemId,
+                history: valueType,  // 0=float, 1=character, 2=log, 3=numeric(unsigned), 4=text
+                sortfield: 'clock',
+                sortorder: 'ASC',  // 改为升序，确保获取时间范围内的所有数据
+                limit: limit
+            };
+
+            // 添加时间范围
+            if (timeFrom) {
+                params.time_from = timeFrom;
+            }
+            if (timeTill) {
+                params.time_till = timeTill;
+            }
+
+            console.log(`API请求参数:`, params);
+            const history = await this.request('history.get', params);
+            console.log(`API返回历史数据条数: ${history ? history.length : 0}`);
+            
+            if (history && history.length > 0) {
+                console.log(`首条数据:`, {
+                    clock: history[0].clock,
+                    time: new Date(parseInt(history[0].clock) * 1000).toLocaleString(),
+                    value: history[0].value
+                });
+                console.log(`末条数据:`, {
+                    clock: history[history.length-1].clock,
+                    time: new Date(parseInt(history[history.length-1].clock) * 1000).toLocaleString(),
+                    value: history[history.length-1].value
+                });
+                
+                // 检查数据分布 - 统计每小时的数据点数量
+                const hourlyStats = {};
+                history.forEach(item => {
+                    const hour = new Date(parseInt(item.clock) * 1000).getHours();
+                    hourlyStats[hour] = (hourlyStats[hour] || 0) + 1;
+                });
+                console.log(`每小时数据点分布:`, hourlyStats);
+            }
+            
+            return history || [];
+        } catch (error) {
+            console.error(`Failed to get history for item ${itemId}:`, error);
+            return [];
+        }
+    }
+
+    // 获取主机的最新值
+    async getLatestValues(hostId, itemKeys = []) {
+        try {
+            const params = {
+                output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue', 'units'],
+                hostids: hostId,
+                monitored: true,
+                status: 0
+            };
+
+            // 如果指定了监控项key，添加过滤条件
+            if (itemKeys.length > 0) {
+                params.filter = {
+                    key_: itemKeys
+                };
+            }
+
+            const items = await this.request('item.get', params);
+            
+            // 转换为更易用的格式
+            const values = {};
+            items.forEach(item => {
+                values[item.key_] = {
+                    value: item.lastvalue,
+                    units: item.units,
+                    name: item.name,
+                    itemid: item.itemid
+                };
+            });
+
+            return values;
+        } catch (error) {
+            console.error(`Failed to get latest values for host ${hostId}:`, error);
+            return {};
+        }
     }
 } 

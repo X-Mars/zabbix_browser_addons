@@ -27,7 +27,9 @@
       "js/main.js",
       "js/settings.js",
       "js/i18n.js",
-      "js/charts.js"
+      "js/charts.js",
+      "dashboard1.html",
+      "dashboard2.html"
     ],
     "matches": ["<all_urls>"]
   }],

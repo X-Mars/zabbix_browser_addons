@@ -14,7 +14,10 @@ class Charts {
                     trigger: 'axis',
                     formatter: function(params) {
                         const data = params[0];
-                        return `${data.name}<br/>${data.value[1]} 个告警`;
+                        // 使用模板字符串格式化
+                        const alertTemplate = safeTranslate('tooltipFormats.alertDetails', '{value}个', '{value} alerts');
+                        const alertText = alertTemplate.replace('{value}', data.value[1]);
+                        return `${data.name}<br/>${alertText}`;
                     }
                 },
                 grid: {
@@ -43,7 +46,7 @@ class Charts {
                 },
                 yAxis: {
                     type: 'value',
-                    name: '告警数量',
+                    name: safeTranslate('chartTitles.alertCount', '告警数量', 'Alert Count'),
                     nameTextStyle: {
                         color: '#666',
                         padding: [0, 30, 0, 0]
@@ -65,7 +68,7 @@ class Charts {
                     minInterval: 1
                 },
                 series: [{
-                    name: '告警数量',
+                    name: safeTranslate('chartTitles.alertCount', '告警数量', 'Alert Count'),
                     type: 'line',
                     smooth: true,
                     data: data,
@@ -105,13 +108,26 @@ class Charts {
                 return null;
             }
             const chart = echarts.init(container);
+            
+            // 获取当前语言
+            const currentLang = (typeof i18n !== 'undefined' && i18n.currentLang) ? i18n.currentLang : 'zh';
+            
+            // 严重性颜色映射（支持中英文）
             const colors = {
+                // 中文
                 '未分类': '#97A0AF',
                 '信息': '#7499FF',
                 '警告': '#FFC859',
                 '一般严重': '#FFA059',
                 '严重': '#E97659',
-                '灾难': '#E45959'
+                '灾难': '#E45959',
+                // 英文
+                'Not classified': '#97A0AF',
+                'Information': '#7499FF',
+                'Warning': '#FFC859',
+                'Average': '#FFA059',
+                'High': '#E97659',
+                'Disaster': '#E45959'
             };
 
             const option = {
@@ -131,7 +147,7 @@ class Charts {
                     }
                 },
                 series: [{
-                    name: '告警等级',
+                    name: currentLang === 'en' ? 'Alert Level' : '告警等级',
                     type: 'pie',
                     radius: ['40%', '70%'],
                     center: ['40%', '50%'],
@@ -155,7 +171,7 @@ class Charts {
                         name: item.name,
                         value: item.value,
                         itemStyle: {
-                            color: colors[item.name]
+                            color: colors[item.name] || '#97A0AF'
                         }
                     }))
                 }]
