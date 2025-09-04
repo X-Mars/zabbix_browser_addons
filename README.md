@@ -13,8 +13,8 @@
 ## 项目截图
 ![image](./assets/1.jpg)
 ![image](./assets/2.jpg)
-![image](./assets/3.jpg)
-![image](./assets/4.jpg)
+![image](./assets/10.png)
+![image](./assets/11.png)
 
 ## 插件市场安装地址
 ### Chrome
