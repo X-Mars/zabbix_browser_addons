@@ -14,8 +14,8 @@ This is a Chrome/Edge browser extension for the Zabbix monitoring system, provid
 ## Screenshots
 ![image](./assets/1_en.jpg)
 ![image](./assets/2_en.jpg)
-![image](./assets/3_en.jpg)
-![image](./assets/4_en.jpg)
+![image](./assets/10_en.png)
+![image](./assets/11_en.png)
 
 ## Webstore Url
 ### Chrome
