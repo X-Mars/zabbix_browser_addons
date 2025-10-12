@@ -23,6 +23,12 @@
 ### Edge
 [https://microsoftedge.microsoft.com/addons/detail/zabbix-dashboard/ccpgeajnamiengocljojcaapifmljiif](https://microsoftedge.microsoft.com/addons/detail/zabbix-dashboard/ccpgeajnamiengocljojcaapifmljiif)
 
+## 更新日志
+### [3.0.4] - 2025-10-12
+#### 改进 / Improvements
+- **API认证方式更新**: 根据Zabbix官方文档建议，将API认证方式从请求体中的`auth`属性改为使用`Authorization: Bearer <token>`头部认证
+- **API Authentication Update**: Following Zabbix official documentation recommendations, changed API authentication from `auth` property in request body to `Authorization: Bearer <token>` header authentication
+
 ## 源码安装方法
 1. 下载项目代码
    - 下载地址：https://github.com/X-Mars/zabbix_browser_addons

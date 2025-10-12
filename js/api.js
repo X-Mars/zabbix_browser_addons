@@ -18,6 +18,11 @@ function safeTranslate(key, zhFallback = '', enFallback = '') {
     }
 }
 
+/**
+ * Zabbix API客户端类
+ * 使用Authorization header进行认证，符合Zabbix 7.0+的推荐做法
+ * @see https://www.zabbix.com/documentation/7.0/en/manual/api
+ */
 class ZabbixAPI {
     constructor(url, token) {
         this.url = url;
@@ -26,7 +31,7 @@ class ZabbixAPI {
     }
 
     async request(method, params = {}) {
-        // apiinfo.version 不需要认证
+        // 构建请求体，不再包含auth属性
         const body = {
             jsonrpc: '2.0',
             method: method,
@@ -34,18 +39,22 @@ class ZabbixAPI {
             id: this.requestId++
         };
 
+        // 构建请求头
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+
         // 除了 apiinfo.version 外，其他方法都需要认证
-        if (method !== 'apiinfo.version') {
-            body.auth = this.token;
+        // 使用Authorization header替代auth属性
+        if (method !== 'apiinfo.version' && this.token) {
+            headers['Authorization'] = `Bearer ${this.token}`;
         }
 
         try {
             // console.log(`Sending request to ${method}:`, body);  // 添加日志
             const response = await fetch(this.url, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: headers,
                 body: JSON.stringify(body)
             });
 
