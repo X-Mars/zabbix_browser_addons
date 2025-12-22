@@ -816,20 +816,38 @@ class ZabbixAPI {
                 // 不过滤状态，获取所有主机
             });
 
-            // 获取每个主机的活动问题
+            // 获取每个主机的活动问题（批量请求以减少 API 调用）
             const hostProblemsMap = {};
-            for (const host of hosts) {
+            // 初始化每个主机的计数为 0，并构建 triggerId -> hostId 映射（依赖于 selectTriggers）
+            const triggerToHost = new Map();
+            hosts.forEach(host => {
+                hostProblemsMap[host.hostid] = 0;
+                const triggers = host.triggers || [];
+                triggers.forEach(t => {
+                    if (t.triggerid) triggerToHost.set(t.triggerid, host.hostid);
+                });
+            });
+
+            const triggerIds = Array.from(triggerToHost.keys());
+            if (triggerIds.length > 0) {
                 try {
+                    // 一次性获取所有触发器对应的活动问题，避免逐主机请求
                     const problems = await this.request('problem.get', {
-                        output: ['eventid', 'severity'],
-                        hostids: [host.hostid],
+                        output: ['eventid', 'objectid'],
+                        objectids: triggerIds,
                         recent: true,
                         suppressed: false
                     });
-                    hostProblemsMap[host.hostid] = problems.length;
+
+                    problems.forEach(p => {
+                        const hostId = triggerToHost.get(p.objectid);
+                        if (hostId) {
+                            hostProblemsMap[hostId] = (hostProblemsMap[hostId] || 0) + 1;
+                        }
+                    });
                 } catch (error) {
-                    console.warn(`Failed to get problems for host ${host.hostid}:`, error);
-                    hostProblemsMap[host.hostid] = 0;
+                    console.warn('Failed to batch get problems for triggers:', error);
+                    // 若批量请求失败，保留各主机计数为 0（避免抛出并中断主流程）
                 }
             }
 
@@ -988,15 +1006,15 @@ class ZabbixAPI {
                 });
             }
 
-            // 第四步：创建查找映射以提高性能
-            const triggerMap = new Map(triggers.map(trigger => [trigger.triggerid, trigger]));
-            const interfaceMap = new Map(hostInterfaces.map(iface => [iface.hostid, iface]));
+            // 第四步：创建查找映射以提高性能（统一使用字符串作为键）
+            const triggerMap = new Map(triggers.map(trigger => [String(trigger.triggerid), trigger]));
+            const interfaceMap = new Map(hostInterfaces.map(iface => [String(iface.hostid), iface]));
 
             // 第五步：组合数据
             const enrichedActiveProblems = activeProblems.map(problem => {
-                const trigger = triggerMap.get(problem.objectid);
+                const trigger = triggerMap.get(String(problem.objectid));
                 const host = trigger && trigger.hosts && trigger.hosts[0];
-                const hostInterface = host ? interfaceMap.get(host.hostid) : null;
+                const hostInterface = host ? interfaceMap.get(String(host.hostid)) : null;
 
                 return {
                     ...problem,
@@ -1022,6 +1040,10 @@ class ZabbixAPI {
             console.log('Problems statistics debug:', {
                 activeProblemsCount: enrichedActiveProblems.length,
                 resolvedEventsCount: resolvedEvents.length,
+                triggerCount: triggers.length,
+                triggerIds: triggerIds.slice(0, 5),
+                triggersReceived: triggers.slice(0, 3).map(t => ({ triggerid: t.triggerid, hosts: t.hosts })),
+                hostInterfacesCount: hostInterfaces.length,
                 sampleActiveProblems: enrichedActiveProblems.slice(0, 3), // 显示前3个活动问题
                 resolvedEvents: resolvedEvents.slice(0, 3)  // 显示前3个恢复事件
             });
@@ -1069,6 +1091,46 @@ class ZabbixAPI {
         } catch (error) {
             console.error(`Failed to get items for host ${hostId}:`, error);
             return [];
+        }
+    }
+
+    // 批量获取多个主机的监控项，返回一个以 hostid 为键的映射
+    async getItemsForHosts(hostIds, searchKey = '') {
+        try {
+            if (!Array.isArray(hostIds)) hostIds = [hostIds];
+            if (hostIds.length === 0) return {};
+
+            const params = {
+                output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue', 'units'],
+                hostids: hostIds,
+                monitored: true,
+                status: 0
+            };
+
+            if (searchKey) {
+                if (searchKey.includes(' ')) {
+                    params.search = { name: searchKey };
+                } else {
+                    params.search = { key_: searchKey };
+                }
+            }
+
+            const items = await this.request('item.get', params) || [];
+
+            const map = {};
+            // 初始化空数组，确保每个hostid都有返回值（至少为空数组）
+            hostIds.forEach(h => { map[h] = []; });
+
+            items.forEach(item => {
+                const hid = item.hostid || item.host;
+                if (!map[hid]) map[hid] = [];
+                map[hid].push(item);
+            });
+
+            return map;
+        } catch (error) {
+            console.error('Failed to get items for hosts:', error);
+            return {};
         }
     }
 

@@ -24,11 +24,14 @@
         .dashboard-screen {
             background: linear-gradient(135deg, #0c1218 0%, #1a2332 50%, #0f1419 100%);
             color: #fff;
-            min-height: 100vh;
-            padding: 24px 24px 50px 24px;
+            height: 100vh;
+            width: 100vw;
+            padding: 20px;
             position: relative;
-            overflow-x: hidden;
-            overflow-y: auto;
+            overflow: hidden;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
         }
         
         .dashboard-screen::before {
@@ -48,10 +51,11 @@
         
         .screen-title {
             text-align: center;
-            font-size: 32px;
+            font-size: clamp(20px, 3vw, 32px);
             font-weight: 700;
-            height: 5vh;
-            margin-bottom: 20px;
+            height: 40px;
+            flex-shrink: 0;
+            margin-bottom: 15px;
             color: #ffffff;
             position: relative;
             z-index: 1;
@@ -176,32 +180,7 @@
         .dashboard-screen:fullscreen,
         .dashboard-screen:-webkit-full-screen,
         .dashboard-screen:-moz-full-screen {
-            padding: 16px 16px 20px 16px;
-        }
-        
-        .dashboard-screen:fullscreen .top-charts-section,
-        .dashboard-screen:-webkit-full-screen .top-charts-section,
-        .dashboard-screen:-moz-full-screen .top-charts-section {
-            height: 35vh;
-        }
-        
-        .dashboard-screen:fullscreen .bottom-content-section,
-        .dashboard-screen:-webkit-full-screen .bottom-content-section,
-        .dashboard-screen:-moz-full-screen .bottom-content-section {
-            height: 35vh;
-            min-height: 400px;
-        }
-        
-        .dashboard-screen:fullscreen .top-data-section,
-        .dashboard-screen:-webkit-full-screen .top-data-section,
-        .dashboard-screen:-moz-full-screen .top-data-section {
-            height: 15vh;
-        }
-        
-        .dashboard-screen:fullscreen .main-grid-container,
-        .dashboard-screen:-webkit-full-screen .main-grid-container,
-        .dashboard-screen:-moz-full-screen .main-grid-container {
-            margin-bottom: 10px;
+            padding: 16px;
         }
         
         .dashboard-screen:fullscreen .fullscreen-btn,
@@ -219,24 +198,7 @@
             width: 100vw !important;
             height: 100vh !important;
             z-index: 9999 !important;
-            padding: 16px 16px 20px 16px;
-        }
-        
-        .dashboard-screen.simulated-fullscreen .top-charts-section {
-            height: 35vh;
-        }
-        
-        .dashboard-screen.simulated-fullscreen .bottom-content-section {
-            height: 35vh;
-            min-height: 400px;
-        }
-        
-        .dashboard-screen.simulated-fullscreen .top-data-section {
-            height: 15vh;
-        }
-        
-        .dashboard-screen.simulated-fullscreen .main-grid-container {
-            margin-bottom: 10px;
+            padding: 16px;
         }
         
         .dashboard-screen.simulated-fullscreen .fullscreen-btn {
@@ -248,17 +210,19 @@
         .top-data-section {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
+            gap: 15px;
             position: relative;
             z-index: 1;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            width: 100%;
+            flex-shrink: 0;
         }
         
         .data-card {
             background: linear-gradient(145deg, rgba(15, 25, 38, 0.95), rgba(8, 16, 28, 0.95));
             border: 1px solid rgba(0, 168, 255, 0.2);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 16px;
             backdrop-filter: blur(20px);
             box-shadow: 
                 0 8px 32px rgba(0, 0, 0, 0.3),
@@ -267,7 +231,7 @@
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             position: relative;
             overflow: hidden;
         }
@@ -362,53 +326,65 @@
         .main-grid-container {
             display: flex;
             flex-direction: column;
-            gap: 24px;
+            gap: 15px;
             position: relative;
             z-index: 1;
-            margin-bottom: 30px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
         }
         
         /* 上排图表区域 */
         .top-charts-section {
             display: grid;
             grid-template-columns: 1fr 2fr 1fr;
-            gap: 24px;
-            height: 35vh;
+            gap: 15px;
+            flex: 1;
+            min-height: 200px;
+            width: 100%;
         }
         
         .top-charts-section .chart-card {
             height: 100%;
             margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
         }
         
         /* 下排内容区域 */
         .bottom-content-section {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 24px;
+            gap: 15px;
             flex: 1;
-            height: 35vh;
-            min-height: 350px;
+            min-height: 200px;
+            width: 100%;
         }
         
         .table-section {
             display: flex;
             flex-direction: column;
+            height: 100%;
+            min-height: 0;
         }
         
         .distribution-section {
             display: flex;
             flex-direction: column;
+            height: 100%;
+            min-height: 0;
         }
         
         .chart-card.table-card {
             flex: 1;
             height: 100%;
+            min-height: 0;
         }
         
         .chart-card.distribution-card {
             flex: 1;
             height: 100%;
+            min-height: 0;
         }
         
         /* 移除旧的布局样式 */
@@ -436,16 +412,19 @@
         .chart-card {
             background: linear-gradient(145deg, rgba(15, 25, 38, 0.95), rgba(8, 16, 28, 0.95));
             border: 1px solid rgba(0, 168, 255, 0.2);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 12px;
+            padding: 15px;
             position: relative;
-            margin-bottom: 24px;
+            margin-bottom: 0;
             backdrop-filter: blur(20px);
             box-shadow: 
                 0 8px 32px rgba(0, 0, 0, 0.3),
                 0 2px 8px rgba(0, 168, 255, 0.1),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
         
         .chart-card:hover {
@@ -471,16 +450,17 @@
         
         .chart-title {
             color: #ffffff;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             position: relative;
             display: flex;
             align-items: center;
             gap: 8px;
-            padding-bottom: 12px;
+            padding-bottom: 10px;
             border-bottom: 1px solid rgba(0, 168, 255, 0.2);
             letter-spacing: 0.5px;
+            flex-shrink: 0;
         }
         
         .chart-title i {
@@ -505,11 +485,11 @@
         
         /* 表格容器样式 */
         .alert-table-container {
-            height: calc(100% - 60px);
+            flex: 1;
             overflow-y: auto;
             border-radius: 8px;
             border: 1px solid rgba(0, 168, 255, 0.1);
-            min-height: 300px;
+            min-height: 0;
         }
         
         /* 不同类型卡片的特色边框 */
@@ -541,7 +521,7 @@
             background: linear-gradient(145deg, rgba(15, 25, 38, 0.95), rgba(8, 16, 28, 0.95));
             border: 1px solid rgba(0, 168, 255, 0.2);
             border-radius: 16px;
-            width: 60%;
+            width: 100%;
             position: relative;
             backdrop-filter: blur(20px);
             box-shadow: 
@@ -674,22 +654,51 @@
         /* 响应式设计 */
         @media (max-width: 1400px) {
             .top-charts-section {
-                grid-template-columns: 1fr 1.8fr 1fr;
+                grid-template-columns: 1fr 1.5fr 1fr;
+            }
+            .top-data-section {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 10px;
             }
         }
         
         @media (max-width: 1200px) {
             .top-data-section {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 16px;
+                gap: 10px;
             }
             
             .top-charts-section {
                 grid-template-columns: 1fr;
-                grid-template-rows: repeat(3, 233px);
+                flex: none;
                 height: auto;
-                gap: 20px;
             }
+            
+            .top-charts-section .chart-card {
+                height: 250px;
+            }
+            
+            .bottom-content-section {
+                grid-template-columns: 1fr;
+                flex: none;
+                height: auto;
+            }
+            
+            .bottom-content-section .table-section,
+            .bottom-content-section .distribution-section {
+                height: 300px;
+            }
+            
+            .dashboard-screen {
+                height: auto;
+                min-height: 100vh;
+                overflow-y: auto;
+            }
+            
+            .main-grid-container {
+                flex: none;
+            }
+        }
             
             .bottom-content-section {
                 grid-template-columns: 1fr;
@@ -702,77 +711,56 @@
         }
         
         @media (max-width: 900px) {
-            .top-charts-section {
-                grid-template-rows: repeat(3, 213px);
-            }
-            
-            .main-grid-container {
-                height: auto;
+            .top-data-section {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
         
         @media (max-width: 768px) {
             .dashboard-screen {
-                padding: 16px;
+                padding: 12px;
             }
             
             .screen-title {
-                font-size: 24px;
-                margin-bottom: 20px;
+                font-size: 20px;
+                margin-bottom: 10px;
             }
             
             .top-data-section {
                 grid-template-columns: 1fr;
-                gap: 12px;
+                gap: 8px;
             }
             
             .data-card {
-                padding: 16px;
-                gap: 12px;
+                padding: 12px;
+                gap: 10px;
             }
             
             .data-icon {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
             }
             
             .data-value {
-                font-size: 24px;
+                font-size: 22px;
             }
             
             .chart-card {
-                padding: 16px;
-                margin-bottom: 16px;
+                padding: 12px;
             }
             
             .main-grid-container {
-                gap: 16px;
+                gap: 10px;
             }
             
-            .top-charts-section {
-                gap: 16px;
-                grid-template-rows: repeat(3, 187px);
+            .top-charts-section .chart-card {
+                height: 200px;
             }
             
-            .bottom-content-section {
-                gap: 16px;
-            }
-            
-            .alert-table-container {
-                height: 300px;
-            }
-            
-            .pending-alerts-table th,
-            .pending-alerts-table td {
-                padding: 8px 6px;
-                font-size: 11px;
-            }
-            
-            #alertSeverityChart,
-            #weeklyAlertTrendChart,
-            #monitorStatusChart {
-                height: 167px !important;
+            .bottom-content-section .table-section,
+            .bottom-content-section .distribution-section {
+                height: 250px;
             }
         }
         
@@ -864,21 +852,21 @@
                             <i class="fas fa-chart-pie"></i>
                             <span data-i18n="dashboard1.severityChart">告警严重性分类</span>
                         </h3>
-                        <div id="alertSeverityChart" style="height: calc(100% - 60px);"></div>
+                        <div id="alertSeverityChart" style="flex:1; min-height:0;"></div>
                     </div>
                     <div class="chart-card trend-card">
                         <h3 class="chart-title">
                             <i class="fas fa-chart-line"></i>
                             <span data-i18n="dashboard1.alertTrend7Days">过去7天告警趋势对比</span>
                         </h3>
-                        <div id="weeklyAlertTrendChart" style="height: calc(100% - 60px);"></div>
+                        <div id="weeklyAlertTrendChart" style="flex:1; min-height:0;"></div>
                     </div>
                     <div class="chart-card status-card-2">
                         <h3 class="chart-title">
                             <i class="fas fa-heartbeat"></i>
                             <span data-i18n="dashboard1.monitoringOverview">监控状态概览</span>
                         </h3>
-                        <div id="monitorStatusChart" style="height: calc(100% - 60px);"></div>
+                        <div id="monitorStatusChart" style="flex:1; min-height:0;"></div>
                     </div>
                 </div>
 
@@ -912,15 +900,7 @@
                     </div>
 
                     <!-- 告警分布图表 -->
-                    <div class="distribution-section">
-                        <div class="chart-card distribution-card">
-                            <h3 class="chart-title">
-                                <i class="fas fa-chart-bar"></i>
-                                <span data-i18n="dashboard1.hostAlertDistribution">主机告警分布</span>
-                            </h3>
-                            <div id="alertDistributionChart" style="height: calc(100% - 60px);"></div>
-                        </div>
-                    </div>
+                        <!-- alert distribution chart removed -->
                 </div>
             </div>
         </div>

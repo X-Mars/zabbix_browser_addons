@@ -87,7 +87,7 @@ class Header {
         if (hostCard) {  // 添加存在性检查
             hostCard.style.cursor = 'pointer';
             hostCard.addEventListener('click', () => {
-                window.location.href = 'hosts.html';
+                window.location.href = 'cmdb.html';
             });
         }
     }
@@ -321,7 +321,7 @@ class ZabbixDashboard {
         if (hostCard) {  // 添加存在性检查
         hostCard.style.cursor = 'pointer';
             hostCard.addEventListener('click', () => {
-                window.location.href = 'hosts.html';
+                window.location.href = 'cmdb.html';
             });
         }
     }
@@ -768,8 +768,8 @@ class ZabbixHosts {
 
     // 初始化国际化
     initI18n() {
-        // 更新页面标题
-        document.title = i18n.t('pageTitle.hostList');
+        // 更新页面标题（hosts 页面已移除，使用 CMDB 标题作为替代）
+        document.title = i18n.t('pageTitle.cmdb');
         document.querySelectorAll('[data-i18n]').forEach(element => {
             const key = element.getAttribute('data-i18n');
             const translation = i18n.t(key);
@@ -1371,7 +1371,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     const headerHtml = await headerResponse.text();
     headerContainer.innerHTML = headerHtml;
     
-    // 在header加载完成后初始化导航
+    // 在header加载完成后应用国际化并初始化导航
+    if (typeof initializeI18n === 'function') {
+        initializeI18n();
+    }
     initializeNavigation();
     
     // 创建全局header实例
@@ -1385,8 +1388,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const currentPath = window.location.pathname;
     if (currentPath.includes('index.html') || currentPath === '/') {
         new ZabbixDashboard();
-    } else if (currentPath.includes('hosts.html')) {
-        new ZabbixHosts();
+    } else if (currentPath.includes('cmdb.html')) {
+        // CMDB 页面由 js/cmdb.js 在 DOMContentLoaded 时自行初始化
     }
 });
 

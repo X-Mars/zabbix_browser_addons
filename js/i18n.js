@@ -4,7 +4,7 @@ const translations = {
         'pageTitle': {
             'settings': '设置',
             'dashboard': '仪表盘',
-            'hostList': '主机列表',
+            'cmdb': 'CMDB',
             'screen1': '告警监控大屏',
             'screen2': '资源监控大屏'
         },
@@ -21,10 +21,50 @@ const translations = {
         // 导航菜单
         'nav': {
             'dashboard': '仪表盘',
-            'hostList': '主机列表',
+            'cmdb': 'CMDB',
             'bigScreen': '大屏展示',
             'screen1': '告警监控大屏',
             'screen2': '资源监控大屏'
+        },
+        // CMDB 页面
+        'cmdb': {
+            'searchByHostOrIP': '按主机名或IP搜索',
+            'searchPlaceholder': '搜索主机...',
+            'selectHostGroup': '选择主机分组',
+            'allGroups': '所有分组',
+            'interfaceType': '接口方式',
+            'allInterfaces': '所有接口',
+            'totalCPU': 'CPU总量',
+            'totalMemory': '内存总量',
+            'totalHosts': '主机总数',
+            'totalGroups': '主机分组',
+            'enabledHosts': '启用主机',
+            'hostName': '主机名',
+            'systemName': '系统名称',
+            'ipAddress': 'IP地址',
+            'architecture': '架构',
+            'cpuCores': 'CPU总量',
+            'cpuUsage': 'CPU使用率',
+            'memoryTotal': '内存总量',
+            'memoryUsage': '内存使用率',
+            'operatingSystem': '操作系统',
+            'hostGroups': '主机分组',
+            'agentVersion': 'Agent 版本',
+            'noHostsFound': '未找到主机',
+            'loadError': '加载数据失败，请检查设置'
+        },
+        // 接口名称与可用性标签
+        'cmdbInterfaceNames': {
+            'agent': 'Agent',
+            'snmp': 'SNMP',
+            'ipmi': 'IPMI',
+            'jmx': 'JMX'
+        },
+        'cmdbStatus': {
+            'available': '可用',
+            'unavailable': '不可用',
+            'enabled': '已启用',
+            'disabled': '已禁用'
         },
 
         // 时间范围按钮
@@ -67,7 +107,7 @@ const translations = {
         },
 
         // 导航和标题
-        'hostList': '主机列表',
+        /* 'hostList' removed */
         'alertHistory': '告警趋势',
         'hostDetails': '主机详情',
 
@@ -200,7 +240,7 @@ const translations = {
 
         'nav': {
             'dashboard': '仪表盘',
-            'hostList': '主机列表',
+            'cmdb': 'CMDB',
             'bigScreen': '大屏展示',
             'screen1': '告警监控大屏',
             'screen2': '资源监控大屏'
@@ -373,7 +413,7 @@ const translations = {
         'pageTitle': {
             'settings': 'Settings',
             'dashboard': 'Dashboard',
-            'hostList': 'Host List',
+            'cmdb': 'CMDB',
             'screen1': 'Alert Monitoring Screen',
             'screen2': 'Resource Monitoring Screen'
         },
@@ -390,10 +430,51 @@ const translations = {
         // Navigation menu
         'nav': {
             'dashboard': 'Dashboard',
-            'hostList': 'Host List',
+            'cmdb': 'CMDB',
             'bigScreen': 'Big Screen',
             'screen1': 'Alert Monitoring Screen',
             'screen2': 'Resource Monitoring Screen'
+        },
+
+        // CMDB Page
+        'cmdb': {
+            'searchByHostOrIP': 'Search by host name or IP',
+            'searchPlaceholder': 'Search hosts...',
+            'selectHostGroup': 'Select Host Group',
+            'allGroups': 'All Groups',
+            'interfaceType': 'Interface Type',
+            'allInterfaces': 'All Interfaces',
+            'totalCPU': 'Total CPU',
+            'totalMemory': 'Total Memory',
+            'totalHosts': 'Total Hosts',
+            'totalGroups': 'Host Groups',
+            'enabledHosts': 'Enabled Hosts',
+            'hostName': 'Host Name',
+            'systemName': 'System Name',
+            'ipAddress': 'IP Address',
+            'architecture': 'Architecture',
+            'cpuCores': 'CPU Cores',
+            'cpuUsage': 'CPU Usage',
+            'memoryTotal': 'Memory Total',
+            'memoryUsage': 'Memory Usage',
+            'operatingSystem': 'Operating System',
+            'hostGroups': 'Host Groups',
+            'agentVersion': 'Agent Version',
+            'noHostsFound': 'No hosts found',
+            'loadError': 'Failed to load data, please check settings'
+        },
+        // Interface names and availability labels
+        'cmdbInterfaceNames': {
+            'agent': 'Agent',
+            'snmp': 'SNMP',
+            'ipmi': 'IPMI',
+            'jmx': 'JMX'
+        },
+        'cmdbStatus': {
+            'available': 'Available',
+            'unavailable': 'Unavailable',
+            'enabled': 'Enabled',
+            'disabled': 'Disabled'
         },
 
         // Time range buttons
@@ -435,8 +516,7 @@ const translations = {
             'problem': 'Problem'
         },
 
-        // Navigation and titles
-        'hostList': 'Host List',
+        // Navigation and titles (hostList removed)
         'alertHistory': 'Alert History',
         'hostDetails': 'Host Details',
 
@@ -569,7 +649,7 @@ const translations = {
 
         'nav': {
             'dashboard': 'Dashboard',
-            'hostList': 'Host List',
+            'cmdb': 'CMDB',
             'bigScreen': 'Big Screen',
             'screen1': 'Alert Monitoring Screen',
             'screen2': 'Resource Monitoring Screen'

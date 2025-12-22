@@ -95,21 +95,21 @@ body {
 .main-content {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 180px);
+    height: calc(100vh - 80px);
     max-width: 100%;
     width: 100%;
-    margin: 2rem auto;
-    padding: 0 1.5rem;
+    margin: 0 auto;
+    padding: 1.5rem;
     flex-grow: 1;
     gap: 1.5rem;
+    box-sizing: border-box;
 }
 
 /* 状态卡片容器 */
 .status-cards {
     display: flex;
-    gap: 20px;
-    height: 120px;
-    min-height: 120px;
+    gap: 1.25rem;
+    flex-shrink: 0;
     width: 100%;
     background: transparent;
     box-shadow: none;
@@ -184,19 +184,22 @@ body {
 /* 图表区域样式 */
 .charts-container {
     display: flex;
-    gap: 20px;
+    gap: 1.25rem;
     flex: 1;
-    min-height: 0;
+    min-height: 200px;
+    width: 100%;
 }
 
 .chart-box {
     flex: 1;
     min-height: 0;
+    min-width: 0;
     background: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 .chart-header {
@@ -247,16 +250,17 @@ body {
 
 .modal-content {
     background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 100%;
-    max-width: 1200px;
-    height: 70vh;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    width: calc(100% - 40px);
+    max-width: 1400px;
+    height: 80vh;
+    max-height: calc(100vh - 40px);
     margin: 20px;
     display: flex;
     flex-direction: column;
     position: relative;
-    transform: translateY(0);  /* 确保不会被其他transform影响 */
+    transform: translateY(0);
 }
 
 .modal-header {
@@ -518,11 +522,14 @@ body {
 .alerts-list {
     flex: 1;
     min-height: 0;
-    overflow: auto;
+    min-width: 0;
+    overflow: hidden;
     background: white;
     border-radius: var(--radius);
     padding: 0.75rem 1.5rem;
     box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
 }
 
 .list-header {
@@ -530,6 +537,7 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
+    flex-shrink: 0;
 }
 
 .list-header h3 {
@@ -539,15 +547,16 @@ body {
 }
 
 .list-content {
-    overflow-x: auto;
-    overflow-y: auto;
+    overflow: auto;
     flex: 1;
-    min-height: 200px;
+    min-height: 0;
 }
 
 .list-content table {
     width: 100%;
+    min-width: 600px;
     border-collapse: collapse;
+    table-layout: auto;
 }
 
 .list-content th,
@@ -1410,7 +1419,7 @@ body {
 /* 大规模主机展示样式 */
 .large-scale-stats {
     margin-bottom: 20px;
-    padding: 15px;
+    /* padding: 15px; */
     background: rgba(25, 25, 45, 0.3);
     border-radius: 8px;
     border: 1px solid rgba(255, 140, 0, 0.2);
@@ -1463,64 +1472,7 @@ body {
     margin-top: 2px;
 }
 
-/* 平均资源使用率 */
-.avg-resources {
-    margin-bottom: 20px;
-    padding: 15px;
-    background: rgba(25, 25, 45, 0.3);
-    border-radius: 8px;
-    border: 1px solid rgba(255, 140, 0, 0.2);
-}
-
-.avg-title {
-    color: #fff;
-    font-size: 14px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    text-align: center;
-}
-
-.avg-metrics {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.avg-metric {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.avg-label {
-    color: #a0a0a0;
-    font-size: 12px;
-    width: 40px;
-    text-align: right;
-}
-
-.avg-bar {
-    flex: 1;
-    height: 8px;
-    background: rgba(0, 0, 0, 0.3);
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-}
-
-.avg-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.3s ease;
-}
-
-.avg-value {
-    color: #fff;
-    font-size: 12px;
-    font-weight: bold;
-    width: 45px;
-    text-align: right;
-}
+/* 平均资源使用率 模块已移除 */
 
 /* TOP问题主机 */
 .top-issues-section {

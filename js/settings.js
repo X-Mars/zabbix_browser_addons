@@ -115,10 +115,10 @@ class Settings {
             // 刷新所有相关页面
             chrome.tabs.query({}, (tabs) => {
                 tabs.forEach(tab => {
-                    if (tab.url.includes('index.html') || tab.url.includes('hosts.html')) {
-                        chrome.tabs.reload(tab.id);
-                    }
-                });
+                        if (tab.url.includes('index.html') || tab.url.includes('cmdb.html')) {
+                            chrome.tabs.reload(tab.id);
+                        }
+                    });
             });
 
             this.hideDialog();

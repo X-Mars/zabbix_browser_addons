@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="pageTitle.cmdb">CMDB</title>
+    <link href="css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* CMDB 页面专用样式 */
+        .cmdb-container {
+            padding: 1.5rem;
+            max-width: 100%;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* 过滤区域样式 */
+        .filter-section {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        .filter-item label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-item label i {
+            color: var(--primary-color);
+        }
+
+        .search-input {
+            width: 100%;
+            min-width: 0;
+            padding: 0.625rem 1rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        .filter-select {
+            width: 100%;
+            min-width: 0;
+            padding: 0.625rem 2rem 0.625rem 1rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            background: white url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") right 0.5rem center/1.5em 1.5em no-repeat;
+            appearance: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        /* 三项均分宽度，由 .filter-item 的 flex:1 控制 */
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+
+        /* 统计卡片区域 */
+        .stats-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .stat-icon.blue { background: #e8f0fe; color: var(--primary-color); }
+        .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+        .stat-icon.green { background: #e6f4ea; color: var(--success-color); }
+        .stat-icon.orange { background: #fff7ed; color: #ea580c; }
+        .stat-icon.red { background: #fef2f2; color: var(--danger-color); }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        /* 主机列表表格 */
+        .cmdb-table-container {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            overflow-x: auto;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+        }
+
+        .cmdb-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .cmdb-table thead {
+            background: var(--gray-100);
+        }
+
+        .cmdb-table th {
+            padding: 0.75rem 0.5rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            border-bottom: 1px solid var(--gray-200);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 表格列宽度分配 */
+        .cmdb-table th:nth-child(1),
+        .cmdb-table td:nth-child(1) { width: 10%; min-width: 80px; } /* 主机名 */
+        .cmdb-table th:nth-child(2),
+        .cmdb-table td:nth-child(2) { width: 10%; min-width: 80px; } /* 系统名称 */
+        .cmdb-table th:nth-child(3),
+        .cmdb-table td:nth-child(3) { width: 9%; min-width: 100px; } /* IP地址 */
+        .cmdb-table th:nth-child(4),
+        .cmdb-table td:nth-child(4) { width: 6%; min-width: 60px; } /* 架构 */
+        .cmdb-table th:nth-child(5),
+        .cmdb-table td:nth-child(5) { width: 8%; min-width: 70px; } /* 接口方式 */
+        .cmdb-table th:nth-child(6),
+        .cmdb-table td:nth-child(6) { width: 8%; min-width: 80px; } /* Agent版本 */
+        .cmdb-table th:nth-child(7),
+        .cmdb-table td:nth-child(7) { width: 7%; min-width: 60px; } /* CPU总量 */
+        .cmdb-table th:nth-child(8),
+        .cmdb-table td:nth-child(8) { width: 9%; min-width: 90px; } /* CPU使用率 */
+        .cmdb-table th:nth-child(9),
+        .cmdb-table td:nth-child(9) { width: 7%; min-width: 70px; } /* 内存总量 */
+        .cmdb-table th:nth-child(10),
+        .cmdb-table td:nth-child(10) { width: 9%; min-width: 90px; } /* 内存使用率 */
+        .cmdb-table th:nth-child(11),
+        .cmdb-table td:nth-child(11) { width: 10%; min-width: 80px; } /* 操作系统 */
+        .cmdb-table th:nth-child(12),
+        .cmdb-table td:nth-child(12) { width: 7%; min-width: 70px; } /* 主机分组 */
+
+        .cmdb-table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* .cmdb-table td[title] {
+            cursor: help;
+        } */
+
+        .cmdb-table th.sortable {
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .cmdb-table th.sortable:hover {
+            color: var(--primary-color);
+        }
+
+        .cmdb-table th .sort-icon {
+            margin-left: 0.5rem;
+            opacity: 0.5;
+        }
+
+        .cmdb-table th.sorted .sort-icon {
+            opacity: 1;
+            color: var(--primary-color);
+        }
+
+        .cmdb-table td {
+            padding: 0.75rem 0.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            font-size: 0.8rem;
+            color: var(--gray-800);
+        }
+
+        .cmdb-table tbody tr:hover {
+            background: var(--gray-100);
+        }
+
+        .cmdb-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* 主机分组列：允许多个 group-tag 自动换行 */
+        .cmdb-table td:nth-child(12) {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: clip;
+            vertical-align: top;
+            line-height: 1.3;
+        }
+
+        .cmdb-table td:nth-child(12) .group-tag {
+            white-space: nowrap;
+        }
+
+        /* 主机名链接样式 */
+        .host-name-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .host-name-link:hover {
+            text-decoration: underline;
+        }
+
+        /* 可用性状态指示器 */
+        .availability-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .availability-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .availability-dot.available { background: var(--success-color); }
+        .availability-dot.unavailable { background: var(--danger-color); }
+
+        /* 接口标签 */
+        .interface-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-right: 0.375rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .interface-tag.agent { background: #dbeafe; color: #1d4ed8; }
+        .interface-tag.snmp { background: #dcfce7; color: #16a34a; }
+        .interface-tag.ipmi { background: #fef3c7; color: #d97706; }
+        .interface-tag.jmx { background: #f3e8ff; color: #9333ea; }
+
+        /* 主机分组标签 */
+        .group-tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: var(--gray-100);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            margin-right: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* 使用率进度条 */
+        .usage-bar-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .usage-bar {
+            flex: 1;
+            height: 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .usage-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .usage-bar-fill.low { background: var(--success-color); }
+        .usage-bar-fill.medium { background: var(--warning-color); }
+        .usage-bar-fill.high { background: var(--danger-color); }
+
+        .usage-value {
+            font-size: 0.875rem;
+            font-weight: 500;
+            min-width: 50px;
+            text-align: right;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--gray-600);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--gray-300);
+            margin-bottom: 1rem;
+        }
+
+        /* 加载状态 */
+        .loading-overlay {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--gray-600);
+        }
+
+        .loading-overlay i {
+            font-size: 2rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 架构标签 */
+        .arch-tag {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            background: var(--gray-100);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--gray-600);
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部栏将通过 JavaScript 加载 -->
+    <div id="header-container"></div>
+
+    <!-- 设置对话框容器 -->
+    <div id="settingsContainer"></div>
+
+    <!-- CMDB 主内容区 -->
+    <div class="cmdb-container">
+        <!-- 过滤区域 -->
+        <div class="filter-section">
+            <div class="filter-item">
+                <label>
+                    <i class="fas fa-search"></i>
+                    <span data-i18n="cmdb.searchByHostOrIP">按主机名或IP搜索</span>
+                </label>
+                <input type="text" id="searchInput" class="search-input" placeholder="搜索主机..." data-i18n-placeholder="cmdb.searchPlaceholder">
+            </div>
+            <div class="filter-item">
+                <label for="groupFilter">
+                    <i class="fas fa-layer-group"></i>
+                    <span data-i18n="cmdb.selectHostGroup">选择主机分组</span>
+                </label>
+                <select id="groupFilter" class="filter-select" data-i18n-title="cmdb.selectHostGroup" title="" >
+                    <option value="" data-i18n="cmdb.allGroups">所有分组</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label for="interfaceFilter">
+                    <i class="fas fa-plug"></i>
+                    <span data-i18n="cmdb.interfaceType">接口方式</span>
+                </label>
+                <select id="interfaceFilter" class="filter-select" data-i18n-title="cmdb.interfaceType" title="">
+                    <option value="" data-i18n="cmdb.allInterfaces">所有接口</option>
+                    <option value="agent" data-i18n="cmdbInterfaceNames.agent">Agent</option>
+                    <option value="snmp" data-i18n="cmdbInterfaceNames.snmp">SNMP</option>
+                    <option value="ipmi" data-i18n="cmdbInterfaceNames.ipmi">IPMI</option>
+                    <option value="jmx" data-i18n="cmdbInterfaceNames.jmx">JMX</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 统计卡片区域 -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-microchip"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label" data-i18n="cmdb.totalCPU">CPU总量</span>
+                    <span class="stat-value" id="totalCPU">-</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-memory"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label" data-i18n="cmdb.totalMemory">内存总量</span>
+                    <span class="stat-value" id="totalMemory">-</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label" data-i18n="cmdb.totalHosts">主机总数</span>
+                    <span class="stat-value" id="totalHosts">-</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-object-group"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label" data-i18n="cmdb.totalGroups">主机分组</span>
+                    <span class="stat-value" id="totalGroups">-</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-desktop"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label" data-i18n="cmdb.enabledHosts">启用主机</span>
+                    <span class="stat-value" id="enabledHosts">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最后刷新时间 -->
+        <div style="display:flex; justify-content:flex-end; margin-bottom:0.75rem;">
+            <span id="lastRefreshTime" class="text-sm" aria-live="polite"></span>
+        </div>
+
+        <!-- 主机列表表格 -->
+        <div class="cmdb-table-container">
+            <table class="cmdb-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="cmdb.hostName">主机名</th>
+                        <th data-i18n="cmdb.systemName">系统名称</th>
+                        <th data-i18n="cmdb.ipAddress">IP地址</th>
+                        <th data-i18n="cmdb.architecture">架构</th>
+                        <th data-i18n="cmdb.interfaceType">接口方式</th>
+                            <th data-i18n="cmdb.agentVersion">Agent 版本</th>
+                        <th class="sortable" data-sort="cpuCores" data-i18n="cmdb.cpuCores">CPU总量 <i class="fas fa-sort sort-icon"></i></th>
+                        <th class="sortable" data-sort="cpu" data-i18n="cmdb.cpuUsage">CPU使用率 <i class="fas fa-sort sort-icon"></i></th>
+                        <th class="sortable" data-sort="memoryTotal" data-i18n="cmdb.memoryTotal">内存总量 <i class="fas fa-sort sort-icon"></i></th>
+                        <th class="sortable" data-sort="memory" data-i18n="cmdb.memoryUsage">内存使用率 <i class="fas fa-sort sort-icon"></i></th>
+                        <th data-i18n="cmdb.operatingSystem">操作系统</th>
+                        <th data-i18n="cmdb.hostGroups">主机分组</th>
+                    </tr>
+                </thead>
+                <tbody id="hostsList">
+                    <tr>
+                        <td colspan="12">
+                            <div class="loading-overlay">
+                                <i class="fas fa-spinner"></i>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/header.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/cmdb.js"></script>
+</body>
+</html>
