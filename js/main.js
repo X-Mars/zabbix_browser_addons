@@ -1380,8 +1380,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 创建全局header实例
     window.headerInstance = new Header();
     
-    // 确保 settingsManager 已经初始化
-    if (!window.settingsManager) {
+    // 确保 settingsManager 已经初始化（仅在 Settings 可用时实例化）
+    if (!window.settingsManager && typeof Settings !== 'undefined') {
         window.settingsManager = new Settings();
     }
     

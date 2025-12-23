@@ -247,7 +247,10 @@ class ResourceMonitoringDashboard {
                         'system.cpu.util',
                         'system.cpu.util[,idle]',
                         'system.cpu.util[,system]',
-                        'system.cpu.utilization'
+                        'system.cpu.utilization',
+                        'CPU utilization',
+                        'sfSysCpuCostRate',
+                        'dev.cpu.usage'
                     ]);
                     
                     // 查找内存相关监控项
@@ -255,7 +258,8 @@ class ResourceMonitoringDashboard {
                         'vm.memory.util',
                         'vm.memory.utilization',
                         'vm.memory.pused',
-                        'system.memory.util'
+                        'system.memory.util',
+                        'dev.mem.usage'
                     ]);
                     
                     // 获取网络接口监控项
@@ -714,19 +718,30 @@ class ResourceMonitoringDashboard {
         hosts.forEach(host => {
             const cpuValue = this.parsePercentageValue(host.cpu);
             const memoryValue = this.parsePercentageValue(host.memory);
-            
-            if (cpuValue === 0 && memoryValue === 0 && (host.cpu === '-' || host.memory === '-')) {
+
+            // 判断主机是否有监控项（优先依据预填充的监控项键），
+            // 或者有真实的数值（>0）。如果既没有监控项又没有有效数值，视为不可用并排除。
+            const hasCpuItem = !!host.cpuItemKey;
+            const hasMemItem = !!host.memoryItemKey;
+            const hasMonitoringItems = hasCpuItem || hasMemItem;
+
+            const noValueAndNoItems = (!hasMonitoringItems) && ( (host.cpu === '-' || host.cpu === null || host.cpu === undefined || cpuValue === 0) && (host.memory === '-' || host.memory === null || host.memory === undefined || memoryValue === 0) );
+
+            if (noValueAndNoItems) {
+                // 标记为不可用，不计入健康/警告/严重统计
                 unknown++;
-            } else {
-                validHosts++;
-                totalCpu += cpuValue;
-                totalMemory += memoryValue;
-                
-                const maxUsage = Math.max(cpuValue, memoryValue);
-                if (maxUsage > 80) critical++;
-                else if (maxUsage > 60) warning++;
-                else healthy++;
+                return;
             }
+
+            // 可用主机计入统计
+            validHosts++;
+            totalCpu += cpuValue;
+            totalMemory += memoryValue;
+
+            const maxUsage = Math.max(cpuValue, memoryValue);
+            if (maxUsage > 80) critical++;
+            else if (maxUsage > 60) warning++;
+            else healthy++;
         });
 
         return {
@@ -937,11 +952,7 @@ class ResourceMonitoringDashboard {
                                    <div style="margin: 4px 0;">${i18n.t('dashboard2.percentage')}: ${((param.value / hosts.length) * 100).toFixed(1)}%</div>`;
                         }
                     },
-                    legend: {
-                        data: [i18n.t('dashboard2.hostCount')],
-                        textStyle: { color: '#fff' },
-                        top: 20
-                    },
+                    legend: { show: false },
                     grid: {
                         left: '3%',
                         right: '4%',
@@ -1065,11 +1076,7 @@ class ResourceMonitoringDashboard {
                                    <div style="margin: 4px 0;">${i18n.t('dashboard2.percentage')}: ${((param.value / hosts.length) * 100).toFixed(1)}%</div>`;
                         }
                     },
-                    legend: {
-                        data: [i18n.t('dashboard2.hostCount')],
-                        textStyle: { color: '#fff' },
-                        top: 20
-                    },
+                    legend: { show: false },
                     grid: {
                         left: '3%',
                         right: '4%',
@@ -1287,17 +1294,7 @@ class ResourceMonitoringDashboard {
                 }
             }
             
-            // 生成聚合数据
-            const aggregatedHistory = this.generateAggregatedData(allHistoryData);
-            if (aggregatedHistory.length > 0) {
-                aggregatedHistory.forEach(point => allTimeStamps.add(point.time));
-                allHistoryData.unshift({ 
-                    host: { name: `平均CPU (${topHosts.length}台主机)` }, 
-                    history: aggregatedHistory, 
-                    index: -1,
-                    isAggregated: true 
-                });
-            }
+            // （已移除）不再在图表中自动添加“平均CPU”系列，保留每台主机的曲线
             
             // 处理每个主机的数据
             for (const { host, history, index, isAggregated } of allHistoryData) {
@@ -1591,17 +1588,17 @@ class ResourceMonitoringDashboard {
     }
 
     // 按指定时间间隔对数据进行采样
-    sampleDataByInterval(data, intervalMs) {
+    sampleDataByInterval(data, intervalMs, attempts = 0) {
         if (data.length === 0) return [];
-        
-        console.log(`开始15分钟采样，原始数据: ${data.length}个点，间隔: ${intervalMs / 1000 / 60}分钟`);
-        
+
+        console.log(`开始采样，原始数据: ${data.length}个点，目标间隔: ${intervalMs / 1000 / 60}分钟`);
+
         // 按时间排序确保数据顺序正确
         const sortedData = [...data].sort((a, b) => a.time - b.time);
-        
+
         const sampledData = [];
         let lastSampleTime = 0;
-        
+
         for (const point of sortedData) {
             // 如果是第一个点，或者距离上次采样超过指定间隔
             if (sampledData.length === 0 || point.time - lastSampleTime >= intervalMs) {
@@ -1609,16 +1606,23 @@ class ResourceMonitoringDashboard {
                 lastSampleTime = point.time;
             }
         }
-        
-        // 如果采样后点数太少，尝试降低采样间隔
-        if (sampledData.length < 4 && intervalMs > 5 * 60 * 1000) { // 少于4个点且间隔大于5分钟
-            console.log(`采样点太少(${sampledData.length}个)，降低到10分钟间隔重新采样`);
-            return this.sampleDataByInterval(data, 10 * 60 * 1000);
+
+        // 如果采样后点数太少，尝试逐步降低采样间隔，最多重试3次，防止在不同间隔之间来回切换
+        if (sampledData.length < 4 && intervalMs > 5 * 60 * 1000 && attempts < 3) {
+            const newInterval = Math.max(5 * 60 * 1000, Math.floor(intervalMs * 2 / 3));
+            console.log(`采样点太少(${sampledData.length}个)，降低到${newInterval / 1000 / 60}分钟间隔重新采样（尝试 ${attempts + 1}）`);
+            return this.sampleDataByInterval(data, newInterval, attempts + 1);
         }
-        
-        console.log(`15分钟采样完成: ${sortedData.length} -> ${sampledData.length}个点`);
-        console.log(`采样数据时间范围: ${new Date(sampledData[0].time).toLocaleTimeString()} - ${new Date(sampledData[sampledData.length-1].time).toLocaleTimeString()}`);
-        
+
+        if (sampledData.length < 4 && attempts >= 3) {
+            console.log(`采样点仍然较少(${sampledData.length}个)，达到最大重试次数，使用当前采样结果`);
+        }
+
+        console.log(`采样完成: ${sortedData.length} -> ${sampledData.length}个点 (间隔 ${intervalMs / 1000 / 60}分钟, 尝试 ${attempts})`);
+        if (sampledData.length > 0) {
+            console.log(`采样数据时间范围: ${new Date(sampledData[0].time).toLocaleTimeString()} - ${new Date(sampledData[sampledData.length - 1].time).toLocaleTimeString()}`);
+        }
+
         return sampledData;
     }
 

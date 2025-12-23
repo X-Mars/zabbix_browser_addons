@@ -118,7 +118,7 @@ class ZabbixAPI {
                         'vm.memory.utilization',      // 内存使用率
                         'vm.memory.util',             // 内存使用率
                         'system.cpu.num',             // CPU核心数
-                        'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
+                        "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']",  // Windows CPU 核心数
                         'system.name',                // 主机名称
                         'system.hostname',            // 主机名称
                         'system.uname',               // 系统详情
@@ -185,7 +185,7 @@ class ZabbixAPI {
 
                 const cpuCoresItem = items.find(item => item.name.includes('Number of CPUs')) ||
                                    items.find(item => item.key_ === 'system.cpu.num') ||
-                                   items.find(item => item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]');
+                                   items.find(item => item.key_ === "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']");
 
                 const memoryTotalItem = items.find(item => item.name.includes('Total memory')) ||
                                       items.find(item => item.key_ === 'vm.memory.size[total]');
@@ -390,7 +390,7 @@ class ZabbixAPI {
                     'vm.memory.utilization',  // Linux 内存使用率
                     'vm.memory.util',         // Windows 内存使用率
                     'system.cpu.num',         // Linux CPU 核心数
-                    'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
+                    "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']",  // Windows CPU 核心数
                     'vm.memory.size[total]',
                     'system.sw.os'
                 ]
@@ -445,7 +445,7 @@ class ZabbixAPI {
                 if (!item || item.hostid !== host.hostid) return false;
                 const isWindows = osItem?.lastvalue?.toLowerCase().includes('windows');
                 return isWindows ? 
-                    item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]' :  // Windows
+                    item.key_ === "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']" :  // Windows
                     item.key_ === 'system.cpu.num'  // Linux
             });
 
@@ -511,7 +511,7 @@ class ZabbixAPI {
                             'vm.memory.utilization',      // 内存使用率
                             'vm.memory.util',             // 内存使用率
                             'system.cpu.num',             // CPU核心数
-                            'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
+                            "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']",  // Windows CPU 核心数
                             'system.name',                // 主机名称
                             'system.hostname',            // 主机名称
                             'system.uname',               // 系统详情
@@ -541,7 +541,7 @@ class ZabbixAPI {
 
             const cpuCoresItem = itemsResponse.find(item => item.name.includes('Number of CPUs')) ||
                                 itemsResponse.find(item => item.key_ === 'system.cpu.num') ||
-                                itemsResponse.find(item => item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]');
+                                itemsResponse.find(item => item.key_ === "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']");
 
             const hostnameItem = itemsResponse.find(item => item.name.includes('System name')) ||
                                 itemsResponse.find(item => item.key_ === 'system.hostname') ||
@@ -657,7 +657,7 @@ class ZabbixAPI {
                         result.cpuCores = item.lastvalue;
                     }
                     break;
-                case 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]':
+                case "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']":
                     if (isWindows) {
                         result.cpuCores = item.lastvalue;
                     }
@@ -796,7 +796,7 @@ class ZabbixAPI {
         try {
             const hostGroups = await this.request('hostgroup.get', {
                 output: ['groupid', 'name'],
-                real_hosts: true,  // 只获取包含真实主机的组
+                with_hosts: true,  // 使用 with_hosts 仅返回包含主机的组（替代已弃用的 real_hosts）
                 selectHosts: ['hostid', 'name', 'status'],  // 选择主机信息
             });
             return hostGroups;
@@ -811,7 +811,7 @@ class ZabbixAPI {
             const hosts = await this.request('host.get', {
                 output: ['hostid', 'host', 'name', 'status', 'available'],
                 selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
-                selectGroups: ['groupid', 'name'],
+                selectHostGroups: ['groupid', 'name'],
                 selectTriggers: ['triggerid', 'description', 'priority', 'value'],
                 // 不过滤状态，获取所有主机
             });

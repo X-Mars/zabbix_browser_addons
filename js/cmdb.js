@@ -122,6 +122,11 @@ class CMDBPage {
                 return;
             }
 
+            // 保存当前过滤条件
+            const currentSearchTerm = document.getElementById('searchInput')?.value || '';
+            const currentGroupId = document.getElementById('groupFilter')?.value || '';
+            const currentInterfaceType = document.getElementById('interfaceFilter')?.value || '';
+
             const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
 
             // 并行加载主机和主机组数据
@@ -132,16 +137,33 @@ class CMDBPage {
 
             this.hosts = hosts;
             this.hostGroups = hostGroups;
-            this.filteredHosts = [...this.hosts];
 
-            // 更新主机分组下拉框
-            this.updateGroupFilter();
+            // 更新主机分组下拉框（保留之前选中的值）
+            this.updateGroupFilter(currentGroupId);
 
-            // 更新统计卡片
-            this.updateStats();
+            // 恢复搜索框的值（以防被清空）
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && currentSearchTerm) {
+                searchInput.value = currentSearchTerm;
+            }
 
-            // 渲染表格
-            this.renderTable();
+            // 恢复接口类型下拉框的值
+            const interfaceFilter = document.getElementById('interfaceFilter');
+            if (interfaceFilter && currentInterfaceType) {
+                interfaceFilter.value = currentInterfaceType;
+            }
+
+            // 如果有任何过滤条件，应用过滤；否则显示所有主机
+            if (currentSearchTerm || currentGroupId || currentInterfaceType) {
+                // 应用过滤条件（不触发新的 API 请求，使用本地过滤）
+                this.applyLocalFilter(currentSearchTerm, currentGroupId, currentInterfaceType);
+            } else {
+                this.filteredHosts = [...this.hosts];
+                // 更新统计卡片
+                this.updateStats();
+                // 渲染表格
+                this.renderTable();
+            }
             // 更新最后刷新时间（仅在完成数据加载时更新）
             try {
                 this.updateLastRefreshTime();
@@ -155,15 +177,73 @@ class CMDBPage {
         }
     }
 
-    async loadHostsWithDetails(api) {
+    async loadHostsWithDetails(api, options = {}) {
         try {
-            // 获取主机详细信息，包括接口、分组、监控项等
-            const hosts = await api.request('host.get', {
+            // 接口类型映射：agent=1, snmp=2, ipmi=3, jmx=4
+            const interfaceTypeMap = {
+                'agent': '1',
+                'snmp': '2',
+                'ipmi': '3',
+                'jmx': '4'
+            };
+
+            // 构建 host.get 请求参数
+            const hostParams = {
                 output: ['hostid', 'host', 'name', 'status'],
                 selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
-                selectGroups: ['groupid', 'name'],
+                selectHostGroups: ['groupid', 'name'],
                 selectInventory: ['os', 'os_full', 'hardware', 'software', 'type'],
-            });
+            };
+
+            // 如果提供了 hostids，添加到请求参数
+            if (options.hostids && options.hostids.length > 0) {
+                hostParams.hostids = options.hostids;
+            }
+
+            // 如果提供了 groupids，添加到请求参数
+            if (options.groupids && options.groupids.length > 0) {
+                hostParams.groupids = options.groupids;
+            }
+
+            // 如果提供了 interfaceids，添加到请求参数
+            if (options.interfaceids && options.interfaceids.length > 0) {
+                hostParams.interfaceids = options.interfaceids;
+            }
+
+            // 如果提供了接口类型，使用 filter 参数按接口 type 属性过滤
+            // 根据 Zabbix API 文档，filter 支持主机-接口-object属性
+            if (options.interfaceType && interfaceTypeMap[options.interfaceType]) {
+                hostParams.filter = hostParams.filter || {};
+                hostParams.filter.type = interfaceTypeMap[options.interfaceType];
+            }
+
+            // 如果提供了搜索词，同时搜索 host、name 和 ip 字段
+            if (options.search) {
+                // 判断搜索词是否像 IP 地址
+                const isIPLike = /^[\d.]+$/.test(options.search);
+                hostParams.search = {
+                    host: options.search,
+                    name: options.search
+                };
+                // 如果搜索词像 IP，添加 ip 搜索
+                if (isIPLike) {
+                    hostParams.search.ip = options.search;
+                }
+                hostParams.searchByAny = true;  // 任意字段匹配即可
+            }
+
+            // 获取主机详细信息，包括接口、分组、监控项等
+            const hosts = await api.request('host.get', hostParams);
+
+            // 兼容不同 Zabbix 返回结构：有的版本/参数会返回 `hostgroups` 字段而不是 `groups`
+            // 统一填充 `groups` 字段，便于后续代码使用
+            if (Array.isArray(hosts)) {
+                hosts.forEach(h => {
+                    if (!h.groups && h.hostgroups) {
+                        h.groups = h.hostgroups;
+                    }
+                });
+            }
 
             // 获取监控项数据
             const items = await api.request('item.get', {
@@ -172,6 +252,9 @@ class CMDBPage {
                     name: [
                         'CPU utilization',
                         'Memory utilization',
+                        'User memory utilization',
+                        'Virtual memory',
+                        'Memory utilization, in %',
                         'Number of CPUs',
                         'System name',
                         'Version of Zabbix agent running',
@@ -181,14 +264,35 @@ class CMDBPage {
                     key_: [
                         'vm.memory.utilization',
                         'vm.memory.util',
+                        'vm.memory.pused',
+                        'dev.mem.usage',
+                        'vm.memory.total',
+                        'vm.memory.walk.data.total',
+                        'system.cpu.util',
+                        'sfSysCpuCostRate',
+                        'dev.cpu.usage',
                         'system.cpu.num',
-                        'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',
+                        'cpu.core.num',
+                        'vmware.hv.hw.cpu.num',
+                        'system.cpu.walk',
+                        'vmware.vm.cpu.num',
+                        "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']",
                         'system.name',
+                        'sysName',
+                        'sysDescr',
                         'system.hostname',
                         'system.uname',
                         'system.sw.os',
+                        'docker.operating_system',
+                        'dell.server.sw.os',
+                        'sd_wan.device.os',
+                        'juniper.mx.system.sw.os',
                         'agent.version',
-                        'vm.memory.size[total]'
+                        'vm.memory.size[total]',
+                        'dell.server.memory.size.total',
+                        'nomad.client.memory.total',
+                        'docker.mem.total',
+                        'vm.memory.total'
                     ]
                 },
                 searchByAny: true,
@@ -209,35 +313,58 @@ class CMDBPage {
                 const hostItems = hostItemsMap[host.hostid] || [];
                 
                 // 获取各项监控数据
-                const cpuItem = hostItems.find(item => item.name.includes('CPU utilization'));
-                const memoryUtilItem = hostItems.find(item => 
+                const cpuItem = hostItems.find(item => (
+                    (item.name && item.name.includes('CPU utilization')) ||
+                    (item.key_ && item.key_.includes('system.cpu.util')) ||
+                    (item.key_ && item.key_.includes('sfSysCpuCostRate')) ||
+                    (item.key_ && item.key_.includes('dev.cpu.usage'))
+                ));
+                const memoryUtilItem = hostItems.find(item => (item.name && (
                     item.name.includes('Memory utilization') ||
-                    item.key_ === 'vm.memory.utilization' ||
-                    item.key_ === 'vm.memory.util'
-                );
-                const cpuCoresItem = hostItems.find(item => 
-                    item.name.includes('Number of CPUs') ||
-                    item.key_ === 'system.cpu.num' ||
-                    item.key_.includes('NumberOfLogicalProcessors')
-                );
+                    item.name.includes('User memory utilization') ||
+                    item.name.includes('Virtual memory') ||
+                    item.name.includes('Memory utilization, in %')
+                )))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.utilization'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.util'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.pused'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('dev.mem.usage'));
+                const cpuCoresItem = hostItems.find(item => (
+                    (item.name && item.name.includes('Number of CPUs')) ||
+                    (item.key_ && item.key_.includes('system.cpu.num')) ||
+                    (item.key_ && item.key_.includes('NumberOfLogicalProcessors')) ||
+                    (item.key_ && item.key_.includes('cpu.core.num')) ||
+                    (item.key_ && item.key_.includes('vmware.hv.hw.cpu.num')) ||
+                    (item.key_ && item.key_.includes('system.cpu.walk')) ||
+                    (item.key_ && item.key_.includes('vmware.vm.cpu.num'))
+                ));
                 const hostnameItem = hostItems.find(item => 
-                    item.name.includes('System name') ||
-                    item.key_ === 'system.hostname' ||
-                    item.key_ === 'system.name'
+                    (item.name && item.name.includes('System name')) ||
+                    (item.key_ && item.key_.includes('system.hostname')) ||
+                    (item.key_ && item.key_.includes('system.name')) ||
+                    (item.key_ && item.key_.includes('sysName'))
                 );
                 const osItem = hostItems.find(item => 
-                    item.name.includes('System description') ||
-                    item.key_ === 'system.uname' ||
-                    item.key_ === 'system.sw.os'
+                    (item.name && item.name.includes('System description')) ||
+                    (item.key_ && item.key_.includes('system.uname')) ||
+                    (item.key_ && item.key_.includes('system.sw.os')) ||
+                    (item.key_ && item.key_.includes('sysDescr')) ||
+                    (item.key_ && item.key_.includes('docker.operating_system')) ||
+                    (item.key_ && item.key_.includes('dell.server.sw.os')) ||
+                    (item.key_ && item.key_.includes('sd_wan.device.os')) ||
+                    (item.key_ && item.key_.includes('juniper.mx.system.sw.os'))
                 );
-                const memoryTotalItem = hostItems.find(item => 
-                    item.name.includes('Total memory') ||
-                    item.key_ === 'vm.memory.size[total]'
-                );
+                const memoryTotalItem = hostItems.find(item => (item.name && item.name.includes('Total memory')))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.size[total]'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('dell.server.memory.size.total'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('nomad.client.memory.total'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('docker.mem.total'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.total'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.walk.data.total'));
                
                    const agentVersionItem = hostItems.find(item => 
                        (item.name && item.name.includes('Version of Zabbix agent running')) ||
-                       (item.key_ && (item.key_ === 'agent.version' || item.key_.includes('agent.version')))
+                       (item.key_ && item.key_.includes('agent.version'))
                    );
 
                 // 解析接口信息
@@ -323,7 +450,7 @@ class CMDBPage {
         return mb.toFixed(2) + ' MB';
     }
 
-    updateGroupFilter() {
+    updateGroupFilter(selectedGroupId = '') {
         const select = document.getElementById('groupFilter');
         // 保留第一个"所有分组"选项
         select.innerHTML = `<option value="" data-i18n="cmdb.allGroups">${safeTranslate('cmdb.allGroups', '所有分组', 'All Groups')}</option>`;
@@ -334,6 +461,44 @@ class CMDBPage {
             option.textContent = group.name;
             select.appendChild(option);
         });
+
+        // 恢复之前选中的值
+        if (selectedGroupId) {
+            select.value = selectedGroupId;
+        }
+    }
+
+    // 本地过滤方法，用于刷新后重新应用过滤条件（避免重复调用 API）
+    applyLocalFilter(searchTerm = '', groupId = '', interfaceType = '') {
+        let filtered = [...this.hosts];
+
+        // 按搜索词过滤（主机名或 IP）
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            filtered = filtered.filter(host => 
+                (host.name && host.name.toLowerCase().includes(term)) ||
+                (host.hostname && host.hostname.toLowerCase().includes(term)) ||
+                (host.ip && host.ip.toLowerCase().includes(term))
+            );
+        }
+
+        // 按主机组过滤
+        if (groupId) {
+            filtered = filtered.filter(host => 
+                host.groups && host.groups.some(g => g.groupid === groupId)
+            );
+        }
+
+        // 按接口类型过滤
+        if (interfaceType) {
+            filtered = filtered.filter(host => 
+                (host.interfaceTypes || []).includes(interfaceType)
+            );
+        }
+
+        this.filteredHosts = filtered;
+        this.updateStats();
+        this.renderTable();
     }
 
     updateStats() {
@@ -350,12 +515,37 @@ class CMDBPage {
         // 主机总数
         document.getElementById('totalHosts').textContent = hosts.length;
 
-        // 主机分组数
+        // 主机分组数 — 对 host.groups 做防护处理，兼容缺失或不同结构的数据
         const uniqueGroups = new Set();
         hosts.forEach(host => {
-            host.groups.forEach(group => uniqueGroups.add(group.groupid));
+            const groups = host.groups || [];
+            if (Array.isArray(groups) && groups.length > 0) {
+                groups.forEach(group => {
+                    // 兼容 group 可能是对象或直接的 id 字符串/数字
+                    const gid = group && (group.groupid || group.groupId || group.id) ?
+                        String(group.groupid || group.groupId || group.id) :
+                        String(group);
+                    if (gid) uniqueGroups.add(gid);
+                });
+            }
         });
-        document.getElementById('totalGroups').textContent = uniqueGroups.size;
+
+        // 如果通过 hosts 计算不到分组（例如 hosts 中 groups 为空），回退到已加载的 hostGroups（仅统计包含主机的组）
+        let totalGroupsCount = uniqueGroups.size;
+        if (totalGroupsCount === 0 && Array.isArray(this.hostGroups) && this.hostGroups.length > 0) {
+            try {
+                totalGroupsCount = this.hostGroups.filter(g => {
+                    // Zabbix 使用 with_hosts 时，group 里会包含 hosts 数组
+                    if (g && Array.isArray(g.hosts)) return g.hosts.length > 0;
+                    // 兼容 selectHosts 返回的结构：可能无 hosts 字段
+                    return false;
+                }).length;
+            } catch (e) {
+                totalGroupsCount = 0;
+            }
+        }
+
+        document.getElementById('totalGroups').textContent = totalGroupsCount;
 
         // 启用主机数
         const enabledHosts = hosts.filter(host => host.status === 'enabled').length;
@@ -421,7 +611,10 @@ class CMDBPage {
     }
 
     filterHosts() {
-        // 使用后台 API 进行过滤（search/group），interfaceType 将在客户端再次确认
+        // 使用后台 API 进行过滤：
+        // - search: 按主机名、名称、IP 搜索
+        // - groupids: 按主机分组过滤
+        // - filter.type: 按接口类型过滤（通过 filter 参数支持主机接口属性）
         const searchTerm = document.getElementById('searchInput').value.trim();
         const groupId = document.getElementById('groupFilter').value;
         const interfaceType = document.getElementById('interfaceFilter').value;
@@ -432,7 +625,8 @@ class CMDBPage {
         // 异步调用后端获取过滤后的主机列表
         this.fetchFilteredHosts(searchTerm, groupId, interfaceType)
             .then(hosts => {
-                // 如果用户指定了接口类型，再次在客户端筛选（因为 host.get 无法直接按接口类型过滤）
+                // 接口类型过滤已在服务端通过 filter.type 完成
+                // 但为确保准确性，仍在客户端进行二次验证
                 let filtered = hosts;
                 if (interfaceType) {
                     filtered = hosts.filter(h => (h.interfaceTypes || []).includes(interfaceType));
@@ -470,30 +664,83 @@ class CMDBPage {
                 return [];
             }
 
+            // 接口类型映射：agent=1, snmp=2, ipmi=3, jmx=4
+            const interfaceTypeMap = {
+                'agent': '1',
+                'snmp': '2',
+                'ipmi': '3',
+                'jmx': '4'
+            };
+
             const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
 
             // 构建 host.get 的查询参数
             const hostParams = {
                 output: ['hostid', 'host', 'name', 'status'],
                 selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
-                selectGroups: ['groupid', 'name'],
+                selectHostGroups: ['groupid', 'name'],
                 selectInventory: ['os', 'os_full', 'hardware', 'software', 'type'],
-                monitored: true,
-                limit: 1000
             };
 
+            // 按主机分组过滤 (groupids)
             if (groupId) {
                 hostParams.groupids = [groupId];
             }
 
+            // 按接口类型过滤，使用 filter 参数按接口 type 属性过滤
+            // 根据 Zabbix API 文档，filter 支持主机-接口-object属性
+            if (interfaceType && interfaceTypeMap[interfaceType]) {
+                hostParams.filter = hostParams.filter || {};
+                hostParams.filter.type = interfaceTypeMap[interfaceType];
+            }
+
+            // 按搜索词过滤 (search)
+            // Zabbix API 的 search 支持搜索 host、name 字段以及主机接口属性（如 ip）
             if (searchTerm) {
-                // 让 API 在主机名上做部分匹配
-                hostParams.search = { host: searchTerm };
-                hostParams.searchByAny = true;
+                // 判断搜索词是否像 IP 地址（包含数字和点号）
+                const isIPLike = /^[\d.]+$/.test(searchTerm);
+                
+                hostParams.search = {
+                    host: searchTerm,
+                    name: searchTerm
+                };
+                // 如果搜索词像 IP，添加 ip 搜索
+                if (isIPLike) {
+                    hostParams.search.ip = searchTerm;
+                }
+                hostParams.searchByAny = true;  // 任意字段匹配即可
             }
 
             // 获取主机基本信息（带接口和分组）
-            const hosts = await api.request('host.get', hostParams);
+            let hosts = await api.request('host.get', hostParams);
+
+            // 标准化返回字段：有时 API 返回 `hostgroups`，确保统一使用 `groups`
+            if (Array.isArray(hosts)) {
+                hosts.forEach(h => {
+                    if (!h.groups && h.hostgroups) h.groups = h.hostgroups;
+                });
+            }
+
+            // 如果搜索词像 IP 地址，在客户端进行二次过滤以确保准确性
+            // 因为 API 的 search 是模糊匹配，可能返回不精确的结果
+            if (searchTerm && hosts && hosts.length > 0) {
+                const term = searchTerm.toLowerCase();
+                hosts = hosts.filter(host => {
+                    // 匹配主机名或名称
+                    if ((host.host && host.host.toLowerCase().includes(term)) ||
+                        (host.name && host.name.toLowerCase().includes(term))) {
+                        return true;
+                    }
+                    // 匹配任意接口的 IP 或 DNS
+                    if (host.interfaces && host.interfaces.length > 0) {
+                        return host.interfaces.some(iface => 
+                            (iface.ip && iface.ip.toLowerCase().includes(term)) ||
+                            (iface.dns && iface.dns.toLowerCase().includes(term))
+                        );
+                    }
+                    return false;
+                });
+            }
 
             if (!hosts || hosts.length === 0) return [];
 
@@ -506,6 +753,9 @@ class CMDBPage {
                     name: [
                         'CPU utilization',
                         'Memory utilization',
+                        'User memory utilization',
+                        'Virtual memory',
+                        'Memory utilization, in %',
                         'Number of CPUs',
                         'System name',
                         'Version of Zabbix agent running',
@@ -515,13 +765,34 @@ class CMDBPage {
                     key_: [
                         'vm.memory.utilization',
                         'vm.memory.util',
+                        'vm.memory.pused',
+                        'dev.mem.usage',
+                        'vm.memory.total',
+                        'vm.memory.walk.data.total',
+                        'system.cpu.util',
+                        'sfSysCpuCostRate',
+                        'dev.cpu.usage',
                         'system.cpu.num',
+                        'cpu.core.num',
+                        'vmware.hv.hw.cpu.num',
+                        'system.cpu.walk',
+                        'vmware.vm.cpu.num',
                         'system.name',
+                        'sysName',
+                        'sysDescr',
                         'system.hostname',
                         'system.uname',
                         'system.sw.os',
+                        'docker.operating_system',
+                        'dell.server.sw.os',
+                        'sd_wan.device.os',
+                        'juniper.mx.system.sw.os',
                         'agent.version',
-                        'vm.memory.size[total]'
+                        'vm.memory.size[total]',
+                        'dell.server.memory.size.total',
+                        'nomad.client.memory.total',
+                        'docker.mem.total',
+                        'vm.memory.total'
                     ]
                 },
                 searchByAny: true,
@@ -537,14 +808,50 @@ class CMDBPage {
             // 组合主机和监控项数据，返回与 loadHostsWithDetails 相同结构
             return hosts.map(host => {
                 const hostItems = hostItemsMap[host.hostid] || [];
-                const cpuItem = hostItems.find(item => item.name && item.name.includes('CPU utilization'));
-                const memoryUtilItem = hostItems.find(item => item.name && item.name.includes('Memory utilization')) || hostItems.find(item => item.key_ === 'vm.memory.utilization') || hostItems.find(item => item.key_ === 'vm.memory.util');
-                const cpuCoresItem = hostItems.find(item => item.name && item.name.includes('Number of CPUs')) || hostItems.find(item => item.key_ === 'system.cpu.num') || (hostItems.find(item => item.key_ && item.key_.includes('NumberOfLogicalProcessors')));
-                const hostnameItem = hostItems.find(item => item.name && item.name.includes('System name')) || hostItems.find(item => item.key_ === 'system.hostname' || item.key_ === 'system.name');
-                const osItem = hostItems.find(item => item.name && item.name.includes('System description')) || hostItems.find(item => item.key_ === 'system.uname') || hostItems.find(item => item.key_ === 'system.sw.os');
-                const memoryTotalItem = hostItems.find(item => item.name && item.name.includes('Total memory')) || hostItems.find(item => item.key_ === 'vm.memory.size[total]');
-
-                const interfaces = host.interfaces || [];
+                const cpuItem = hostItems.find(item => (
+                    (item.name && item.name.includes('CPU utilization')) ||
+                    (item.key_ && item.key_.includes('system.cpu.util')) ||
+                    (item.key_ && item.key_.includes('sfSysCpuCostRate')) ||
+                    (item.key_ && item.key_.includes('dev.cpu.usage'))
+                ));
+                const memoryUtilItem = hostItems.find(item => (item.name && (
+                    item.name.includes('Memory utilization') ||
+                    item.name.includes('User memory utilization') ||
+                    item.name.includes('Virtual memory') ||
+                    item.name.includes('Memory utilization, in %')
+                )))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.utilization'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.util'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.pused'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('dev.mem.usage'));
+                const cpuCoresItem = hostItems.find(item => (item.name && item.name.includes('Number of CPUs')))
+                    || hostItems.find(item => item.key_ && item.key_.includes('system.cpu.num'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('NumberOfLogicalProcessors'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('cpu.core.num'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vmware.hv.hw.cpu.num'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('system.cpu.walk'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vmware.vm.cpu.num'));
+                const hostnameItem = hostItems.find(item => (item.name && item.name.includes('System name')))
+                    || hostItems.find(item => item.key_ && item.key_.includes('system.hostname'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('system.name'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('sysName'));
+                const osItem = hostItems.find(item => (item.name && item.name.includes('System description')))
+                    || hostItems.find(item => item.key_ && item.key_.includes('system.uname'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('system.sw.os'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('sysDescr'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('docker.operating_system'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('dell.server.sw.os'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('sd_wan.device.os'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('juniper.mx.system.sw.os'));
+                const memoryTotalItem = hostItems.find(item => (item.name && item.name.includes('Total memory')))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.size[total]'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('dell.server.memory.size.total'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('nomad.client.memory.total'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('docker.mem.total'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.total'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.walk.data.total'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.pused'))
+                    || hostItems.find(item => item.key_ && item.key_.includes('dev.mem.usage'));
                 const mainInterface = interfaces.find(iface => iface.main === '1') || interfaces[0];
                 const interfaceTypes = this.getInterfaceTypes(interfaces);
 
