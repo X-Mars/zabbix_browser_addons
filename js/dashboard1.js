@@ -12,7 +12,7 @@ class DashboardScreen {
 
     async getSettings() {
         return new Promise((resolve, reject) => {
-            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval', 'zabbixVersion'], (result) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
@@ -73,7 +73,7 @@ class DashboardScreen {
                 return;
             }
             
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             
             // 批量获取所需数据
             const [hostsData, hostGroupsData, problemsStats] = await Promise.all([
@@ -84,8 +84,20 @@ class DashboardScreen {
 
             this.data.hosts = hostsData;
             this.data.hostGroups = hostGroupsData;
-            this.data.alerts = problemsStats.activeProblems;
-            this.data.problemsStats = problemsStats;
+            if (!problemsStats) {
+                console.warn('getProblemsStatistics returned undefined, falling back to empty problems data');
+                this.data.alerts = [];
+                this.data.problemsStats = {
+                    activeProblemsCount: 0,
+                    resolvedProblemsCount: 0,
+                    totalProblemsToday: 0,
+                    activeProblems: [],
+                    resolvedProblems: []
+                };
+            } else {
+                this.data.alerts = problemsStats.activeProblems || [];
+                this.data.problemsStats = problemsStats;
+            }
 
             this.updateDataCards();
             // 更新最后刷新时间
@@ -96,7 +108,7 @@ class DashboardScreen {
             try {
                 const settings = await this.getSettings();
                 if (settings.apiUrl && settings.apiToken) {
-                    const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+                    const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
                     const [hostsData, alertsData] = await Promise.all([
                         api.getHosts(),
                         api.getAlerts()
@@ -160,21 +172,7 @@ class DashboardScreen {
                 const severityCounts = this.calculateSeverityCounts();
                 this.charts.alertSeverity.setOption({
                     legend: {
-                        orient: 'vertical',
-                        right: 10,
-                        top: 'center',
-                        textStyle: { color: '#fff' },
-                        formatter: function(name) {
-                            const data = [
-                                { name: i18n.t('severity.disaster'), value: severityCounts.disaster },
-                                { name: i18n.t('severity.high'), value: severityCounts.high },
-                                { name: i18n.t('severity.average'), value: severityCounts.average },
-                                { name: i18n.t('severity.warning'), value: severityCounts.warning },
-                                { name: i18n.t('severity.information'), value: severityCounts.information }
-                            ];
-                            const item = data.find(d => d.name === name);
-                            return name + ': ' + (item ? item.value : 0);
-                        }
+                        show: false
                     },
                     series: [{
                         data: [
@@ -196,9 +194,7 @@ class DashboardScreen {
                 this.updateMonitorStatusChart();
             }
 
-            if (this.charts.alertDistribution) {
-                this.updateAlertDistributionChart();
-            }
+            // alertDistribution chart removed
 
             // 更新待处理告警表格
             this.initPendingAlertTable();
@@ -281,29 +277,7 @@ class DashboardScreen {
         });
     }
 
-    updateAlertDistributionChart() {
-        const distributionData = this.data.hosts
-            .filter(host => host.problemCount > 0)
-            .map(host => ({
-                name: host.name || host.host,
-                value: host.problemCount
-            }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 10);
-
-        if (distributionData.length === 0) {
-            distributionData.push({ name: i18n.t('dashboard1.noData.noAlertingHosts'), value: 0 });
-        }
-
-        this.charts.alertDistribution.setOption({
-            xAxis: {
-                data: distributionData.map(item => item.name)
-            },
-            series: [{
-                data: distributionData.map(item => item.value)
-            }]
-        });
-    }
+    // alertDistribution chart removed
 
     initializeCharts() {
         // 初始化所有图表，添加错误处理
@@ -331,11 +305,7 @@ class DashboardScreen {
             console.error('Failed to initialize pending alert table:', error);
         }
         
-        try {
-            this.initAlertDistributionChart();
-        } catch (error) {
-            console.error('Failed to initialize alert distribution chart:', error);
-        }
+        // alertDistribution chart removed
     }
 
     initAlertSeverityChart() {
@@ -352,21 +322,7 @@ class DashboardScreen {
                 formatter: '{a} <br/>{b} : {c} ({d}%)'
             },
             legend: {
-                orient: 'vertical',
-                right: 10,
-                top: 'center',
-                textStyle: { color: '#fff' },
-                formatter: function(name) {
-                    const data = [
-                        { name: i18n.t('dashboard1.severity.disaster'), value: severityCounts.disaster },
-                        { name: i18n.t('dashboard1.severity.high'), value: severityCounts.high },
-                        { name: i18n.t('dashboard1.severity.average'), value: severityCounts.average },
-                        { name: i18n.t('dashboard1.severity.warning'), value: severityCounts.warning },
-                        { name: i18n.t('dashboard1.severity.information'), value: severityCounts.information }
-                    ];
-                    const item = data.find(d => d.name === name);
-                    return name + ': ' + (item ? item.value : 0);
-                }
+                show: false
             },
             series: [{
                 type: 'pie',
@@ -551,9 +507,7 @@ class DashboardScreen {
                 }
             },
             legend: {
-                bottom: '5%',
-                left: 'center',
-                textStyle: { color: '#fff' }
+                show: false
             },
             series: [{
                 type: 'pie',
@@ -677,69 +631,7 @@ class DashboardScreen {
         });
     }
 
-    initAlertDistributionChart() {
-        const chartContainer = document.getElementById('alertDistributionChart');
-        if (!chartContainer) return;
-        
-        this.charts.alertDistribution = echarts.init(chartContainer);
-        
-        // 告警分布数据 - 使用实际的问题计数
-        const distributionData = this.data.hosts
-            .filter(host => host.problemCount > 0)  // 只显示有问题的主机
-            .map(host => ({
-                name: host.name || host.host,
-                value: host.problemCount
-            }))
-            .sort((a, b) => b.value - a.value)  // 按问题数量降序排列
-            .slice(0, 10); // 只显示前10个
-
-        // 如果没有问题主机，显示一个提示
-        if (distributionData.length === 0) {
-            distributionData.push({ name: i18n.t('dashboard1.noData.noAlertingHosts'), value: 0 });
-        }
-
-        this.charts.alertDistribution.setOption({
-            title: {
-                // text: '告警分布',
-                textStyle: { color: '#fff' }
-            },
-            tooltip: {
-                trigger: 'axis',
-                axisPointer: {
-                    type: 'shadow'
-                }
-            },
-            xAxis: {
-                type: 'category',
-                data: distributionData.map(item => item.name),
-                axisLabel: { 
-                    color: '#fff',
-                    interval: 0,  // 显示所有标签
-                    rotate: 45,  // 旋转标签以避免重叠
-                    formatter: function(value) {
-                        return value.length > 10 ? value.substring(0, 10) + '...' : value;
-                    }
-                },
-                axisLine: { lineStyle: { color: '#fff' } }
-            },
-            yAxis: {
-                type: 'value',
-                axisLabel: { color: '#fff' },
-                axisLine: { lineStyle: { color: '#fff' } },
-                splitLine: { lineStyle: { color: '#333' } }
-            },
-            series: [{
-                data: distributionData.map(item => item.value),
-                type: 'bar',
-                itemStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 1, 0, 0, [
-                        { offset: 0, color: '#ff7875' },
-                        { offset: 1, color: '#ff4d4f' }
-                    ])
-                }
-            }]
-        });
-    }
+    // alertDistribution chart and its initialization removed
 
     // ... 其他图表初始化方法 ...
 

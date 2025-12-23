@@ -66,7 +66,7 @@
                         <thead>
                             <tr>
                                 <th data-i18n="host"></th>
-                                <th data-i18n="alertContent" style="width: 110vh;"></th>
+                                <th data-i18n="alertContent" style="min-width: 200px;"></th>
                                 <th data-i18n="level"></th>
                                 <th data-i18n="status"></th>
                                 <th data-i18n="duration"></th>
@@ -88,9 +88,9 @@
 
     <div id="hostsModal" class="modal">
         <div class="modal-overlay"></div>
-        <div class="modal-content" style="width: 80%; max-width: none;">
+        <div class="modal-content" style="width: calc(100% - 40px); max-width: 1600px;">
             <div class="modal-header">
-                <h2 data-i18n="hostList"></h2>
+                <h2 data-i18n="host"></h2>
                 <button class="close-btn" id="closeHostsModal">
                     <i class="fas fa-times"></i>
                 </button>

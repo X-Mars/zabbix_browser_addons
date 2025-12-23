@@ -20,18 +20,90 @@ function safeTranslate(key, zhFallback = '', enFallback = '') {
 
 /**
  * Zabbix API客户端类
- * 使用Authorization header进行认证，符合Zabbix 7.0+的推荐做法
+ * 兼容 Zabbix 6.0、7.0 和 7.4+
+ * - Zabbix 6.x: 使用请求体中的 auth 字段传递 API Token
+ * - Zabbix 7.0+: 使用 HTTP Header Authorization: Bearer <token>
+ * @see https://www.zabbix.com/documentation/6.0/zh/manual/api
  * @see https://www.zabbix.com/documentation/7.0/en/manual/api
  */
 class ZabbixAPI {
-    constructor(url, token) {
+    constructor(url, token, zabbixVersion = null) {
         this.url = url;
         this.token = token;
         this.requestId = 1;
+        // 存储 Zabbix 版本，用于决定认证方式
+        // null 表示未知，需要在首次请求时检测
+        this.zabbixVersion = zabbixVersion;
+    }
+
+    /**
+     * 获取主版本号（如 6、7）
+     * @returns {number|null}
+     */
+    getMajorVersion() {
+        if (!this.zabbixVersion) return null;
+        const match = this.zabbixVersion.match(/^(\d+)/);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
+    /**
+     * 判断是否需要使用旧版认证方式（auth 在请求体中）
+     * Zabbix 6.x 使用请求体 auth 字段
+     * Zabbix 7.0+ 使用 Authorization header
+     * @returns {boolean}
+     */
+    useLegacyAuth() {
+        const major = this.getMajorVersion();
+        // 如果版本未知，先尝试新版认证方式（7.0+）
+        if (major === null) return false;
+        return major < 7;
+    }
+
+    /**
+     * 检测并获取 Zabbix 版本
+     * @returns {Promise<string>} 版本号字符串
+     */
+    async detectVersion() {
+        if (this.zabbixVersion) return this.zabbixVersion;
+        
+        // apiinfo.version 不需要认证
+        const body = {
+            jsonrpc: '2.0',
+            method: 'apiinfo.version',
+            params: {},
+            id: this.requestId++
+        };
+
+        const response = await fetch(this.url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error.data || data.error.message || 'API error');
+        }
+
+        this.zabbixVersion = data.result;
+        return this.zabbixVersion;
     }
 
     async request(method, params = {}) {
-        // 构建请求体，不再包含auth属性
+        // 如果版本未知且不是获取版本的请求，先检测版本
+        if (!this.zabbixVersion && method !== 'apiinfo.version') {
+            try {
+                await this.detectVersion();
+            } catch (e) {
+                console.warn('Failed to detect Zabbix version, using default auth method:', e);
+            }
+        }
+
+        // 构建请求体
         const body = {
             jsonrpc: '2.0',
             method: method,
@@ -44,10 +116,15 @@ class ZabbixAPI {
             'Content-Type': 'application/json',
         };
 
-        // 除了 apiinfo.version 外，其他方法都需要认证
-        // 使用Authorization header替代auth属性
+        // 根据版本选择认证方式
         if (method !== 'apiinfo.version' && this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
+            if (this.useLegacyAuth()) {
+                // Zabbix 6.x: 使用请求体中的 auth 字段
+                body.auth = this.token;
+            } else {
+                // Zabbix 7.0+: 使用 Authorization header
+                headers['Authorization'] = `Bearer ${this.token}`;
+            }
         }
 
         try {
@@ -77,11 +154,15 @@ class ZabbixAPI {
         }
     }
 
+    /**
+     * 测试连接并返回版本信息
+     * @returns {Promise<{success: boolean, version: string}>}
+     */
     async testConnection() {
         try {
-            // 先测试 API 版本（不需要认证）
-            const version = await this.request('apiinfo.version');
-            // console.log('Zabbix API version:', version);
+            // 先检测 API 版本（不需要认证）
+            const version = await this.detectVersion();
+            console.log('Zabbix API version:', version, '| Major:', this.getMajorVersion(), '| Legacy auth:', this.useLegacyAuth());
 
             // 再测试认证
             const hosts = await this.request('host.get', {
@@ -89,11 +170,37 @@ class ZabbixAPI {
                 limit: 1
             });
             // console.log('Connection test successful');
-            return true;
+            return { success: true, version: version };
         } catch (error) {
             console.error('Connection test failed:', error);
             throw new Error('连接失败：' + error.message);
         }
+    }
+
+    /**
+     * 静态工厂方法：从 chrome.storage 加载设置并创建 ZabbixAPI 实例
+     * 会自动加载已存储的 Zabbix 版本以选择正确的认证方式
+     * @returns {Promise<ZabbixAPI>}
+     */
+    static async createFromStorage() {
+        return new Promise((resolve, reject) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'zabbixVersion'], (result) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                    return;
+                }
+                if (!result.apiUrl || !result.apiToken) {
+                    reject(new Error('API URL or Token not configured'));
+                    return;
+                }
+                const api = new ZabbixAPI(
+                    result.apiUrl,
+                    atob(result.apiToken),
+                    result.zabbixVersion || null
+                );
+                resolve(api);
+            });
+        });
     }
 
     async getHosts() {
@@ -118,7 +225,7 @@ class ZabbixAPI {
                         'vm.memory.utilization',      // 内存使用率
                         'vm.memory.util',             // 内存使用率
                         'system.cpu.num',             // CPU核心数
-                        'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
+                        "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']",  // Windows CPU 核心数
                         'system.name',                // 主机名称
                         'system.hostname',            // 主机名称
                         'system.uname',               // 系统详情
@@ -185,7 +292,7 @@ class ZabbixAPI {
 
                 const cpuCoresItem = items.find(item => item.name.includes('Number of CPUs')) ||
                                    items.find(item => item.key_ === 'system.cpu.num') ||
-                                   items.find(item => item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]');
+                                   items.find(item => item.key_ === "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']");
 
                 const memoryTotalItem = items.find(item => item.name.includes('Total memory')) ||
                                       items.find(item => item.key_ === 'vm.memory.size[total]');
@@ -390,7 +497,7 @@ class ZabbixAPI {
                     'vm.memory.utilization',  // Linux 内存使用率
                     'vm.memory.util',         // Windows 内存使用率
                     'system.cpu.num',         // Linux CPU 核心数
-                    'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
+                    "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']",  // Windows CPU 核心数
                     'vm.memory.size[total]',
                     'system.sw.os'
                 ]
@@ -445,7 +552,7 @@ class ZabbixAPI {
                 if (!item || item.hostid !== host.hostid) return false;
                 const isWindows = osItem?.lastvalue?.toLowerCase().includes('windows');
                 return isWindows ? 
-                    item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]' :  // Windows
+                    item.key_ === "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']" :  // Windows
                     item.key_ === 'system.cpu.num'  // Linux
             });
 
@@ -511,7 +618,7 @@ class ZabbixAPI {
                             'vm.memory.utilization',      // 内存使用率
                             'vm.memory.util',             // 内存使用率
                             'system.cpu.num',             // CPU核心数
-                            'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]',  // Windows CPU 核心数
+                            "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']",  // Windows CPU 核心数
                             'system.name',                // 主机名称
                             'system.hostname',            // 主机名称
                             'system.uname',               // 系统详情
@@ -541,7 +648,7 @@ class ZabbixAPI {
 
             const cpuCoresItem = itemsResponse.find(item => item.name.includes('Number of CPUs')) ||
                                 itemsResponse.find(item => item.key_ === 'system.cpu.num') ||
-                                itemsResponse.find(item => item.key_ === 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]');
+                                itemsResponse.find(item => item.key_ === "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']");
 
             const hostnameItem = itemsResponse.find(item => item.name.includes('System name')) ||
                                 itemsResponse.find(item => item.key_ === 'system.hostname') ||
@@ -657,7 +764,7 @@ class ZabbixAPI {
                         result.cpuCores = item.lastvalue;
                     }
                     break;
-                case 'wmi.get[root/cimv2,"Select NumberOfLogicalProcessors from Win32_ComputerSystem"]':
+                case "wmi.get[root/cimv2,'Select NumberOfLogicalProcessors from Win32_ComputerSystem']":
                     if (isWindows) {
                         result.cpuCores = item.lastvalue;
                     }
@@ -796,7 +903,7 @@ class ZabbixAPI {
         try {
             const hostGroups = await this.request('hostgroup.get', {
                 output: ['groupid', 'name'],
-                real_hosts: true,  // 只获取包含真实主机的组
+                with_hosts: true,  // 使用 with_hosts 仅返回包含主机的组（替代已弃用的 real_hosts）
                 selectHosts: ['hostid', 'name', 'status'],  // 选择主机信息
             });
             return hostGroups;
@@ -808,28 +915,57 @@ class ZabbixAPI {
 
     async getHostsWithStatus() {
         try {
-            const hosts = await this.request('host.get', {
+            // 确保已知 Zabbix 版本，若未知则尝试检测（以便在 6.x 使用 selectGroups）
+            if (!this.zabbixVersion && this.detectVersion) {
+                try {
+                    await this.detectVersion();
+                } catch (e) {
+                    console.warn('Failed to detect Zabbix version in getHostsWithStatus:', e);
+                }
+            }
+            const groupKey = (this.getMajorVersion && this.getMajorVersion() === 6) ? 'selectGroups' : 'selectHostGroups';
+            const hostParams = {
                 output: ['hostid', 'host', 'name', 'status', 'available'],
                 selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
-                selectGroups: ['groupid', 'name'],
                 selectTriggers: ['triggerid', 'description', 'priority', 'value'],
                 // 不过滤状态，获取所有主机
+            };
+            hostParams[groupKey] = ['groupid', 'name'];
+
+            const hosts = await this.request('host.get', hostParams);
+
+            // 获取每个主机的活动问题（批量请求以减少 API 调用）
+            const hostProblemsMap = {};
+            // 初始化每个主机的计数为 0，并构建 triggerId -> hostId 映射（依赖于 selectTriggers）
+            const triggerToHost = new Map();
+            hosts.forEach(host => {
+                hostProblemsMap[host.hostid] = 0;
+                const triggers = host.triggers || [];
+                triggers.forEach(t => {
+                    if (t.triggerid) triggerToHost.set(t.triggerid, host.hostid);
+                });
             });
 
-            // 获取每个主机的活动问题
-            const hostProblemsMap = {};
-            for (const host of hosts) {
+            const triggerIds = Array.from(triggerToHost.keys());
+            if (triggerIds.length > 0) {
                 try {
+                    // 一次性获取所有触发器对应的活动问题，避免逐主机请求
                     const problems = await this.request('problem.get', {
-                        output: ['eventid', 'severity'],
-                        hostids: [host.hostid],
+                        output: ['eventid', 'objectid'],
+                        objectids: triggerIds,
                         recent: true,
                         suppressed: false
                     });
-                    hostProblemsMap[host.hostid] = problems.length;
+
+                    problems.forEach(p => {
+                        const hostId = triggerToHost.get(p.objectid);
+                        if (hostId) {
+                            hostProblemsMap[hostId] = (hostProblemsMap[hostId] || 0) + 1;
+                        }
+                    });
                 } catch (error) {
-                    console.warn(`Failed to get problems for host ${host.hostid}:`, error);
-                    hostProblemsMap[host.hostid] = 0;
+                    console.warn('Failed to batch get problems for triggers:', error);
+                    // 若批量请求失败，保留各主机计数为 0（避免抛出并中断主流程）
                 }
             }
 
@@ -988,15 +1124,15 @@ class ZabbixAPI {
                 });
             }
 
-            // 第四步：创建查找映射以提高性能
-            const triggerMap = new Map(triggers.map(trigger => [trigger.triggerid, trigger]));
-            const interfaceMap = new Map(hostInterfaces.map(iface => [iface.hostid, iface]));
+            // 第四步：创建查找映射以提高性能（统一使用字符串作为键）
+            const triggerMap = new Map(triggers.map(trigger => [String(trigger.triggerid), trigger]));
+            const interfaceMap = new Map(hostInterfaces.map(iface => [String(iface.hostid), iface]));
 
             // 第五步：组合数据
             const enrichedActiveProblems = activeProblems.map(problem => {
-                const trigger = triggerMap.get(problem.objectid);
+                const trigger = triggerMap.get(String(problem.objectid));
                 const host = trigger && trigger.hosts && trigger.hosts[0];
-                const hostInterface = host ? interfaceMap.get(host.hostid) : null;
+                const hostInterface = host ? interfaceMap.get(String(host.hostid)) : null;
 
                 return {
                     ...problem,
@@ -1022,6 +1158,10 @@ class ZabbixAPI {
             console.log('Problems statistics debug:', {
                 activeProblemsCount: enrichedActiveProblems.length,
                 resolvedEventsCount: resolvedEvents.length,
+                triggerCount: triggers.length,
+                triggerIds: triggerIds.slice(0, 5),
+                triggersReceived: triggers.slice(0, 3).map(t => ({ triggerid: t.triggerid, hosts: t.hosts })),
+                hostInterfacesCount: hostInterfaces.length,
                 sampleActiveProblems: enrichedActiveProblems.slice(0, 3), // 显示前3个活动问题
                 resolvedEvents: resolvedEvents.slice(0, 3)  // 显示前3个恢复事件
             });
@@ -1069,6 +1209,46 @@ class ZabbixAPI {
         } catch (error) {
             console.error(`Failed to get items for host ${hostId}:`, error);
             return [];
+        }
+    }
+
+    // 批量获取多个主机的监控项，返回一个以 hostid 为键的映射
+    async getItemsForHosts(hostIds, searchKey = '') {
+        try {
+            if (!Array.isArray(hostIds)) hostIds = [hostIds];
+            if (hostIds.length === 0) return {};
+
+            const params = {
+                output: ['itemid', 'hostid', 'name', 'key_', 'lastvalue', 'units'],
+                hostids: hostIds,
+                monitored: true,
+                status: 0
+            };
+
+            if (searchKey) {
+                if (searchKey.includes(' ')) {
+                    params.search = { name: searchKey };
+                } else {
+                    params.search = { key_: searchKey };
+                }
+            }
+
+            const items = await this.request('item.get', params) || [];
+
+            const map = {};
+            // 初始化空数组，确保每个hostid都有返回值（至少为空数组）
+            hostIds.forEach(h => { map[h] = []; });
+
+            items.forEach(item => {
+                const hid = item.hostid || item.host;
+                if (!map[hid]) map[hid] = [];
+                map[hid].push(item);
+            });
+
+            return map;
+        } catch (error) {
+            console.error('Failed to get items for hosts:', error);
+            return {};
         }
     }
 

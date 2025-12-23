@@ -17,15 +17,18 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
+            padding-top: 80px;
+            box-sizing: border-box;
         }
         .modal-content {
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            width: 100%;
+            width: calc(100% - 40px);
             max-width: 560px;
             padding: 24px;
+            box-sizing: border-box;
         }
         .modal-header {
             margin-bottom: 20px;
@@ -93,6 +96,8 @@
     </style>
 </head>
 <body>
+    <!-- 顶部栏将通过 JavaScript 加载 -->
+    <div id="header-container"></div>
     <div class="modal-content">
         <div class="modal-header">
             <h2 data-i18n="settings.title">设置</h2>
@@ -132,5 +137,16 @@
             </button>
         </div>
     </div>
-</body>
+    </div>
+
+        <script src="js/header.js"></script>
+        <script>
+            // 如果页面未加载其他主脚本，确保 header 能被注入
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.loadHeader) {
+                    loadHeader();
+                }
+            });
+        </script>
+    </body>
 </html> 

@@ -18,7 +18,7 @@ async function loadHeader() {
                 <nav class="navbar">
                     <ul>
                         <li><a href="index.html" id="nav-dashboard"><i class="fas fa-tachometer-alt"></i> <span data-i18n="nav.dashboard">仪表盘</span></a></li>
-                        <li><a href="hosts.html" id="nav-hosts"><i class="fas fa-server"></i> <span data-i18n="nav.hostList">主机列表</span></a></li>
+                        <li><a href="cmdb.html" id="nav-cmdb"><i class="fas fa-server"></i> <span data-i18n="nav.cmdb">主机列表</span></a></li>
                         <li class="dropdown">
                             <a href="#" class="dropdown-toggle" id="nav-screens">
                                 <i class="fas fa-desktop"></i>
@@ -80,12 +80,12 @@ function initializeNavigation() {
     });
     
     // 根据当前页面设置激活状态
-    switch(currentPage) {
+        switch(currentPage) {
         case 'index.html':
             document.getElementById('nav-dashboard')?.classList.add('active');
             break;
-        case 'hosts.html':
-            document.getElementById('nav-hosts')?.classList.add('active');
+        case 'cmdb.html':
+            document.getElementById('nav-cmdb')?.classList.add('active');
             break;
         case 'dashboard1.html':
             document.getElementById('nav-screens')?.classList.add('active');

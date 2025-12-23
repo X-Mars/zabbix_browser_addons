@@ -75,7 +75,7 @@ class ResourceMonitoringDashboard {
             }
             
             // 创建API实例
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             return api;
         } catch (error) {
             console.error('获取API实例失败:', error);
@@ -85,7 +85,7 @@ class ResourceMonitoringDashboard {
 
     async getSettings() {
         return new Promise((resolve, reject) => {
-            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval', 'zabbixVersion'], (result) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
@@ -232,19 +232,25 @@ class ResourceMonitoringDashboard {
     async enrichHostsWithMonitoringData(hosts) {
         console.log('开始获取主机监控数据...');
         
-        // 批量获取主机监控数据
+        // 批量获取主机监控数据（合并 item.get 调用）
+        const hostIds = hosts.map(h => h.hostid);
+        const itemsMap = await this.api.getItemsForHosts(hostIds);
+
         const enrichedHosts = await Promise.all(
             hosts.map(async (host) => {
                 try {
-                    // 获取所有监控项，然后筛选需要的
-                    const allItems = await this.api.getItems(host.hostid);
+                    // 从预取的映射中获取监控项
+                    const allItems = itemsMap[host.hostid] || [];
                     
                     // 查找CPU相关监控项
                     const cpuItem = this.findBestItem(allItems, [
                         'system.cpu.util',
                         'system.cpu.util[,idle]',
                         'system.cpu.util[,system]',
-                        'system.cpu.utilization'
+                        'system.cpu.utilization',
+                        'CPU utilization',
+                        'sfSysCpuCostRate',
+                        'dev.cpu.usage'
                     ]);
                     
                     // 查找内存相关监控项
@@ -252,7 +258,8 @@ class ResourceMonitoringDashboard {
                         'vm.memory.util',
                         'vm.memory.utilization',
                         'vm.memory.pused',
-                        'system.memory.util'
+                        'system.memory.util',
+                        'dev.mem.usage'
                     ]);
                     
                     // 获取网络接口监控项
@@ -652,29 +659,7 @@ class ResourceMonitoringDashboard {
         `;
         container.appendChild(statsOverview);
 
-        // 平均资源使用率
-        const avgResources = document.createElement('div');
-        avgResources.className = 'avg-resources';
-        avgResources.innerHTML = `
-            <div class="avg-title">${i18n.t('dashboard2.resourceUsage')}</div>
-            <div class="avg-metrics">
-                <div class="avg-metric">
-                    <div class="avg-label">CPU</div>
-                    <div class="avg-bar">
-                        <div class="avg-fill" style="width: ${stats.avgCpu}%; background: ${this.getColorByValue(stats.avgCpu)}"></div>
-                    </div>
-                    <div class="avg-value">${stats.avgCpu.toFixed(1)}%</div>
-                </div>
-                <div class="avg-metric">
-                    <div class="avg-label">内存</div>
-                    <div class="avg-bar">
-                        <div class="avg-fill" style="width: ${stats.avgMemory}%; background: ${this.getColorByValue(stats.avgMemory)}"></div>
-                    </div>
-                    <div class="avg-value">${stats.avgMemory.toFixed(1)}%</div>
-                </div>
-            </div>
-        `;
-        container.appendChild(avgResources);
+        // 平均资源使用率模块已移除
 
         // 显示TOP问题主机（使用排序后的数据）
         const topIssueHosts = this.getTopIssueHostsFromSorted(hosts, 10);
@@ -733,19 +718,30 @@ class ResourceMonitoringDashboard {
         hosts.forEach(host => {
             const cpuValue = this.parsePercentageValue(host.cpu);
             const memoryValue = this.parsePercentageValue(host.memory);
-            
-            if (cpuValue === 0 && memoryValue === 0 && (host.cpu === '-' || host.memory === '-')) {
+
+            // 判断主机是否有监控项（优先依据预填充的监控项键），
+            // 或者有真实的数值（>0）。如果既没有监控项又没有有效数值，视为不可用并排除。
+            const hasCpuItem = !!host.cpuItemKey;
+            const hasMemItem = !!host.memoryItemKey;
+            const hasMonitoringItems = hasCpuItem || hasMemItem;
+
+            const noValueAndNoItems = (!hasMonitoringItems) && ( (host.cpu === '-' || host.cpu === null || host.cpu === undefined || cpuValue === 0) && (host.memory === '-' || host.memory === null || host.memory === undefined || memoryValue === 0) );
+
+            if (noValueAndNoItems) {
+                // 标记为不可用，不计入健康/警告/严重统计
                 unknown++;
-            } else {
-                validHosts++;
-                totalCpu += cpuValue;
-                totalMemory += memoryValue;
-                
-                const maxUsage = Math.max(cpuValue, memoryValue);
-                if (maxUsage > 80) critical++;
-                else if (maxUsage > 60) warning++;
-                else healthy++;
+                return;
             }
+
+            // 可用主机计入统计
+            validHosts++;
+            totalCpu += cpuValue;
+            totalMemory += memoryValue;
+
+            const maxUsage = Math.max(cpuValue, memoryValue);
+            if (maxUsage > 80) critical++;
+            else if (maxUsage > 60) warning++;
+            else healthy++;
         });
 
         return {
@@ -835,10 +831,11 @@ class ResourceMonitoringDashboard {
             </div>
         `;
         
-        // 添加事件监听器
+        // 添加事件监听器 — 点击跳转到 CMDB 页面以查看完整列表
         const viewAllBtn = virtualScrollHint.querySelector('.view-all-btn');
         viewAllBtn.addEventListener('click', () => {
-            virtualScrollHint.style.display = 'none';
+            // 在当前窗口打开 CMDB 页面
+            window.location.href = 'cmdb.html';
         });
         
         container.appendChild(virtualScrollHint);
@@ -955,11 +952,7 @@ class ResourceMonitoringDashboard {
                                    <div style="margin: 4px 0;">${i18n.t('dashboard2.percentage')}: ${((param.value / hosts.length) * 100).toFixed(1)}%</div>`;
                         }
                     },
-                    legend: {
-                        data: [i18n.t('dashboard2.hostCount')],
-                        textStyle: { color: '#fff' },
-                        top: 20
-                    },
+                    legend: { show: false },
                     grid: {
                         left: '3%',
                         right: '4%',
@@ -1023,11 +1016,7 @@ class ResourceMonitoringDashboard {
                         formatter: '{a} <br/>{b}: {c}' + i18n.t('dashboard2.units.hosts') + ' ({d}%)'
                     },
                     legend: {
-                        orient: 'horizontal',
-                        bottom: '5%',
-                        left: 'center',
-                        textStyle: { color: '#fff' },
-                        itemGap: 20
+                        show: false
                     },
                     series: [{
                         name: i18n.t('dashboard2.memoryDistributionChart'),
@@ -1087,11 +1076,7 @@ class ResourceMonitoringDashboard {
                                    <div style="margin: 4px 0;">${i18n.t('dashboard2.percentage')}: ${((param.value / hosts.length) * 100).toFixed(1)}%</div>`;
                         }
                     },
-                    legend: {
-                        data: [i18n.t('dashboard2.hostCount')],
-                        textStyle: { color: '#fff' },
-                        top: 20
-                    },
+                    legend: { show: false },
                     grid: {
                         left: '3%',
                         right: '4%',
@@ -1155,11 +1140,7 @@ class ResourceMonitoringDashboard {
                         formatter: '{a} <br/>{b}: {c}' + i18n.t('dashboard2.units.hosts') + ' ({d}%)'
                     },
                     legend: {
-                        orient: 'horizontal',
-                        bottom: '5%',
-                        left: 'center',
-                        textStyle: { color: '#fff' },
-                        itemGap: 20
+                        show: false
                     },
                     series: [{
                         name: i18n.t('dashboard2.cpuDistributionChart'),
@@ -1298,9 +1279,13 @@ class ResourceMonitoringDashboard {
             const topHosts = this.getTopIssueHosts(hosts, 5);
             const allHistoryData = [];
             
+            // 预取TOP主机的CPU监控项，合并 item.get 调用
+            const topHostIds = topHosts.map(h => h.hostid);
+            const topItemsMap = await this.api.getItemsForHosts(topHostIds, 'CPU utilization');
+
             for (const [index, host] of topHosts.entries()) {
                 console.log(`获取TOP主机${index + 1}: ${host.name}`);
-                const cpuHistory = await this.getHostCpuHistory(host, 24);
+                const cpuHistory = await this.getHostCpuHistory(host, 24, topItemsMap[host.hostid]);
                 
                 if (cpuHistory.length > 0) {
                     // 收集所有时间戳
@@ -1309,17 +1294,7 @@ class ResourceMonitoringDashboard {
                 }
             }
             
-            // 生成聚合数据
-            const aggregatedHistory = this.generateAggregatedData(allHistoryData);
-            if (aggregatedHistory.length > 0) {
-                aggregatedHistory.forEach(point => allTimeStamps.add(point.time));
-                allHistoryData.unshift({ 
-                    host: { name: `平均CPU (${topHosts.length}台主机)` }, 
-                    history: aggregatedHistory, 
-                    index: -1,
-                    isAggregated: true 
-                });
-            }
+            // （已移除）不再在图表中自动添加“平均CPU”系列，保留每台主机的曲线
             
             // 处理每个主机的数据
             for (const { host, history, index, isAggregated } of allHistoryData) {
@@ -1350,10 +1325,14 @@ class ResourceMonitoringDashboard {
             
             // 标准模式：显示所有主机（最多10个）
             const displayHosts = hosts.slice(0, 10);
-            
+
+            // 预取 displayHosts 的 CPU 监控项，合并 item.get 调用
+            const displayHostIds = displayHosts.map(h => h.hostid);
+            const displayItemsMap = await this.api.getItemsForHosts(displayHostIds, 'CPU utilization');
+
             for (const [index, host] of displayHosts.entries()) {
                 console.log(`获取主机${index + 1}: ${host.name}`);
-                const cpuHistory = await this.getHostCpuHistory(host, 24);
+                const cpuHistory = await this.getHostCpuHistory(host, 24, displayItemsMap[host.hostid]);
                 
                 if (cpuHistory.length > 0) {
                     // 收集时间戳
@@ -1470,13 +1449,16 @@ class ResourceMonitoringDashboard {
         return labels;
     }
 
-    async getHostCpuHistory(host, hours = 24) {
+    async getHostCpuHistory(host, hours = 24, cpuItems = null) {
         try {
             console.log(`=== 获取 ${host.name} 的CPU历史数据 ===`);
             
-            // 1. 获取CPU utilization监控项
-            const cpuItems = await this.api.getItems(host.hostid, 'CPU utilization');
-            if (cpuItems.length === 0) {
+            // 1. 获取CPU utilization监控项（优先使用传入的items，缺省时再调用API）
+            if (!cpuItems) {
+                cpuItems = await this.api.getItems(host.hostid, 'CPU utilization');
+            }
+
+            if (!cpuItems || cpuItems.length === 0) {
                 console.warn(`主机 ${host.name} 没有CPU utilization监控项，跳过该主机`);
                 return []; // 返回空数组，该主机不会在趋势图中显示
             }
@@ -1606,17 +1588,17 @@ class ResourceMonitoringDashboard {
     }
 
     // 按指定时间间隔对数据进行采样
-    sampleDataByInterval(data, intervalMs) {
+    sampleDataByInterval(data, intervalMs, attempts = 0) {
         if (data.length === 0) return [];
-        
-        console.log(`开始15分钟采样，原始数据: ${data.length}个点，间隔: ${intervalMs / 1000 / 60}分钟`);
-        
+
+        console.log(`开始采样，原始数据: ${data.length}个点，目标间隔: ${intervalMs / 1000 / 60}分钟`);
+
         // 按时间排序确保数据顺序正确
         const sortedData = [...data].sort((a, b) => a.time - b.time);
-        
+
         const sampledData = [];
         let lastSampleTime = 0;
-        
+
         for (const point of sortedData) {
             // 如果是第一个点，或者距离上次采样超过指定间隔
             if (sampledData.length === 0 || point.time - lastSampleTime >= intervalMs) {
@@ -1624,16 +1606,23 @@ class ResourceMonitoringDashboard {
                 lastSampleTime = point.time;
             }
         }
-        
-        // 如果采样后点数太少，尝试降低采样间隔
-        if (sampledData.length < 4 && intervalMs > 5 * 60 * 1000) { // 少于4个点且间隔大于5分钟
-            console.log(`采样点太少(${sampledData.length}个)，降低到10分钟间隔重新采样`);
-            return this.sampleDataByInterval(data, 10 * 60 * 1000);
+
+        // 如果采样后点数太少，尝试逐步降低采样间隔，最多重试3次，防止在不同间隔之间来回切换
+        if (sampledData.length < 4 && intervalMs > 5 * 60 * 1000 && attempts < 3) {
+            const newInterval = Math.max(5 * 60 * 1000, Math.floor(intervalMs * 2 / 3));
+            console.log(`采样点太少(${sampledData.length}个)，降低到${newInterval / 1000 / 60}分钟间隔重新采样（尝试 ${attempts + 1}）`);
+            return this.sampleDataByInterval(data, newInterval, attempts + 1);
         }
-        
-        console.log(`15分钟采样完成: ${sortedData.length} -> ${sampledData.length}个点`);
-        console.log(`采样数据时间范围: ${new Date(sampledData[0].time).toLocaleTimeString()} - ${new Date(sampledData[sampledData.length-1].time).toLocaleTimeString()}`);
-        
+
+        if (sampledData.length < 4 && attempts >= 3) {
+            console.log(`采样点仍然较少(${sampledData.length}个)，达到最大重试次数，使用当前采样结果`);
+        }
+
+        console.log(`采样完成: ${sortedData.length} -> ${sampledData.length}个点 (间隔 ${intervalMs / 1000 / 60}分钟, 尝试 ${attempts})`);
+        if (sampledData.length > 0) {
+            console.log(`采样数据时间范围: ${new Date(sampledData[0].time).toLocaleTimeString()} - ${new Date(sampledData[sampledData.length - 1].time).toLocaleTimeString()}`);
+        }
+
         return sampledData;
     }
 
@@ -1967,16 +1956,17 @@ class ResourceMonitoringDashboard {
         const validHosts = [];
         const skippedHosts = [];
         
-        // 1. 获取所有主机的CPU utilization监控项最后值
+        // 1. 批量获取所有主机的CPU utilization监控项最后值，合并 item.get 请求
+        const hostIds = hosts.map(h => h.hostid);
+        const itemsMap = await this.api.getItemsForHosts(hostIds, 'CPU utilization');
+
         for (const host of hosts) {
             try {
-                // 只通过CPU utilization监控项获取数据
-                const cpuItems = await this.api.getItems(host.hostid, 'CPU utilization');
-                
+                const cpuItems = itemsMap[host.hostid] || [];
                 if (cpuItems.length > 0 && cpuItems[0].lastvalue !== null) {
                     const cpuValue = parseFloat(cpuItems[0].lastvalue);
                     console.log(`${host.name}: CPU utilization = ${cpuValue.toFixed(1)}%`);
-                    
+
                     if (cpuValue >= 0 && cpuValue <= 100) { // 有效值范围
                         cpuValues.push(cpuValue);
                         validHosts.push(host.name);
@@ -1989,7 +1979,7 @@ class ResourceMonitoringDashboard {
                     skippedHosts.push(host.name);
                 }
             } catch (error) {
-                console.warn(`获取${host.name}CPU utilization监控项失败: ${error.message}，跳过该主机`);
+                console.warn(`处理${host.name}时发生错误: ${error.message}，跳过该主机`);
                 skippedHosts.push(host.name);
             }
         }
@@ -2095,12 +2085,13 @@ class ResourceMonitoringDashboard {
         const data = [];
         const memoryValues = [];
         
-        // 1. 获取所有主机的实时内存使用率
+        // 1. 批量获取所有主机的实时内存使用率（合并 item.get 调用）
+        const hostIds = hosts.map(h => h.hostid);
+        const itemsMap = await this.api.getItemsForHosts(hostIds, 'Memory utilization');
+
         for (const host of hosts) {
             try {
-                // 通过Memory utilization监控项获取准确数据
-                const memoryItems = await this.api.getItems(host.hostid, 'Memory utilization');
-                
+                const memoryItems = itemsMap[host.hostid] || [];
                 let memoryValue = 0;
                 if (memoryItems.length > 0 && memoryItems[0].lastvalue !== null) {
                     memoryValue = parseFloat(memoryItems[0].lastvalue);
@@ -2110,17 +2101,16 @@ class ResourceMonitoringDashboard {
                     memoryValue = this.parsePercentageValue(host.memory);
                     console.log(`${host.name}: 使用回退值 = ${memoryValue.toFixed(1)}%`);
                 }
-                
+
                 if (memoryValue > 0) {
                     memoryValues.push(memoryValue);
                 }
             } catch (error) {
-                // 如果API调用失败，使用原有值
                 const fallbackValue = this.parsePercentageValue(host.memory);
                 if (fallbackValue > 0) {
                     memoryValues.push(fallbackValue);
                 }
-                console.warn(`获取${host.name}内存数据失败，使用回退值: ${fallbackValue}%`);
+                console.warn(`处理${host.name}内存数据时发生错误，使用回退值: ${fallbackValue}%`);
             }
         }
         
@@ -2226,9 +2216,13 @@ class ResourceMonitoringDashboard {
             const topHosts = this.getTopMemoryHosts(hosts, 5);
             const allHistoryData = [];
             
+            // 预取 TOP 内存主机的 memory items
+            const topHostIds = topHosts.map(h => h.hostid);
+            const topMemItemsMap = await this.api.getItemsForHosts(topHostIds, 'Memory utilization');
+
             for (const [index, host] of topHosts.entries()) {
                 console.log(`获取TOP内存主机${index + 1}: ${host.name}`);
-                const memoryHistory = await this.getHostMemoryHistory(host, 24);
+                const memoryHistory = await this.getHostMemoryHistory(host, 24, topMemItemsMap[host.hostid]);
                 
                 if (memoryHistory.length > 0) {
                     // 收集所有时间戳
@@ -2279,9 +2273,13 @@ class ResourceMonitoringDashboard {
             // 标准模式：显示所有主机（最多10个）
             const displayHosts = hosts.slice(0, 10);
             
+            // 预取 displayHosts 的 memory items
+            const displayHostIds = displayHosts.map(h => h.hostid);
+            const displayMemItemsMap = await this.api.getItemsForHosts(displayHostIds, 'Memory utilization');
+
             for (const [index, host] of displayHosts.entries()) {
                 console.log(`获取内存主机${index + 1}: ${host.name}`);
-                const memoryHistory = await this.getHostMemoryHistory(host, 24);
+                const memoryHistory = await this.getHostMemoryHistory(host, 24, displayMemItemsMap[host.hostid]);
                 
                 if (memoryHistory.length > 0) {
                     // 收集时间戳
@@ -2317,17 +2315,19 @@ class ResourceMonitoringDashboard {
         };
     }
 
-    async getHostMemoryHistory(host, hours = 24) {
+    async getHostMemoryHistory(host, hours = 24, memoryItems = null) {
         try {
             console.log(`=== 获取 ${host.name} 的内存历史数据 ===`);
             
-            // 1. 获取Memory utilization监控项
-            const memoryItems = await this.api.getItems(host.hostid, 'Memory utilization');
-            if (memoryItems.length === 0) {
+            // 1. 获取Memory utilization监控项（优先使用传入的items）
+            if (!memoryItems) {
+                memoryItems = await this.api.getItems(host.hostid, 'Memory utilization');
+            }
+            if (!memoryItems || memoryItems.length === 0) {
                 console.warn(`主机 ${host.name} 没有Memory utilization监控项，跳过该主机`);
                 return []; // 返回空数组，该主机不会在趋势图中显示
             }
-            
+
             const memoryItem = memoryItems[0];
             console.log(`使用监控项: ${memoryItem.name} (${memoryItem.key_})`);
             

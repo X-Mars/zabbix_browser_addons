@@ -28,8 +28,10 @@
       "js/settings.js",
       "js/i18n.js",
       "js/charts.js",
+      "js/cmdb.js",
       "dashboard1.html",
-      "dashboard2.html"
+      "dashboard2.html",
+      "cmdb.html"
     ],
     "matches": ["<all_urls>"]
   }],
