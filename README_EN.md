@@ -10,12 +10,13 @@ This is a Chrome/Edge browser extension for the Zabbix monitoring system, provid
 - Real-time alert notifications
 - Monitoring data visualization
 - Multi-language support (English/Chinese)
+- Compatible environments: Zabbix 6.0.48, Zabbix 7.0.21, Zabbix 7.4.6
 
 ## Screenshots
-![image](./assets/1_en.jpg)
-![image](./assets/2_en.jpg)
-![image](./assets/10_en.png)
-![image](./assets/11_en.png)
+![image](./assets/1.jpg)
+![image](./assets/cmdb_en.png)
+![image](./assets/10.png)
+![image](./assets/11.png)
 
 ## Webstore Url
 ### Chrome
@@ -55,4 +56,4 @@ This is a Chrome/Edge browser extension for the Zabbix monitoring system, provid
 - Data Charts: Visualize monitoring data
 - Settings Center: Personalization options
 
-## Project Structure 
+## Project Structure

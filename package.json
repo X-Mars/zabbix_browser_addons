@@ -1,6 +1,6 @@
 {
   "name": "zabbix_addons_new",
-  "version": "3.0.5",
+  "version": "4.0.0",
   "description": "",
   "main": "generate_icons.js",
   "scripts": {
