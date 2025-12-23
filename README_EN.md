@@ -18,23 +18,6 @@ This is a Chrome/Edge browser extension for the Zabbix monitoring system, provid
 ![image](./assets/10.png)
 ![image](./assets/11.png)
 
-English | [简体中文](README.md)
-
-## Introduction
-This is a Chrome/Edge browser extension for the Zabbix monitoring system, providing a more convenient monitoring experience. Users can quickly view and manage Zabbix monitoring data without frequently switching pages. It supports tab management and quick URL access functionality.
-
-## Key Features
-- Quick access to Zabbix monitoring data
-- Real-time alert notifications
-- Monitoring data visualization
-- Multi-language support (English/Chinese)
-
-## Screenshots
-![image](./assets/1_en.jpg)
-![image](./assets/2_en.jpg)
-![image](./assets/10_en.png)
-![image](./assets/11_en.png)
-
 ## Webstore Url
 ### Chrome
 [https://chromewebstore.google.com/detail/zabbix-dashboard/kcnnfpddapjgflocpeojnobdolfaejaa](https://chromewebstore.google.com/detail/zabbix-dashboard/kcnnfpddapjgflocpeojnobdolfaejaa)
