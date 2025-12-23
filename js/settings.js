@@ -111,11 +111,28 @@ class Settings {
                 apiToken: btoa(this.apiToken.value.trim())
             };
             const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
-            await api.testConnection();
+            const result = await api.testConnection();
+
+            // 保存检测到的 Zabbix 版本到 storage，供后续 API 调用使用
+            if (result && result.version) {
+                try {
+                    await new Promise((resolve, reject) => {
+                        chrome.storage.sync.set({ zabbixVersion: result.version }, () => {
+                            if (chrome.runtime.lastError) reject(chrome.runtime.lastError);
+                            else resolve();
+                        });
+                    });
+                    console.log('Saved Zabbix version to storage:', result.version);
+                } catch (e) {
+                    console.warn('Failed to save Zabbix version:', e);
+                }
+            }
 
             testBtn.style.backgroundColor = '#67C23A';
             testBtn.style.color = 'white';
-            testBtn.innerHTML = `<i class="fas fa-check"></i> ${i18n.t('settings.messages.connectionSuccess')}`;
+            // 显示版本号
+            const versionText = result && result.version ? ` (v${result.version})` : '';
+            testBtn.innerHTML = `<i class="fas fa-check"></i> ${i18n.t('settings.messages.connectionSuccess')}${versionText}`;
 
             setTimeout(() => {
                 testBtn.style.backgroundColor = '#f0f0f0';

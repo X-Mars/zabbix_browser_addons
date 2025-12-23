@@ -130,7 +130,7 @@ class RefreshManager {
 
     async getSettings() {
         return new Promise((resolve, reject) => {
-            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval', 'zabbixVersion'], (result) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
@@ -178,7 +178,7 @@ class ZabbixDashboard {
     async loadDashboard() {
         try {
             const settings = await this.getSettings();
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
 
             // 更新最后刷新时间
             this.header.updateLastRefreshTime();
@@ -305,7 +305,7 @@ class ZabbixDashboard {
 
     async getSettings() {
         return new Promise((resolve, reject) => {
-            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval', 'zabbixVersion'], (result) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
@@ -395,7 +395,7 @@ class ZabbixDashboard {
 
         try {
             const settings = await this.getSettings();
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             
             // 获取主机详细信息
             const hostDetails = await api.getHostDetail(hostId);
@@ -589,7 +589,7 @@ class ZabbixDashboard {
 
         try {
             const settings = await this.getSettings();
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             
             // 获取监控项ID
             const itemId = chartType === 'cpu' ? this.currentCpuItemId : this.currentMemoryItemId;
@@ -835,7 +835,7 @@ class ZabbixHosts {
         }
 
         try {
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             const hosts = await api.getHosts();
             this.hosts = hosts;
             this.renderHosts(hosts);
@@ -867,7 +867,7 @@ class ZabbixHosts {
 
     async getSettings() {
         return new Promise((resolve, reject) => {
-            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval', 'zabbixVersion'], (result) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
@@ -961,7 +961,7 @@ class ZabbixHosts {
 
         try {
             const settings = await this.getSettings();
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             
             // 获取主机详细信息
             const hostDetails = await api.getHostDetail(hostId);
@@ -1148,7 +1148,7 @@ class ZabbixHosts {
 
         try {
             const settings = await this.getSettings();
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             
             // 获取监控项ID
             const itemId = chartType === 'cpu' ? this.currentCpuItemId : this.currentMemoryItemId;
@@ -1309,7 +1309,7 @@ class ZabbixHosts {
         
         try {
             const settings = await this.getSettings();
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             const alerts = await api.getHostAlerts(hostId);
             
             if (alerts.length === 0) {
@@ -1361,7 +1361,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const key = element.getAttribute('data-i18n');
             const translation = i18n.t(key);
             element.textContent = translation;
-            console.log(`国际化翻译: ${key} -> ${translation}`); // 调试日志
+            // console.log(`国际化翻译: ${key} -> ${translation}`); // 调试日志
         });
     }
     

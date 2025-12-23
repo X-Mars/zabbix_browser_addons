@@ -12,7 +12,7 @@ class DashboardScreen {
 
     async getSettings() {
         return new Promise((resolve, reject) => {
-            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval', 'zabbixVersion'], (result) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
@@ -73,7 +73,7 @@ class DashboardScreen {
                 return;
             }
             
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             
             // 批量获取所需数据
             const [hostsData, hostGroupsData, problemsStats] = await Promise.all([
@@ -108,7 +108,7 @@ class DashboardScreen {
             try {
                 const settings = await this.getSettings();
                 if (settings.apiUrl && settings.apiToken) {
-                    const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+                    const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
                     const [hostsData, alertsData] = await Promise.all([
                         api.getHosts(),
                         api.getAlerts()

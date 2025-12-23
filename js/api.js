@@ -20,18 +20,90 @@ function safeTranslate(key, zhFallback = '', enFallback = '') {
 
 /**
  * Zabbix API客户端类
- * 使用Authorization header进行认证，符合Zabbix 7.0+的推荐做法
+ * 兼容 Zabbix 6.0、7.0 和 7.4+
+ * - Zabbix 6.x: 使用请求体中的 auth 字段传递 API Token
+ * - Zabbix 7.0+: 使用 HTTP Header Authorization: Bearer <token>
+ * @see https://www.zabbix.com/documentation/6.0/zh/manual/api
  * @see https://www.zabbix.com/documentation/7.0/en/manual/api
  */
 class ZabbixAPI {
-    constructor(url, token) {
+    constructor(url, token, zabbixVersion = null) {
         this.url = url;
         this.token = token;
         this.requestId = 1;
+        // 存储 Zabbix 版本，用于决定认证方式
+        // null 表示未知，需要在首次请求时检测
+        this.zabbixVersion = zabbixVersion;
+    }
+
+    /**
+     * 获取主版本号（如 6、7）
+     * @returns {number|null}
+     */
+    getMajorVersion() {
+        if (!this.zabbixVersion) return null;
+        const match = this.zabbixVersion.match(/^(\d+)/);
+        return match ? parseInt(match[1], 10) : null;
+    }
+
+    /**
+     * 判断是否需要使用旧版认证方式（auth 在请求体中）
+     * Zabbix 6.x 使用请求体 auth 字段
+     * Zabbix 7.0+ 使用 Authorization header
+     * @returns {boolean}
+     */
+    useLegacyAuth() {
+        const major = this.getMajorVersion();
+        // 如果版本未知，先尝试新版认证方式（7.0+）
+        if (major === null) return false;
+        return major < 7;
+    }
+
+    /**
+     * 检测并获取 Zabbix 版本
+     * @returns {Promise<string>} 版本号字符串
+     */
+    async detectVersion() {
+        if (this.zabbixVersion) return this.zabbixVersion;
+        
+        // apiinfo.version 不需要认证
+        const body = {
+            jsonrpc: '2.0',
+            method: 'apiinfo.version',
+            params: {},
+            id: this.requestId++
+        };
+
+        const response = await fetch(this.url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.error) {
+            throw new Error(data.error.data || data.error.message || 'API error');
+        }
+
+        this.zabbixVersion = data.result;
+        return this.zabbixVersion;
     }
 
     async request(method, params = {}) {
-        // 构建请求体，不再包含auth属性
+        // 如果版本未知且不是获取版本的请求，先检测版本
+        if (!this.zabbixVersion && method !== 'apiinfo.version') {
+            try {
+                await this.detectVersion();
+            } catch (e) {
+                console.warn('Failed to detect Zabbix version, using default auth method:', e);
+            }
+        }
+
+        // 构建请求体
         const body = {
             jsonrpc: '2.0',
             method: method,
@@ -44,10 +116,15 @@ class ZabbixAPI {
             'Content-Type': 'application/json',
         };
 
-        // 除了 apiinfo.version 外，其他方法都需要认证
-        // 使用Authorization header替代auth属性
+        // 根据版本选择认证方式
         if (method !== 'apiinfo.version' && this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
+            if (this.useLegacyAuth()) {
+                // Zabbix 6.x: 使用请求体中的 auth 字段
+                body.auth = this.token;
+            } else {
+                // Zabbix 7.0+: 使用 Authorization header
+                headers['Authorization'] = `Bearer ${this.token}`;
+            }
         }
 
         try {
@@ -77,11 +154,15 @@ class ZabbixAPI {
         }
     }
 
+    /**
+     * 测试连接并返回版本信息
+     * @returns {Promise<{success: boolean, version: string}>}
+     */
     async testConnection() {
         try {
-            // 先测试 API 版本（不需要认证）
-            const version = await this.request('apiinfo.version');
-            // console.log('Zabbix API version:', version);
+            // 先检测 API 版本（不需要认证）
+            const version = await this.detectVersion();
+            console.log('Zabbix API version:', version, '| Major:', this.getMajorVersion(), '| Legacy auth:', this.useLegacyAuth());
 
             // 再测试认证
             const hosts = await this.request('host.get', {
@@ -89,11 +170,37 @@ class ZabbixAPI {
                 limit: 1
             });
             // console.log('Connection test successful');
-            return true;
+            return { success: true, version: version };
         } catch (error) {
             console.error('Connection test failed:', error);
             throw new Error('连接失败：' + error.message);
         }
+    }
+
+    /**
+     * 静态工厂方法：从 chrome.storage 加载设置并创建 ZabbixAPI 实例
+     * 会自动加载已存储的 Zabbix 版本以选择正确的认证方式
+     * @returns {Promise<ZabbixAPI>}
+     */
+    static async createFromStorage() {
+        return new Promise((resolve, reject) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'zabbixVersion'], (result) => {
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                    return;
+                }
+                if (!result.apiUrl || !result.apiToken) {
+                    reject(new Error('API URL or Token not configured'));
+                    return;
+                }
+                const api = new ZabbixAPI(
+                    result.apiUrl,
+                    atob(result.apiToken),
+                    result.zabbixVersion || null
+                );
+                resolve(api);
+            });
+        });
     }
 
     async getHosts() {
@@ -808,13 +915,24 @@ class ZabbixAPI {
 
     async getHostsWithStatus() {
         try {
-            const hosts = await this.request('host.get', {
+            // 确保已知 Zabbix 版本，若未知则尝试检测（以便在 6.x 使用 selectGroups）
+            if (!this.zabbixVersion && this.detectVersion) {
+                try {
+                    await this.detectVersion();
+                } catch (e) {
+                    console.warn('Failed to detect Zabbix version in getHostsWithStatus:', e);
+                }
+            }
+            const groupKey = (this.getMajorVersion && this.getMajorVersion() === 6) ? 'selectGroups' : 'selectHostGroups';
+            const hostParams = {
                 output: ['hostid', 'host', 'name', 'status', 'available'],
                 selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
-                selectHostGroups: ['groupid', 'name'],
                 selectTriggers: ['triggerid', 'description', 'priority', 'value'],
                 // 不过滤状态，获取所有主机
-            });
+            };
+            hostParams[groupKey] = ['groupid', 'name'];
+
+            const hosts = await this.request('host.get', hostParams);
 
             // 获取每个主机的活动问题（批量请求以减少 API 调用）
             const hostProblemsMap = {};

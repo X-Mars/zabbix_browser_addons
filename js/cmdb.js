@@ -104,7 +104,7 @@ class CMDBPage {
 
     async getSettings() {
         return new Promise((resolve, reject) => {
-            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval', 'zabbixVersion'], (result) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
@@ -127,7 +127,7 @@ class CMDBPage {
             const currentGroupId = document.getElementById('groupFilter')?.value || '';
             const currentInterfaceType = document.getElementById('interfaceFilter')?.value || '';
 
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
 
             // 并行加载主机和主机组数据
             const [hosts, hostGroups] = await Promise.all([
@@ -191,9 +191,26 @@ class CMDBPage {
             const hostParams = {
                 output: ['hostid', 'host', 'name', 'status'],
                 selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
-                selectHostGroups: ['groupid', 'name'],
                 selectInventory: ['os', 'os_full', 'hardware', 'software', 'type'],
             };
+            // 确保已知 Zabbix 版本，若未知则尝试检测（以便在 6.x 使用 selectGroups）
+            if (!api.zabbixVersion && api.detectVersion) {
+                try {
+                    await api.detectVersion();
+                } catch (e) {
+                    console.warn('Failed to detect Zabbix version before building host params:', e);
+                }
+            }
+            // 确保已知 Zabbix 版本，若未知则尝试检测（以便在 6.x 使用 selectGroups）
+            if (!api.zabbixVersion && api.detectVersion) {
+                try {
+                    await api.detectVersion();
+                } catch (e) {
+                    console.warn('Failed to detect Zabbix version before building host params:', e);
+                }
+            }
+            const groupKey = (api.getMajorVersion && api.getMajorVersion() === 6) ? 'selectGroups' : 'selectHostGroups';
+            hostParams[groupKey] = ['groupid', 'name'];
 
             // 如果提供了 hostids，添加到请求参数
             if (options.hostids && options.hostids.length > 0) {
@@ -672,15 +689,16 @@ class CMDBPage {
                 'jmx': '4'
             };
 
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
 
             // 构建 host.get 的查询参数
             const hostParams = {
                 output: ['hostid', 'host', 'name', 'status'],
                 selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
-                selectHostGroups: ['groupid', 'name'],
                 selectInventory: ['os', 'os_full', 'hardware', 'software', 'type'],
             };
+            const groupKey = (api.getMajorVersion && api.getMajorVersion() === 6) ? 'selectGroups' : 'selectHostGroups';
+            hostParams[groupKey] = ['groupid', 'name'];
 
             // 按主机分组过滤 (groupids)
             if (groupId) {
@@ -852,6 +870,7 @@ class CMDBPage {
                     || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.walk.data.total'))
                     || hostItems.find(item => item.key_ && item.key_.includes('vm.memory.pused'))
                     || hostItems.find(item => item.key_ && item.key_.includes('dev.mem.usage'));
+                const interfaces = host.interfaces || [];
                 const mainInterface = interfaces.find(iface => iface.main === '1') || interfaces[0];
                 const interfaceTypes = this.getInterfaceTypes(interfaces);
 

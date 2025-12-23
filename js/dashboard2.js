@@ -75,7 +75,7 @@ class ResourceMonitoringDashboard {
             }
             
             // 创建API实例
-            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken));
+            const api = new ZabbixAPI(settings.apiUrl, atob(settings.apiToken), settings.zabbixVersion);
             return api;
         } catch (error) {
             console.error('获取API实例失败:', error);
@@ -85,7 +85,7 @@ class ResourceMonitoringDashboard {
 
     async getSettings() {
         return new Promise((resolve, reject) => {
-            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval'], (result) => {
+            chrome.storage.sync.get(['apiUrl', 'apiToken', 'refreshInterval', 'zabbixVersion'], (result) => {
                 if (chrome.runtime.lastError) {
                     reject(chrome.runtime.lastError);
                 } else {
