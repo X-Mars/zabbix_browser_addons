@@ -9,10 +9,11 @@
 - 快速查看 Zabbix 监控数据
 - 实时告警通知
 - 监控数据可视化展示
+- 兼容环境：zabbix 6.0.48、zabbix 7.0.21、zabbix 7.4.6
 
 ## 项目截图
 ![image](./assets/1.jpg)
-![image](./assets/2.jpg)
+![image](./assets/cmdb.png)
 ![image](./assets/10.png)
 ![image](./assets/11.png)
 
@@ -24,6 +25,12 @@
 [https://microsoftedge.microsoft.com/addons/detail/zabbix-dashboard/ccpgeajnamiengocljojcaapifmljiif](https://microsoftedge.microsoft.com/addons/detail/zabbix-dashboard/ccpgeajnamiengocljojcaapifmljiif)
 
 ## 更新日志
+### [4.0.0] - 2025-10-12
+#### 新增 / New Features
+- **支持 Zabbix 6.x 版本**: 插件现已兼容 Zabbix 6.x 版本，确保在最新版本的 Zabbix 上正常运行
+- **多语言支持增强**: 优化了国际化支持，提升了多语言环境下的用户体验
+- **删除了主机列表页面**: 为简化用户界面，移除了主机列表页面
+- **新增了 CMDB 页面**: 添加了 CMDB 页面
 ### [3.0.4] - 2025-10-12
 #### 改进 / Improvements
 - **API认证方式更新**: 根据Zabbix官方文档建议，将API认证方式从请求体中的`auth`属性改为使用`Authorization: Bearer <token>`头部认证
