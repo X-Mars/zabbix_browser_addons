@@ -14,7 +14,7 @@ This is a Chrome/Edge browser extension for the Zabbix monitoring system, provid
 
 ## Screenshots
 ![image](./assets/1.jpg)
-![image](./assets/cmdb.png)
+![image](./assets/cmdb_en.png)
 ![image](./assets/10.png)
 ![image](./assets/11.png)
 
@@ -73,4 +73,4 @@ This is a Chrome/Edge browser extension for the Zabbix monitoring system, provid
 - Data Charts: Visualize monitoring data
 - Settings Center: Personalization options
 
-## Project Structure 
+## Project Structure
