@@ -6,7 +6,9 @@ const translations = {
             'dashboard': '仪表盘',
             'cmdb': 'CMDB',
             'screen1': '告警监控大屏',
-            'screen2': '资源监控大屏'
+            'screen2': '资源监控大屏',
+            'screen3': '综合监控大屏',
+            'screen4': '服务可用性大屏'
         },
         'hostCount': '主机数量',
         'alertCount': '当前告警',
@@ -24,7 +26,9 @@ const translations = {
             'cmdb': 'CMDB',
             'bigScreen': '大屏展示',
             'screen1': '告警监控大屏',
-            'screen2': '资源监控大屏'
+            'screen2': '资源监控大屏',
+            'screen3': '综合监控大屏',
+            'screen4': '服务可用性大屏'
         },
         // CMDB 页面
         'cmdb': {
@@ -243,7 +247,9 @@ const translations = {
             'cmdb': 'CMDB',
             'bigScreen': '大屏展示',
             'screen1': '告警监控大屏',
-            'screen2': '资源监控大屏'
+            'screen2': '资源监控大屏',
+            'screen3': '综合监控大屏',
+            'screen4': '服务可用性大屏'
         },
 
         'performanceMonitor': '性能监控',
@@ -338,7 +344,31 @@ const translations = {
             }
         },
         
-        // Dashboard1告警监控专用
+        // Dashboard3综合监控专用
+        'dashboard3': {
+            'title': '综合监控大屏',
+            'totalHosts': '主机总数',
+            'activeAlerts': '活动告警',
+            'hostGroups': '主机组',
+            'avgCpu': '平均CPU',
+            'avgMemory': '平均内存',
+            'hostGroupHealth': '主机组健康度',
+            'severityDistribution': '告警严重性分布',
+            'hostStatusGauge': '主机健康率',
+            'topCpuHosts': 'TOP10 CPU使用率',
+            'topMemoryHosts': 'TOP10 内存使用率',
+            'recentAlerts': '最近告警',
+            'healthyHosts': '健康主机',
+            'problemHosts': '告警主机',
+            'healthRate': '健康率',
+            'healthy': '健康',
+            'problem': '告警',
+            'memory': '内存',
+            'noAlerts': '暂无告警',
+            'lastRefresh': '最后刷新:',
+            'lastRefreshTime': '最后刷新: {time}'
+        },
+
         'dashboard1': {
             'title': '告警监控大屏',
             'hostCount': '主机数量',
@@ -404,6 +434,27 @@ const translations = {
             'chartError': '图表加载错误'
         },
 
+        // Dashboard4 服务可用性专用
+        'dashboard4': {
+            'title': '服务可用性大屏',
+            'monitoredHosts': '监控主机',
+            'availabilityRate': '可用率',
+            'activeProblems': '活动问题',
+            'resolvedToday': '今日已恢复',
+            'hostGroups': '主机组',
+            'alertHeatmap': '7天告警时段热力图',
+            'severityRadar': '告警级别雷达',
+            'groupProblems': '主机组问题分布',
+            'availabilityTrend': '24小时可用率趋势',
+            'topProblemHosts': '问题主机 TOP',
+            'recentEvents': '实时事件流',
+            'noEvents': '暂无事件',
+            'alertCount': '告警',
+            'resolved': '已恢复',
+            'lastRefresh': '最后刷新:',
+            'lastRefreshTime': '最后刷新: {time}'
+        },
+
         // 通用字段
         'time': '时间',
         'ipAddress': 'IP地址'
@@ -415,7 +466,9 @@ const translations = {
             'dashboard': 'Dashboard',
             'cmdb': 'CMDB',
             'screen1': 'Alert Monitoring Screen',
-            'screen2': 'Resource Monitoring Screen'
+            'screen2': 'Resource Monitoring Screen',
+            'screen3': 'Comprehensive Monitoring Screen',
+            'screen4': 'Service Availability Screen'
         },
         'hostCount': 'Host Count',
         'alertCount': 'Alerting',
@@ -433,7 +486,9 @@ const translations = {
             'cmdb': 'CMDB',
             'bigScreen': 'Big Screen',
             'screen1': 'Alert Monitoring Screen',
-            'screen2': 'Resource Monitoring Screen'
+            'screen2': 'Resource Monitoring Screen',
+            'screen3': 'Comprehensive Monitoring Screen',
+            'screen4': 'Service Availability Screen'
         },
 
         // CMDB Page
@@ -652,7 +707,9 @@ const translations = {
             'cmdb': 'CMDB',
             'bigScreen': 'Big Screen',
             'screen1': 'Alert Monitoring Screen',
-            'screen2': 'Resource Monitoring Screen'
+            'screen2': 'Resource Monitoring Screen',
+            'screen3': 'Comprehensive Monitoring Screen',
+            'screen4': 'Service Availability Screen'
         },
 
         'performanceMonitor': 'Performance Monitor',
@@ -745,6 +802,31 @@ const translations = {
             }
         },
         
+        // Dashboard3 Comprehensive Monitoring
+        'dashboard3': {
+            'title': 'Zabbix Comprehensive Monitoring Dashboard',
+            'totalHosts': 'Total Hosts',
+            'activeAlerts': 'Active Alerts',
+            'hostGroups': 'Host Groups',
+            'avgCpu': 'Avg CPU',
+            'avgMemory': 'Avg Memory',
+            'hostGroupHealth': 'Host Group Health',
+            'severityDistribution': 'Severity Distribution',
+            'hostStatusGauge': 'Host Health Rate',
+            'topCpuHosts': 'TOP10 CPU Usage',
+            'topMemoryHosts': 'TOP10 Memory Usage',
+            'recentAlerts': 'Recent Alerts',
+            'healthyHosts': 'Healthy Hosts',
+            'problemHosts': 'Problem Hosts',
+            'healthRate': 'Health Rate',
+            'healthy': 'Healthy',
+            'problem': 'Problem',
+            'memory': 'Memory',
+            'noAlerts': 'No Alerts',
+            'lastRefresh': 'Last Refresh:',
+            'lastRefreshTime': 'Last Refresh: {time}'
+        },
+
         // Dashboard1 Alert Monitoring
         'dashboard1': {
             'title': 'Zabbix Alert Monitoring Dashboard',
@@ -802,6 +884,27 @@ const translations = {
                 'hostCount': '{name}: {value} hosts ({percent}%)'
             }
         },        
+        // Dashboard4 Service Availability
+        'dashboard4': {
+            'title': 'Service Availability Dashboard',
+            'monitoredHosts': 'Monitored Hosts',
+            'availabilityRate': 'Availability',
+            'activeProblems': 'Active Problems',
+            'resolvedToday': 'Resolved Today',
+            'hostGroups': 'Host Groups',
+            'alertHeatmap': '7-Day Alert Heatmap',
+            'severityRadar': 'Severity Radar',
+            'groupProblems': 'Group Problems',
+            'availabilityTrend': '24h Availability Trend',
+            'topProblemHosts': 'Top Problem Hosts',
+            'recentEvents': 'Event Feed',
+            'noEvents': 'No Events',
+            'alertCount': 'Alerts',
+            'resolved': 'Resolved',
+            'lastRefresh': 'Last Refresh:',
+            'lastRefreshTime': 'Last Refresh: {time}'
+        },
+
         // Error and Status Messages
         'errors': {
             'loadFailed': 'Load Failed',

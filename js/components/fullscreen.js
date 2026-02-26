@@ -42,11 +42,15 @@ class FullscreenManager {
     }
 
     detectCurrentDashboard() {
-        // 检测是大屏1还是大屏2
+        // 检测是大屏1、大屏2还是大屏3
         const dashboard1Btn = document.getElementById('fullscreenBtn');
         const dashboard2Btn = document.getElementById('fullscreenBtn2');
+        const dashboard3Btn = document.getElementById('fullscreenBtn3');
+        const dashboard4Btn = document.getElementById('fullscreenBtn4');
         const dashboard1Screen = document.querySelector('.dashboard-screen');
         const dashboard2Screen = document.querySelector('.dashboard-screen-2');
+        const dashboard3Screen = document.querySelector('.dashboard-screen-3');
+        const dashboard4Screen = document.querySelector('.dashboard-screen-4');
         
         if (dashboard1Btn && dashboard1Screen) {
             this.fullscreenBtn = dashboard1Btn;
@@ -56,6 +60,14 @@ class FullscreenManager {
             this.fullscreenBtn = dashboard2Btn;
             this.dashboardScreen = dashboard2Screen;
             this.currentDashboard = 'dashboard2';
+        } else if (dashboard3Btn && dashboard3Screen) {
+            this.fullscreenBtn = dashboard3Btn;
+            this.dashboardScreen = dashboard3Screen;
+            this.currentDashboard = 'dashboard3';
+        } else if (dashboard4Btn && dashboard4Screen) {
+            this.fullscreenBtn = dashboard4Btn;
+            this.dashboardScreen = dashboard4Screen;
+            this.currentDashboard = 'dashboard4';
         }
     }
 

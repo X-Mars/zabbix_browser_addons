@@ -1365,17 +1365,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
-    // 加载头部
-    const headerContainer = document.getElementById('header-container');
-    const headerResponse = await fetch('header.html');
-    const headerHtml = await headerResponse.text();
-    headerContainer.innerHTML = headerHtml;
+    // 加载头部（通过 header.js 动态生成）
+    if (typeof loadHeader === 'function') {
+        await loadHeader();
+    }
     
     // 在header加载完成后应用国际化并初始化导航
     if (typeof initializeI18n === 'function') {
         initializeI18n();
     }
-    initializeNavigation();
     
     // 创建全局header实例
     window.headerInstance = new Header();

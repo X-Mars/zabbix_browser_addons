@@ -1283,16 +1283,21 @@ class ResourceMonitoringDashboard {
             const topHostIds = topHosts.map(h => h.hostid);
             const topItemsMap = await this.api.getItemsForHosts(topHostIds, 'CPU utilization');
 
-            for (const [index, host] of topHosts.entries()) {
-                console.log(`获取TOP主机${index + 1}: ${host.name}`);
-                const cpuHistory = await this.getHostCpuHistory(host, 24, topItemsMap[host.hostid]);
-                
-                if (cpuHistory.length > 0) {
-                    // 收集所有时间戳
-                    cpuHistory.forEach(point => allTimeStamps.add(point.time));
-                    allHistoryData.push({ host, history: cpuHistory, index });
+            // 并行获取所有TOP主机的历史数据
+            const topHistoryResults = await Promise.all(
+                topHosts.map((host, index) => 
+                    this.getHostCpuHistory(host, 24, topItemsMap[host.hostid])
+                        .then(history => ({ host, history, index }))
+                        .catch(err => { console.warn(`获取主机 ${host.name} CPU历史失败:`, err); return null; })
+                )
+            );
+
+            topHistoryResults.filter(Boolean).forEach(({ host, history, index }) => {
+                if (history.length > 0) {
+                    history.forEach(point => allTimeStamps.add(point.time));
+                    allHistoryData.push({ host, history, index });
                 }
-            }
+            });
             
             // （已移除）不再在图表中自动添加“平均CPU”系列，保留每台主机的曲线
             
@@ -1330,10 +1335,16 @@ class ResourceMonitoringDashboard {
             const displayHostIds = displayHosts.map(h => h.hostid);
             const displayItemsMap = await this.api.getItemsForHosts(displayHostIds, 'CPU utilization');
 
-            for (const [index, host] of displayHosts.entries()) {
-                console.log(`获取主机${index + 1}: ${host.name}`);
-                const cpuHistory = await this.getHostCpuHistory(host, 24, displayItemsMap[host.hostid]);
-                
+            // 并行获取所有主机的历史数据
+            const displayHistoryResults = await Promise.all(
+                displayHosts.map((host, index) =>
+                    this.getHostCpuHistory(host, 24, displayItemsMap[host.hostid])
+                        .then(cpuHistory => ({ host, cpuHistory, index }))
+                        .catch(err => { console.warn(`获取主机 ${host.name} CPU历史失败:`, err); return null; })
+                )
+            );
+
+            displayHistoryResults.filter(Boolean).forEach(({ host, cpuHistory, index }) => {
                 if (cpuHistory.length > 0) {
                     // 收集时间戳
                     cpuHistory.forEach(point => allTimeStamps.add(point.time));
@@ -1354,7 +1365,7 @@ class ResourceMonitoringDashboard {
                 } else {
                     console.warn(`主机 ${host.name} 没有历史数据`);
                 }
-            }
+            });
         }
         
         // 2. 处理时间轴
@@ -2220,16 +2231,21 @@ class ResourceMonitoringDashboard {
             const topHostIds = topHosts.map(h => h.hostid);
             const topMemItemsMap = await this.api.getItemsForHosts(topHostIds, 'Memory utilization');
 
-            for (const [index, host] of topHosts.entries()) {
-                console.log(`获取TOP内存主机${index + 1}: ${host.name}`);
-                const memoryHistory = await this.getHostMemoryHistory(host, 24, topMemItemsMap[host.hostid]);
-                
+            // 并行获取所有TOP内存主机的历史数据
+            const topMemHistoryResults = await Promise.all(
+                topHosts.map((host, index) =>
+                    this.getHostMemoryHistory(host, 24, topMemItemsMap[host.hostid])
+                        .then(memoryHistory => ({ host, memoryHistory, index }))
+                        .catch(err => { console.warn(`获取主机 ${host.name} 内存历史失败:`, err); return null; })
+                )
+            );
+
+            topMemHistoryResults.filter(Boolean).forEach(({ host, memoryHistory, index }) => {
                 if (memoryHistory.length > 0) {
-                    // 收集所有时间戳
                     memoryHistory.forEach(point => allTimeStamps.add(point.time));
                     allHistoryData.push({ host, history: memoryHistory, index });
                 }
-            }
+            });
             
             // 生成聚合数据
             const aggregatedHistory = this.generateAggregatedData(allHistoryData);
@@ -2277,10 +2293,16 @@ class ResourceMonitoringDashboard {
             const displayHostIds = displayHosts.map(h => h.hostid);
             const displayMemItemsMap = await this.api.getItemsForHosts(displayHostIds, 'Memory utilization');
 
-            for (const [index, host] of displayHosts.entries()) {
-                console.log(`获取内存主机${index + 1}: ${host.name}`);
-                const memoryHistory = await this.getHostMemoryHistory(host, 24, displayMemItemsMap[host.hostid]);
-                
+            // 并行获取所有主机的内存历史数据
+            const displayMemHistoryResults = await Promise.all(
+                displayHosts.map((host, index) =>
+                    this.getHostMemoryHistory(host, 24, displayMemItemsMap[host.hostid])
+                        .then(memoryHistory => ({ host, memoryHistory, index }))
+                        .catch(err => { console.warn(`获取主机 ${host.name} 内存历史失败:`, err); return null; })
+                )
+            );
+
+            displayMemHistoryResults.filter(Boolean).forEach(({ host, memoryHistory, index }) => {
                 if (memoryHistory.length > 0) {
                     // 收集时间戳
                     memoryHistory.forEach(point => allTimeStamps.add(point.time));
@@ -2301,7 +2323,7 @@ class ResourceMonitoringDashboard {
                 } else {
                     console.warn(`主机 ${host.name} 没有内存历史数据`);
                 }
-            }
+            });
         }
         
         // 2. 处理时间轴
