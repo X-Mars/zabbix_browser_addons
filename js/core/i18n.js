@@ -55,7 +55,12 @@ const translations = {
             'hostGroups': '主机分组',
             'agentVersion': 'Agent 版本',
             'noHostsFound': '未找到主机',
-            'loadError': '加载数据失败，请检查设置'
+            'loadError': '加载数据失败，请检查设置',
+            'loading': '正在加载...',
+            'perPage': '每页',
+            'records': '条',
+            'totalRecords': '共 {count} 条',
+            'showingRange': '显示 {from}-{to} 条，共 {total} 条',
         },
         // 接口名称与可用性标签
         'cmdbInterfaceNames': {
@@ -516,7 +521,12 @@ const translations = {
             'hostGroups': 'Host Groups',
             'agentVersion': 'Agent Version',
             'noHostsFound': 'No hosts found',
-            'loadError': 'Failed to load data, please check settings'
+            'loadError': 'Failed to load data, please check settings',
+            'loading': 'Loading...',
+            'perPage': 'Per page',
+            'records': 'records',
+            'totalRecords': 'Total {count} records',
+            'showingRange': 'Showing {from}-{to} of {total}',
         },
         // Interface names and availability labels
         'cmdbInterfaceNames': {
