@@ -19,6 +19,8 @@ This is a Chrome/Edge browser extension for the Zabbix monitoring system, provid
 ![image](./assets/cmdb_en.png)
 ![image](./assets/10.png)
 ![image](./assets/11.png)
+![image](./assets/12.png)
+![image](./assets/13.png)
 
 ## Extension Store Installation
 

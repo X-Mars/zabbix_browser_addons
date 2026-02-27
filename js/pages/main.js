@@ -56,12 +56,8 @@ class Header {
     }
 
     initSettingsButton() {
-        if (this.settingsBtn) {
-            this.settingsBtn.addEventListener('click', () => {
-                // 使用 settingsManager 显示设置对话框
-                window.settingsManager?.showDialog();
-            });
-        }
+        // 设置按钮点击事件已由 header.js 的 initializeSettings() 统一管理
+        // 此处不再重复绑定，避免弹出两个设置对话框
     }
 
     initSettingsModal() {

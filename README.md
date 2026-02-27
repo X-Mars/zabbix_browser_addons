@@ -19,6 +19,8 @@
 ![image](./assets/cmdb.png)
 ![image](./assets/10.png)
 ![image](./assets/11.png)
+![image](./assets/12.png)
+![image](./assets/13.png)
 
 ## 插件市场安装地址
 
