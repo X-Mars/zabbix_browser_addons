@@ -159,6 +159,7 @@ const translations = {
         // 设置相关
         'settings': {
             'title': '设置',
+            'description': '配置 Zabbix 连接参数',
             'apiUrl': 'ZABBIX API URL:',
             'apiToken': 'ZABBIX API TOKEN:',
             'refreshInterval': '刷新间隔',
@@ -219,6 +220,7 @@ const translations = {
         // 设置对话框
         'settings': {
             'title': '设置',
+            'description': '配置 Zabbix 连接参数',
             'apiUrl': 'ZABBIX API URL:',
             'apiToken': 'ZABBIX API TOKEN:',
             'refreshInterval': '刷新间隔:',
@@ -624,9 +626,8 @@ const translations = {
         // Settings related
         'settings': {
             'title': 'Settings',
+            'description': 'Configure Zabbix connection parameters',
             'apiUrl': 'ZABBIX API URL:',
-            'apiToken': 'ZABBIX API TOKEN:',
-            'refreshInterval': 'Refresh Interval',
             'buttons': {
                 'test': 'Test Connection',
                 'save': 'Save Settings'
