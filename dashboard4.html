@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title data-i18n="pageTitle.screen4">服务可用性大屏</title>
+    <link href="css/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="js/lib/echarts.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .dashboard-screen-4 {
+            background: linear-gradient(135deg, #0d0f14 0%, #1a1520 50%, #12101a 100%);
+            color: #fff;
+            height: 100vh;
+            width: 100vw;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .dashboard-screen-4::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(circle at 15% 85%, rgba(255, 170, 0, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 15%, rgba(255, 120, 50, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 200, 80, 0.03) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* 标题样式 */
+        .screen-title-4 {
+            text-align: center;
+            font-size: clamp(20px, 3vw, 32px);
+            font-weight: 700;
+            height: 40px;
+            flex-shrink: 0;
+            margin-bottom: 15px;
+            color: #ffffff;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(255, 170, 0, 0.3);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .screen-title-4::before,
+        .screen-title-4::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 35%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #ffaa00 50%, transparent 100%);
+            transform: translateY(-50%);
+            opacity: 0.8;
+        }
+        
+        .screen-title-4::before { left: 5%; }
+        .screen-title-4::after { right: 5%; }
+        
+        /* 全屏按钮 */
+        .fullscreen-btn-4 {
+            position: fixed;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(145deg, rgba(20, 16, 30, 0.95), rgba(10, 8, 18, 0.95));
+            border: 1px solid rgba(255, 170, 0, 0.3);
+            border-radius: 12px;
+            color: #ffaa00;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 1000;
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.3),
+                0 1px 4px rgba(255, 170, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .fullscreen-btn-4:hover {
+            background: linear-gradient(145deg, rgba(255, 170, 0, 0.15), rgba(255, 120, 50, 0.15));
+            border-color: rgba(255, 170, 0, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 2px 8px rgba(255, 170, 0, 0.3);
+        }
+        
+        /* 数据卡片行 */
+        .data-cards-4 {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+        
+        .data-card-4 {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+            border: 1px solid rgba(255, 170, 0, 0.12);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .data-card-4:hover {
+            border-color: rgba(255, 170, 0, 0.3);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+            transform: translateY(-1px);
+        }
+        
+        .data-card-4 .card-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        
+        .data-card-4 .card-info .card-value {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #fff;
+        }
+        
+        .data-card-4 .card-info .card-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 2px;
+        }
+        
+        .card-icon.amber { background: rgba(255, 170, 0, 0.15); color: #ffaa00; }
+        .card-icon.green { background: rgba(80, 200, 120, 0.15); color: #50c878; }
+        .card-icon.red { background: rgba(255, 80, 80, 0.15); color: #ff5050; }
+        .card-icon.blue { background: rgba(80, 160, 255, 0.15); color: #50a0ff; }
+        .card-icon.purple { background: rgba(180, 120, 255, 0.15); color: #b478ff; }
+        
+        /* 图表网格布局 */
+        .charts-grid-4 {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 12px;
+            flex: 1;
+            min-height: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .chart-panel-4 {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.008));
+            border: 1px solid rgba(255, 170, 0, 0.1);
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+        
+        .chart-panel-4 .panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 10px;
+            padding-left: 10px;
+            border-left: 3px solid #ffaa00;
+            flex-shrink: 0;
+        }
+        
+        .chart-panel-4 .chart-container {
+            flex: 1;
+            min-height: 0;
+        }
+        
+        /* 告警热力图跨两列 */
+        .chart-heatmap { grid-column: 1 / 2; grid-row: 1 / 2; }
+        .chart-radar { grid-column: 2 / 3; grid-row: 1 / 2; }
+        .chart-group-bar { grid-column: 3 / 4; grid-row: 1 / 2; }
+        .chart-availability { grid-column: 1 / 2; grid-row: 2 / 3; }
+        .chart-top-problems { grid-column: 2 / 3; grid-row: 2 / 3; }
+        .chart-event-feed { grid-column: 3 / 4; grid-row: 2 / 3; }
+        
+        /* 事件列表样式 */
+        .event-feed {
+            flex: 1;
+            overflow: hidden !important;
+            min-height: 0;
+        }
+        
+        .event-feed::-webkit-scrollbar {
+            width: 3px;
+        }
+        
+        .event-feed::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .event-feed::-webkit-scrollbar-thumb {
+            background: rgba(255, 170, 0, 0.2);
+            border-radius: 3px;
+        }
+        
+        .event-scroll-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .event-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            font-size: 11px;
+            line-height: 1.4;
+            transition: background 0.2s;
+        }
+        
+        .event-item:hover {
+            background: rgba(255, 170, 0, 0.05);
+        }
+        
+        .event-item:last-child {
+            border-bottom: none;
+        }
+        
+        .event-severity-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        
+        .event-severity-dot.disaster { background: #ff4d4f; box-shadow: 0 0 6px rgba(255, 77, 79, 0.5); }
+        .event-severity-dot.high { background: #ff7a45; box-shadow: 0 0 6px rgba(255, 122, 69, 0.5); }
+        .event-severity-dot.average { background: #ffa940; box-shadow: 0 0 6px rgba(255, 169, 64, 0.5); }
+        .event-severity-dot.warning { background: #ffc53d; box-shadow: 0 0 6px rgba(255, 197, 61, 0.5); }
+        .event-severity-dot.information { background: #73d13d; box-shadow: 0 0 6px rgba(115, 209, 61, 0.5); }
+        .event-severity-dot.resolved { background: #8c8c8c; }
+        
+        .event-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .event-host {
+            font-size: 12px;
+            font-weight: 600;
+            color: #ffaa00;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .event-name {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+        
+        .event-time {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 3px;
+        }
+        
+        .no-events {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.3);
+            padding: 40px 0;
+            font-size: 12px;
+        }
+        
+        /* 左上角刷新时间显示 */
+        .dashboard-refresh-time-4 {
+            position: fixed;
+            left: 24px;
+            color: #ffffff;
+            font-size: 14px;
+            background: linear-gradient(145deg, rgba(20, 16, 30, 0.95), rgba(10, 8, 18, 0.95));
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 170, 0, 0.3);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: 
+                0 4px 16px rgba(0, 0, 0, 0.3),
+                0 1px 4px rgba(255, 170, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 180px;
+        }
+        
+        .dashboard-refresh-time-4:hover {
+            border-color: rgba(255, 170, 0, 0.5);
+            box-shadow: 
+                0 6px 20px rgba(0, 0, 0, 0.4),
+                0 2px 8px rgba(255, 170, 0, 0.3);
+        }
+        
+        .dashboard-refresh-time-4 i {
+            color: #ffaa00;
+            font-size: 12px;
+        }
+        
+        .dashboard-refresh-time-4 .refresh-label {
+            color: #a0a0a0;
+            font-size: 12px;
+        }
+        
+        .dashboard-refresh-time-4 .refresh-value {
+            color: #ffaa00;
+            font-weight: 500;
+            font-size: 13px;
+        }
+
+        /* 刷新时间 */
+        .refresh-info-4 {
+            position: fixed;
+            left: 24px;
+            bottom: 16px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+            z-index: 100;
+        }
+        
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .data-cards-4 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .charts-grid-4 {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: auto;
+            }
+            .chart-heatmap,
+            .chart-availability { grid-column: 1 / -1; }
+            .chart-radar { grid-column: auto; grid-row: auto; }
+            .chart-group-bar { grid-column: auto; grid-row: auto; }
+            .chart-top-problems { grid-column: auto; grid-row: auto; }
+            .chart-event-feed { grid-column: auto; grid-row: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- 顶部栏将通过 JavaScript 加载 -->
+        <div id="header-container"></div>
+
+    <div class="dashboard-screen-4">
+        <!-- 全屏按钮 -->
+        <button class="fullscreen-btn-4" id="fullscreenBtn4" title="全屏">
+            <i class="fas fa-expand"></i>
+        </button>
+        
+        <!-- 左上角刷新时间显示 -->
+        <div id="dashboardRefreshTime4" class="dashboard-refresh-time-4">
+            <i class="fas fa-clock"></i>
+            <span class="refresh-label" data-i18n="dashboard4.lastRefresh">最后刷新:</span>
+            <span class="refresh-value">--</span>
+        </div>
+        
+        <!-- 标题 -->
+        <div class="screen-title-4" data-i18n="dashboard4.title">服务可用性大屏</div>
+        
+        <!-- 数据卡片 -->
+        <div class="data-cards-4">
+            <div class="data-card-4">
+                <div class="card-icon amber"><i class="fas fa-server"></i></div>
+                <div class="card-info">
+                    <div class="card-value" id="card-total-hosts">--</div>
+                    <div class="card-label" data-i18n="dashboard4.monitoredHosts">监控主机</div>
+                </div>
+            </div>
+            <div class="data-card-4">
+                <div class="card-icon green"><i class="fas fa-check-circle"></i></div>
+                <div class="card-info">
+                    <div class="card-value" id="card-availability">--</div>
+                    <div class="card-label" data-i18n="dashboard4.availabilityRate">可用率</div>
+                </div>
+            </div>
+            <div class="data-card-4">
+                <div class="card-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="card-info">
+                    <div class="card-value" id="card-active-problems">--</div>
+                    <div class="card-label" data-i18n="dashboard4.activeProblems">活动问题</div>
+                </div>
+            </div>
+            <div class="data-card-4">
+                <div class="card-icon blue"><i class="fas fa-history"></i></div>
+                <div class="card-info">
+                    <div class="card-value" id="card-resolved-today">--</div>
+                    <div class="card-label" data-i18n="dashboard4.resolvedToday">今日已恢复</div>
+                </div>
+            </div>
+            <div class="data-card-4">
+                <div class="card-icon purple"><i class="fas fa-layer-group"></i></div>
+                <div class="card-info">
+                    <div class="card-value" id="card-host-groups">--</div>
+                    <div class="card-label" data-i18n="dashboard4.hostGroups">主机组</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 图表区域 -->
+        <div class="charts-grid-4">
+            <!-- 7天告警趋势热力图 -->
+            <div class="chart-panel-4 chart-heatmap">
+                <div class="panel-title" data-i18n="dashboard4.alertHeatmap">7天告警时段热力图</div>
+                <div class="chart-container" id="chartHeatmap"></div>
+            </div>
+            
+            <!-- 严重性雷达图 -->
+            <div class="chart-panel-4 chart-radar">
+                <div class="panel-title" data-i18n="dashboard4.severityRadar">告警级别雷达</div>
+                <div class="chart-container" id="chartRadar"></div>
+            </div>
+            
+            <!-- 主机组问题分布 -->
+            <div class="chart-panel-4 chart-group-bar">
+                <div class="panel-title" data-i18n="dashboard4.groupProblems">主机组问题分布</div>
+                <div class="chart-container" id="chartGroupBar"></div>
+            </div>
+            
+            <!-- 可用率趋势 -->
+            <div class="chart-panel-4 chart-availability">
+                <div class="panel-title" data-i18n="dashboard4.availabilityTrend">24小时可用率趋势</div>
+                <div class="chart-container" id="chartAvailability"></div>
+            </div>
+            
+            <!-- TOP问题主机 -->
+            <div class="chart-panel-4 chart-top-problems">
+                <div class="panel-title" data-i18n="dashboard4.topProblemHosts">问题主机 TOP</div>
+                <div class="chart-container" id="chartTopProblems"></div>
+            </div>
+            
+            <!-- 实时事件流 -->
+            <div class="chart-panel-4 chart-event-feed">
+                <div class="panel-title" data-i18n="dashboard4.recentEvents">实时事件流</div>
+                <div class="event-feed" id="eventFeed">
+                    <div class="no-events" data-i18n="dashboard4.noEvents">暂无事件</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 刷新时间 -->
+        <div class="refresh-info-4">
+            <span id="lastRefreshTime4" data-i18n="dashboard4.lastRefresh">最后刷新:</span>
+        </div>
+    </div>
+    </div>
+
+    <!-- 设置对话框容器 -->
+    <div id="settingsContainer"></div>
+
+    <script src="js/core/api.js"></script>
+    <script src="js/components/fullscreen.js"></script>
+    <script src="js/components/header.js"></script>
+    <script src="js/pages/dashboard4.js"></script>
+    <script src="js/core/settings.js"></script>
+    <script src="js/core/i18n.js"></script>
+    <script src="js/pages/main.js"></script>
+</body>
+</html>

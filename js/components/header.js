@@ -28,6 +28,8 @@ async function loadHeader() {
                             <ul class="dropdown-menu">
                                 <li><a href="dashboard1.html" id="nav-screen1"><span data-i18n="nav.screen1">告警监控大屏</span></a></li>
                                 <li><a href="dashboard2.html" id="nav-screen2"><span data-i18n="nav.screen2">资源监控大屏</span></a></li>
+                                <li><a href="dashboard3.html" id="nav-screen3"><span data-i18n="nav.screen3">综合监控大屏</span></a></li>
+                                <li><a href="dashboard4.html" id="nav-screen4"><span data-i18n="nav.screen4">服务可用性大屏</span></a></li>
                             </ul>
                         </li>
                     </ul>
@@ -95,6 +97,14 @@ function initializeNavigation() {
             document.getElementById('nav-screens')?.classList.add('active');
             document.getElementById('nav-screen2')?.classList.add('active');
             break;
+        case 'dashboard3.html':
+            document.getElementById('nav-screens')?.classList.add('active');
+            document.getElementById('nav-screen3')?.classList.add('active');
+            break;
+        case 'dashboard4.html':
+            document.getElementById('nav-screens')?.classList.add('active');
+            document.getElementById('nav-screen4')?.classList.add('active');
+            break;
     }
 }
 
@@ -123,8 +133,8 @@ function initializeI18n() {
     // 应用所有 data-i18n 属性的翻译
     document.querySelectorAll('[data-i18n]').forEach(element => {
         const key = element.getAttribute('data-i18n');
-        if (window.i18n && window.i18n.t) {
-            element.textContent = window.i18n.t(key);
+        if (typeof i18n !== 'undefined' && i18n.t) {
+            element.textContent = i18n.t(key);
         }
     });
 }

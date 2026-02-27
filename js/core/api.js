@@ -337,16 +337,15 @@ class ZabbixAPI {
     }
 
     async getAlerts() {
-        return await this.request('problem.get', {
+        const params = {
             output: ['eventid', 'clock', 'name', 'severity'],
             recent: true,
             sortfield: 'eventid',
             sortorder: 'DESC',
-            // 只获取活动的问题
-            recent: true,
-            acknowledged: false,
-            suppressed: false
-        });
+            suppressed: false,
+            severities: [1, 2, 3, 4, 5]
+        };
+        return await this.request('problem.get', params);
     }
 
     async getAlertTrend() {
@@ -442,7 +441,7 @@ class ZabbixAPI {
         const weekAgo = now - 7 * 24 * 60 * 60;
 
         // 获取问题事件
-        const problems = await this.request('event.get', {
+        const eventParams = {
             output: ['eventid', 'clock', 'name', 'severity', 'value', 'r_eventid'],
             selectHosts: ['hostid', 'host', 'name'],
             source: 0,
@@ -451,17 +450,21 @@ class ZabbixAPI {
             sortfield: ['clock', 'eventid'],
             sortorder: 'DESC',
             value: 1,
-            suppressed: false
-        });
+            suppressed: false,
+            severities: [1, 2, 3, 4, 5]
+        };
+        const problems = await this.request('event.get', eventParams);
 
-        // 获取恢复事件
-        const recoveryEvents = await this.request('event.get', {
-            output: ['eventid', 'clock'],
-            eventids: problems.map(p => p.r_eventid).filter(id => id !== '0')
-        });
-
-        // 创建恢复事件的映射
-        const recoveryMap = new Map(recoveryEvents.map(e => [e.eventid, e]));
+        // 获取恢复事件（仅当有恢复事件ID时才请求）
+        const recoveryIds = problems.map(p => p.r_eventid).filter(id => id !== '0');
+        let recoveryMap = new Map();
+        if (recoveryIds.length > 0) {
+            const recoveryEvents = await this.request('event.get', {
+                output: ['eventid', 'clock'],
+                eventids: recoveryIds
+            });
+            recoveryMap = new Map(recoveryEvents.map(e => [e.eventid, e]));
+        }
 
         // 为每个问题添加恢复状态和持续时间
         return problems.map(problem => {
@@ -504,18 +507,20 @@ class ZabbixAPI {
             }
         });
 
-        // 获取当前告警数量
-        const triggers = await this.request('trigger.get', {
-            output: ['triggerid', 'description'],
+        // 获取当前告警数量（仅严重级别>=警告）
+        const triggerParams = {
+            output: ['triggerid'],
             selectHosts: ['hostid'],
             filter: {
                 value: 1,
-                status: 0
+                status: 0,
+                priority: [2, 3, 4, 5]
             },
             monitored: true,
             skipDependent: true,
             only_true: true
-        });
+        };
+        const triggers = await this.request('trigger.get', triggerParams);
 
         // 统计每个主机的告警数量
         const alertCounts = {};
@@ -923,12 +928,13 @@ class ZabbixAPI {
                     console.warn('Failed to detect Zabbix version in getHostsWithStatus:', e);
                 }
             }
-            const groupKey = (this.getMajorVersion && this.getMajorVersion() === 6) ? 'selectGroups' : 'selectHostGroups';
+            const major = this.getMajorVersion ? this.getMajorVersion() : null;
+            const groupKey = (major && major >= 7) ? 'selectHostGroups' : 'selectGroups';
             const hostParams = {
-                output: ['hostid', 'host', 'name', 'status', 'available'],
-                selectInterfaces: ['interfaceid', 'ip', 'dns', 'port', 'type', 'main', 'available'],
-                selectTriggers: ['triggerid', 'description', 'priority', 'value'],
-                // 不过滤状态，获取所有主机
+                output: ['hostid', 'host', 'name', 'status'],
+                selectInterfaces: ['ip', 'type', 'main', 'available'],
+                selectTriggers: ['triggerid', 'value'],
+                monitored: true
             };
             hostParams[groupKey] = ['groupid', 'name'];
 
@@ -950,12 +956,14 @@ class ZabbixAPI {
             if (triggerIds.length > 0) {
                 try {
                     // 一次性获取所有触发器对应的活动问题，避免逐主机请求
-                    const problems = await this.request('problem.get', {
-                        output: ['eventid', 'objectid'],
+                    const allProblems = await this.request('problem.get', {
+                        output: ['eventid', 'objectid', 'r_eventid'],
                         objectids: triggerIds,
                         recent: true,
                         suppressed: false
                     });
+                    // 过滤掉已恢复的问题（r_eventid !== "0" 表示已有恢复事件）
+                    const problems = allProblems.filter(p => p.r_eventid === "0");
 
                     problems.forEach(p => {
                         const hostId = triggerToHost.get(p.objectid);
@@ -1036,7 +1044,7 @@ class ZabbixAPI {
                     unavailableInterfaces: unavailableInterfaces,
                     unknownInterfaces: unknownInterfaces,
                     interfaces: interfaces,
-                    groups: host.groups || [],
+                    groups: host.groups || host.hostgroups || [],
                     // 详细的接口状态
                     interfaceStatus: {
                         agent: agentInterface ? {
@@ -1074,75 +1082,67 @@ class ZabbixAPI {
 
     async getProblemsStatistics() {
         try {
-            // 第一步：获取活动问题的基础信息
-            const activeProblems = await this.request('problem.get', {
+            // 第一步：获取活动问题的基础信息（过滤掉未分类和信息级别）
+            const problemParams = {
                 output: ['eventid', 'objectid', 'clock', 'r_eventid', 'severity', 'name'],
                 recent: true,
-                suppressed: false
-            });
+                suppressed: false,
+                severities: [1, 2, 3, 4, 5]
+            };
+            const allProblems = await this.request('problem.get', problemParams);
+            // 过滤掉已恢复的问题（r_eventid !== "0" 表示已有恢复事件，即问题已解决）
+            const activeProblems = allProblems.filter(p => p.r_eventid === "0");
+            const recentlyResolvedProblems = allProblems.filter(p => p.r_eventid !== "0");
 
-            if (activeProblems.length === 0) {
-                // 如果没有活动问题，直接返回
-                const resolvedEvents = await this.request('event.get', {
-                    output: ['eventid', 'clock', 'value'],
-                    source: 0,
-                    object: 0,
-                    value: 0,
-                    time_from: Math.floor(Date.now() / 1000) - 24 * 60 * 60,
-                    sortfield: 'clock',
-                    sortorder: 'DESC'
+            // 第二步：批量获取触发器信息（为所有问题，包括已恢复的）
+            const allTriggerIds = [...new Set(allProblems.map(p => p.objectid))];
+            let triggerMap = new Map();
+            let interfaceMap = new Map();
+
+            if (allTriggerIds.length > 0) {
+                const triggers = await this.request('trigger.get', {
+                    output: ['triggerid', 'description'],
+                    triggerids: allTriggerIds,
+                    selectHosts: ['hostid', 'name', 'host']
                 });
 
-                return {
-                    activeProblemsCount: 0,
-                    resolvedProblemsCount: resolvedEvents.length,
-                    totalProblemsToday: resolvedEvents.length,
-                    activeProblems: [],
-                    resolvedProblems: resolvedEvents
-                };
+                // 第三步：获取所有相关主机的接口信息
+                const hostIds = [...new Set(triggers.flatMap(trigger => 
+                    trigger.hosts ? trigger.hosts.map(host => host.hostid) : []
+                ))];
+
+                if (hostIds.length > 0) {
+                    const hostInterfaces = await this.request('hostinterface.get', {
+                        output: ['hostid', 'ip', 'dns', 'main'],
+                        hostids: hostIds,
+                        filter: { main: 1 }
+                    });
+                    interfaceMap = new Map(hostInterfaces.map(iface => [String(iface.hostid), iface]));
+                }
+
+                triggerMap = new Map(triggers.map(trigger => [String(trigger.triggerid), trigger]));
             }
 
-            // 第二步：批量获取触发器信息
-            const triggerIds = activeProblems.map(problem => problem.objectid);
-            const triggers = await this.request('trigger.get', {
-                output: ['triggerid', 'description', 'expression'],
-                triggerids: triggerIds,
-                selectHosts: ['hostid', 'name', 'host']
-            });
-
-            // 第三步：获取所有相关主机的接口信息
-            const hostIds = [...new Set(triggers.flatMap(trigger => 
-                trigger.hosts ? trigger.hosts.map(host => host.hostid) : []
-            ))];
-
-            let hostInterfaces = [];
-            if (hostIds.length > 0) {
-                hostInterfaces = await this.request('hostinterface.get', {
-                    output: ['hostid', 'ip', 'dns', 'main'],
-                    hostids: hostIds,
-                    filter: { main: 1 }
-                });
-            }
-
-            // 第四步：创建查找映射以提高性能（统一使用字符串作为键）
-            const triggerMap = new Map(triggers.map(trigger => [String(trigger.triggerid), trigger]));
-            const interfaceMap = new Map(hostInterfaces.map(iface => [String(iface.hostid), iface]));
-
-            // 第五步：组合数据
-            const enrichedActiveProblems = activeProblems.map(problem => {
+            // 第四步：统一的数据丰富函数
+            const enrichProblem = (problem) => {
                 const trigger = triggerMap.get(String(problem.objectid));
                 const host = trigger && trigger.hosts && trigger.hosts[0];
                 const hostInterface = host ? interfaceMap.get(String(host.hostid)) : null;
 
                 return {
                     ...problem,
+                    hostId: host ? host.hostid : null,
                     hostName: host ? (host.name || host.host) : '未知主机',
                     hostIp: hostInterface ? (hostInterface.ip || hostInterface.dns) : '--',
                     name: problem.name || (trigger ? trigger.description : '未知问题')
                 };
-            });
+            };
 
-            // 第六步：获取最近24小时已解决的事件
+            // 第五步：丰富活动问题和最近恢复的问题
+            const enrichedActiveProblems = activeProblems.map(enrichProblem);
+            const enrichedResolvedProblems = recentlyResolvedProblems.map(enrichProblem);
+
+            // 第六步：获取最近24小时已解决的事件（用于统计计数）
             const resolvedEvents = await this.request('event.get', {
                 output: ['eventid', 'clock', 'value'],
                 source: 0,  // 触发器事件
@@ -1157,13 +1157,10 @@ class ZabbixAPI {
 
             console.log('Problems statistics debug:', {
                 activeProblemsCount: enrichedActiveProblems.length,
+                recentlyResolvedCount: enrichedResolvedProblems.length,
                 resolvedEventsCount: resolvedEvents.length,
-                triggerCount: triggers.length,
-                triggerIds: triggerIds.slice(0, 5),
-                triggersReceived: triggers.slice(0, 3).map(t => ({ triggerid: t.triggerid, hosts: t.hosts })),
-                hostInterfacesCount: hostInterfaces.length,
-                sampleActiveProblems: enrichedActiveProblems.slice(0, 3), // 显示前3个活动问题
-                resolvedEvents: resolvedEvents.slice(0, 3)  // 显示前3个恢复事件
+                sampleActiveProblems: enrichedActiveProblems.slice(0, 3),
+                sampleResolvedProblems: enrichedResolvedProblems.slice(0, 3)
             });
 
             return {
@@ -1171,6 +1168,7 @@ class ZabbixAPI {
                 resolvedProblemsCount: resolvedProblemsCount,
                 totalProblemsToday: enrichedActiveProblems.length + resolvedProblemsCount,
                 activeProblems: enrichedActiveProblems,
+                recentResolvedProblems: enrichedResolvedProblems,
                 resolvedProblems: resolvedEvents
             };
         } catch (error) {

@@ -6,7 +6,7 @@
     <title data-i18n="pageTitle.cmdb">CMDB</title>
     <link href="css/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
-    <script src="js/echarts.min.js"></script>
+    <script src="js/lib/echarts.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* CMDB 页面专用样式 */
@@ -182,29 +182,31 @@
 
         /* 表格列宽度分配 */
         .cmdb-table th:nth-child(1),
-        .cmdb-table td:nth-child(1) { width: 10%; min-width: 80px; } /* 主机名 */
+        .cmdb-table td:nth-child(1) { width: 3%; min-width: 40px; text-align: center; } /* 序号 */
         .cmdb-table th:nth-child(2),
-        .cmdb-table td:nth-child(2) { width: 10%; min-width: 80px; } /* 系统名称 */
+        .cmdb-table td:nth-child(2) { width: 9%; min-width: 80px; } /* 主机名 */
         .cmdb-table th:nth-child(3),
-        .cmdb-table td:nth-child(3) { width: 9%; min-width: 100px; } /* IP地址 */
+        .cmdb-table td:nth-child(3) { width: 9%; min-width: 80px; } /* 系统名称 */
         .cmdb-table th:nth-child(4),
-        .cmdb-table td:nth-child(4) { width: 6%; min-width: 60px; } /* 架构 */
+        .cmdb-table td:nth-child(4) { width: 9%; min-width: 100px; } /* IP地址 */
         .cmdb-table th:nth-child(5),
-        .cmdb-table td:nth-child(5) { width: 8%; min-width: 70px; } /* 接口方式 */
+        .cmdb-table td:nth-child(5) { width: 5%; min-width: 55px; } /* 架构 */
         .cmdb-table th:nth-child(6),
-        .cmdb-table td:nth-child(6) { width: 8%; min-width: 80px; } /* Agent版本 */
+        .cmdb-table td:nth-child(6) { width: 8%; min-width: 70px; } /* 接口方式 */
         .cmdb-table th:nth-child(7),
-        .cmdb-table td:nth-child(7) { width: 7%; min-width: 60px; } /* CPU总量 */
+        .cmdb-table td:nth-child(7) { width: 8%; min-width: 80px; } /* Agent版本 */
         .cmdb-table th:nth-child(8),
-        .cmdb-table td:nth-child(8) { width: 9%; min-width: 90px; } /* CPU使用率 */
+        .cmdb-table td:nth-child(8) { width: 7%; min-width: 60px; } /* CPU总量 */
         .cmdb-table th:nth-child(9),
-        .cmdb-table td:nth-child(9) { width: 7%; min-width: 70px; } /* 内存总量 */
+        .cmdb-table td:nth-child(9) { width: 9%; min-width: 90px; } /* CPU使用率 */
         .cmdb-table th:nth-child(10),
-        .cmdb-table td:nth-child(10) { width: 9%; min-width: 90px; } /* 内存使用率 */
+        .cmdb-table td:nth-child(10) { width: 7%; min-width: 70px; } /* 内存总量 */
         .cmdb-table th:nth-child(11),
-        .cmdb-table td:nth-child(11) { width: 10%; min-width: 80px; } /* 操作系统 */
+        .cmdb-table td:nth-child(11) { width: 9%; min-width: 90px; } /* 内存使用率 */
         .cmdb-table th:nth-child(12),
-        .cmdb-table td:nth-child(12) { width: 7%; min-width: 70px; } /* 主机分组 */
+        .cmdb-table td:nth-child(12) { width: 10%; min-width: 80px; } /* 操作系统 */
+        .cmdb-table th:nth-child(13),
+        .cmdb-table td:nth-child(13) { width: 7%; min-width: 70px; } /* 主机分组 */
 
         .cmdb-table td {
             white-space: nowrap;
@@ -252,7 +254,7 @@
         }
 
         /* 主机分组列：允许多个 group-tag 自动换行 */
-        .cmdb-table td:nth-child(12) {
+        .cmdb-table td:nth-child(13) {
             white-space: normal;
             overflow: visible;
             text-overflow: clip;
@@ -260,7 +262,7 @@
             line-height: 1.3;
         }
 
-        .cmdb-table td:nth-child(12) .group-tag {
+        .cmdb-table td:nth-child(13) .group-tag {
             white-space: nowrap;
         }
 
@@ -395,6 +397,96 @@
             font-size: 0.75rem;
             color: var(--gray-600);
         }
+
+        /* ── 分页样式 ── */
+        .pagination-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .pagination-info {
+            font-size: 0.875rem;
+            color: var(--gray-600);
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .pagination-btn {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 0.5rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            background: white;
+            color: var(--gray-700);
+            font-size: 0.8125rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .pagination-btn:hover:not([disabled]):not(.active) {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: #f0f6ff;
+        }
+
+        .pagination-btn.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .pagination-btn[disabled] {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .pagination-ellipsis {
+            padding: 0 0.25rem;
+            color: var(--gray-500);
+            font-size: 0.875rem;
+            user-select: none;
+        }
+
+        /* 每页条数 + 跳转 */
+        .pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .page-size-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            color: var(--gray-600);
+        }
+
+        .page-size-wrapper select {
+            padding: 0.25rem 1.75rem 0.25rem 0.5rem;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            background: white url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") right 0.25rem center/1.25em 1.25em no-repeat;
+            appearance: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -488,22 +580,21 @@
             </div>
         </div>
 
-        <!-- 最后刷新时间 -->
-        <div style="display:flex; justify-content:flex-end; margin-bottom:0.75rem;">
-            <span id="lastRefreshTime" class="text-sm" aria-live="polite"></span>
-        </div>
+        <!-- 分页容器（上） -->
+        <div id="paginationTop"></div>
 
         <!-- 主机列表表格 -->
         <div class="cmdb-table-container">
             <table class="cmdb-table">
                 <thead>
                     <tr>
+                        <th>#</th>
                         <th data-i18n="cmdb.hostName">主机名</th>
                         <th data-i18n="cmdb.systemName">系统名称</th>
                         <th data-i18n="cmdb.ipAddress">IP地址</th>
                         <th data-i18n="cmdb.architecture">架构</th>
                         <th data-i18n="cmdb.interfaceType">接口方式</th>
-                            <th data-i18n="cmdb.agentVersion">Agent 版本</th>
+                        <th data-i18n="cmdb.agentVersion">Agent 版本</th>
                         <th class="sortable" data-sort="cpuCores" data-i18n="cmdb.cpuCores">CPU总量 <i class="fas fa-sort sort-icon"></i></th>
                         <th class="sortable" data-sort="cpu" data-i18n="cmdb.cpuUsage">CPU使用率 <i class="fas fa-sort sort-icon"></i></th>
                         <th class="sortable" data-sort="memoryTotal" data-i18n="cmdb.memoryTotal">内存总量 <i class="fas fa-sort sort-icon"></i></th>
@@ -514,7 +605,7 @@
                 </thead>
                 <tbody id="hostsList">
                     <tr>
-                        <td colspan="12">
+                        <td colspan="13">
                             <div class="loading-overlay">
                                 <i class="fas fa-spinner"></i>
                             </div>
@@ -523,12 +614,15 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- 分页容器（下） -->
+        <div id="paginationBottom"></div>
     </div>
 
-    <script src="js/i18n.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/header.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/cmdb.js"></script>
+    <script src="js/core/i18n.js"></script>
+    <script src="js/core/api.js"></script>
+    <script src="js/components/header.js"></script>
+    <script src="js/core/settings.js"></script>
+    <script src="js/pages/cmdb.js"></script>
 </body>
 </html>
